@@ -1,0 +1,62 @@
+.budget-card {
+  background: #2a3447;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #3a4553;
+}
+
+.budget-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.budget-title-section {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.budget-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.time-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #374151;
+  border-radius: 6px;
+  color: #9ca3af;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-filter:hover {
+  background: #4b5563;
+  color: white;
+}
+
+.budget-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.currency {
+  font-size: 18px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}

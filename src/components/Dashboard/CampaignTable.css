@@ -1,0 +1,122 @@
+.campaign-table {
+  background: #2a3447;
+  border-radius: 16px;
+  border: 1px solid #3a4553;
+  overflow: hidden;
+}
+
+.table-tabs {
+  display: flex;
+  border-bottom: 1px solid #3a4553;
+}
+
+.table-tab {
+  flex: 1;
+  padding: 16px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.table-tab:hover {
+  color: white;
+  background: #374151;
+}
+
+.table-tab.active {
+  color: #4f46e5;
+  border-bottom-color: #4f46e5;
+  background: #374151;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.campaigns-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.campaigns-table th {
+  background: #374151;
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #e5e7eb;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #4b5563;
+  white-space: nowrap;
+}
+
+.campaigns-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #3a4553;
+  color: #e5e7eb;
+  white-space: nowrap;
+}
+
+.campaigns-table tr:hover {
+  background: #374151;
+}
+
+.campaign-thumbnail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thumbnail-id {
+  font-weight: 600;
+  color: white;
+}
+
+.thumbnail-emoji {
+  font-size: 18px;
+}
+
+.ad-title {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: white;
+  font-weight: 500;
+}
+
+.status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status.live {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.status.completed {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+.status.paused {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.status.draft {
+  background: rgba(75, 85, 99, 0.2);
+  color: #6b7280;
+}

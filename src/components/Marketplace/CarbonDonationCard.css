@@ -1,0 +1,166 @@
+.carbon-donation-card {
+  aspect-ratio: 1;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.carbon-donation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.card-background {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    #1e3a8a 0%, 
+    #1e40af 25%, 
+    #2563eb 50%, 
+    #3b82f6 75%, 
+    #60a5fa 100%);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Tree illustration */
+.tree-illustration {
+  position: absolute;
+  bottom: 20px;
+  right: 16px;
+  opacity: 0.3;
+}
+
+.tree-trunk {
+  width: 3px;
+  height: 12px;
+  background: #8b4513;
+  margin: 0 auto;
+}
+
+.tree-crown {
+  width: 16px;
+  height: 16px;
+  background: #22c55e;
+  border-radius: 50%;
+  margin: -4px auto 0;
+  position: relative;
+}
+
+.tree-crown::before,
+.tree-crown::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+  border-radius: 50%;
+}
+
+.tree-crown::before {
+  top: -6px;
+  left: -4px;
+}
+
+.tree-crown::after {
+  top: -6px;
+  right: -4px;
+}
+
+.verification-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(34, 197, 94, 0.9);
+  border-radius: 50%;
+  padding: 4px;
+  color: white;
+  backdrop-filter: blur(4px);
+}
+
+.carbon-info {
+  text-align: center;
+  color: white;
+  margin-top: 8px;
+}
+
+.carbon-amount {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.carbon-unit {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+  letter-spacing: 0.5px;
+}
+
+.donate-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  text-align: center;
+  margin-top: auto;
+}
+
+.donate-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Different gradient variations for visual interest */
+.carbon-donation-card:nth-child(6n+1) .card-background {
+  background: linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa);
+}
+
+.carbon-donation-card:nth-child(6n+2) .card-background {
+  background: linear-gradient(135deg, #047857, #059669, #10b981);
+}
+
+.carbon-donation-card:nth-child(6n+3) .card-background {
+  background: linear-gradient(135deg, #7c2d12, #ea580c, #f97316);
+}
+
+.carbon-donation-card:nth-child(6n+4) .card-background {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed, #a855f7);
+}
+
+.carbon-donation-card:nth-child(6n+5) .card-background {
+  background: linear-gradient(135deg, #be123c, #e11d48, #f43f5e);
+}
+
+.carbon-donation-card:nth-child(6n+6) .card-background {
+  background: linear-gradient(135deg, #0f766e, #14b8a6, #5eead4);
+}
+
+@media (max-width: 768px) {
+  .carbon-amount {
+    font-size: 24px;
+  }
+  
+  .donate-button {
+    font-size: 9px;
+    padding: 6px 8px;
+  }
+  
+  .card-background {
+    padding: 12px;
+  }
+}

@@ -1,0 +1,148 @@
+.flyer-creation {
+  padding: 24px;
+  background: #1a1f37;
+}
+
+.creation-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.step-header {
+  margin-bottom: 40px;
+  flex-shrink: 0;
+}
+
+.step-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-indicator.active .step-number {
+  background: #4f46e5;
+  color: white;
+}
+
+.step-indicator.active .step-label {
+  color: white;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #374151;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.step-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.step-connector {
+  width: 100px;
+  height: 2px;
+  background: #374151;
+  margin: 0 20px;
+}
+
+.step-connector.active {
+  background: #4f46e5;
+}
+
+.step-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+  margin-top: 20px;
+  border-top: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.back-button {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.back-button:hover {
+  background: #4b5563;
+  color: white;
+}
+
+.next-button {
+  background: #4f46e5;
+  color: white;
+}
+
+.next-button:hover {
+  background: #4338ca;
+}
+
+.generate-button {
+  background: #4f46e5;
+  color: white;
+}
+
+.generate-button:hover {
+  background: #4338ca;
+}
+
+@media (max-width: 768px) {
+  .flyer-creation {
+    padding: 16px;
+  }
+  
+  .step-connector {
+    width: 60px;
+    margin: 0 10px;
+  }
+  
+  .step-navigation {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .nav-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,108 @@
+.marketplace {
+  padding: 24px;
+  background: #1a1f37;
+  min-height: 100vh;
+}
+
+.marketplace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #3a4553;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 0;
+  background: #2a3447;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.filter-tab {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.filter-tab.active {
+  background: #1a1f37;
+  color: white;
+}
+
+.filter-tab:hover:not(.active) {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.donation-button {
+  padding: 10px 24px;
+  background: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.donation-button:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.carbon-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1400px) {
+  .carbon-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .carbon-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .carbon-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .marketplace {
+    padding: 16px;
+  }
+  
+  .marketplace-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .carbon-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .carbon-grid {
+    grid-template-columns: 1fr;
+  }
+}

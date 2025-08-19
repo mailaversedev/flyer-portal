@@ -1,0 +1,39 @@
+.flyer {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.flyer-header {
+  margin-bottom: 48px;
+}
+
+.flyer-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.flyer-distribution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .flyer {
+    padding: 16px;
+  }
+  
+  .flyer-distribution-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .flyer-title {
+    font-size: 24px;
+  }
+}
