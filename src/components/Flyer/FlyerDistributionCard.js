@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import './FlyerDistributionCard.css';
@@ -13,13 +13,37 @@ const FlyerDistributionCard = ({
   isPrimary 
 }) => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      // Create a file URL for the selected image
+      const imageUrl = URL.createObjectURL(file);
+      
+      // Navigate to budget page with the selected image
+      navigate('/flyer/create/leaflet', {
+        state: {
+          uploadedImage: imageUrl,
+          fileName: file.name,
+          fileSize: file.size,
+          isDirectUpload: true
+        }
+      });
+    }
+  };
 
   const handleButtonClick = (buttonType) => {
     if (buttonType === 'primary' && primaryRoute) {
       navigate(primaryRoute);
     } else if (buttonType === 'secondary') {
-      // Handle secondary button actions (like Direct Upload)
-      console.log('Secondary button clicked');
+      // For leaflet, trigger file selector
+      if (icon === 'leaflet' && fileInputRef.current) {
+        fileInputRef.current.click();
+      } else {
+        // Handle other secondary button actions
+        console.log('Secondary button clicked');
+      }
     }
   };
 
@@ -73,6 +97,15 @@ const FlyerDistributionCard = ({
 
   return (
     <div className="flyer-distribution-card">
+      {/* Hidden file input for direct upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+      
       <div className="card-header">
         <h3 className="card-title">{title}</h3>
         <p className="card-subtitle">{subtitle}</p>

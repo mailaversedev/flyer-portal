@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, ChevronDown } from 'lucide-react';
+import { Plus, ChevronDown, X } from 'lucide-react';
 import './Step2Survey.css';
 
 const Step2Survey = ({ data, onUpdate }) => {
@@ -59,6 +59,51 @@ const Step2Survey = ({ data, onUpdate }) => {
     onUpdate({ questions: updatedQuestions });
   };
 
+  const removeQuestion = (questionId) => {
+    if (questions.length <= 1) {
+      // Don't allow removing the last question
+      return;
+    }
+    
+    const updatedQuestions = questions.filter(q => q.id !== questionId);
+    // Reassign IDs to maintain sequential numbering
+    const reindexedQuestions = updatedQuestions.map((q, index) => ({
+      ...q,
+      id: index + 1
+    }));
+    
+    setQuestions(reindexedQuestions);
+    onUpdate({ questions: reindexedQuestions });
+    
+    // If the removed question was selected, select the first question
+    if (selectedQuestion === questionId) {
+      setSelectedQuestion(1);
+    } else if (selectedQuestion > questionId) {
+      // Adjust selected question ID if it was after the removed question
+      setSelectedQuestion(selectedQuestion - 1);
+    }
+  };
+
+  const removeAnswer = (questionId, answerIndex) => {
+    const question = questions.find(q => q.id === questionId);
+    if (question && question.answers.length <= 1) {
+      // Don't allow removing the last answer for choice questions
+      return;
+    }
+    
+    const updatedQuestions = questions.map(q => {
+      if (q.id === questionId) {
+        return { 
+          ...q, 
+          answers: q.answers.filter((_, index) => index !== answerIndex)
+        };
+      }
+      return q;
+    });
+    setQuestions(updatedQuestions);
+    onUpdate({ questions: updatedQuestions });
+  };
+
   // Validation functions
   const validateQuestion = (question) => {
     const errors = [];
@@ -101,14 +146,24 @@ const Step2Survey = ({ data, onUpdate }) => {
               {questions.map((question) => {
                 const validation = getQuestionValidationStatus(question);
                 return (
-                  <button
-                    key={question.id}
-                    className={`question-item ${selectedQuestion === question.id ? 'active' : ''} ${!validation.isValid ? 'invalid' : ''}`}
-                    onClick={() => setSelectedQuestion(question.id)}
-                  >
-                    Question {question.id}
-                    {!validation.isValid && <span className="validation-indicator">!</span>}
-                  </button>
+                  <div key={question.id} className="question-item-container">
+                    <button
+                      className={`question-item ${selectedQuestion === question.id ? 'active' : ''} ${!validation.isValid ? 'invalid' : ''}`}
+                      onClick={() => setSelectedQuestion(question.id)}
+                    >
+                      Question {question.id}
+                      {!validation.isValid && <span className="validation-indicator">!</span>}
+                    </button>
+                    {questions.length > 1 && (
+                      <button
+                        className="remove-question-btn"
+                        onClick={() => removeQuestion(question.id)}
+                        title="Remove question"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
               <button className="add-question-btn" onClick={addNewQuestion}>
@@ -195,14 +250,24 @@ const Step2Survey = ({ data, onUpdate }) => {
                     ) : (
                       <>
                         {currentQuestion.answers.map((answer, index) => (
-                          <textarea
-                            key={index}
-                            className="form-textarea answer-input"
-                            placeholder="Please enter"
-                            rows={2}
-                            value={answer}
-                            onChange={(e) => updateAnswer(currentQuestion.id, index, e.target.value)}
-                          />
+                          <div key={index} className="answer-input-container">
+                            <textarea
+                              className="form-textarea answer-input"
+                              placeholder="Please enter"
+                              rows={2}
+                              value={answer}
+                              onChange={(e) => updateAnswer(currentQuestion.id, index, e.target.value)}
+                            />
+                            {currentQuestion.answers.length > 1 && (
+                              <button
+                                className="remove-answer-btn"
+                                onClick={() => removeAnswer(currentQuestion.id, index)}
+                                title="Remove answer"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
                         ))}
                         <button 
                           className="add-answer-btn"

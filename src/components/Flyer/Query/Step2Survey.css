@@ -410,3 +410,71 @@
 .validation-error:last-child {
   margin-bottom: 0;
 }
+
+/* Remove Button Styles */
+.question-item-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.question-item-container .question-item {
+  flex: 1;
+  margin-right: 8px;
+}
+
+.remove-question-btn {
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.remove-question-btn:hover {
+  opacity: 1;
+  background: #dc2626;
+}
+
+.answer-input-container {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.answer-input-container .answer-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.remove-answer-btn {
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.remove-answer-btn:hover {
+  opacity: 1;
+  background: #dc2626;
+}

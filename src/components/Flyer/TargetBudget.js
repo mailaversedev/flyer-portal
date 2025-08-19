@@ -171,7 +171,6 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
                   checked={formData.paymentMethod === 'credit-card'}
                   onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
                 />
-                <span className="radio-custom"></span>
                 <span className="checkbox-text">Credit Card (VISA, Master)</span>
               </label>
               
@@ -183,7 +182,6 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
                   checked={formData.paymentMethod === 'bank-transfer'}
                   onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
                 />
-                <span className="radio-custom"></span>
                 <span className="checkbox-text">By Bank Transfer</span>
               </label>
               
@@ -195,7 +193,6 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
                   checked={formData.paymentMethod === 'fps'}
                   onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
                 />
-                <span className="radio-custom"></span>
                 <span className="checkbox-text">By FPS</span>
               </label>
             </div>
@@ -218,21 +215,31 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
         <div className="flyer-preview">
           <div className="preview-container">
             <div className="preview-image">
-              {/* Placeholder for generated flyer */}
-              <div className="flyer-placeholder">
-                <div className="placeholder-content">
-                  <div className="placeholder-header">FIRE FITNESS</div>
-                  <div className="placeholder-main">
-                    <div className="placeholder-figure"></div>
-                    <div className="placeholder-text">FREE 1-HOUR TRIAL</div>
-                    <div className="placeholder-subtitle">THIS IS MORE FOR &gt; JUST A FITNESS PLACE IT'S NOT WORLD PLACE<br/>FULL OF VITALITY AND PASSION</div>
-                  </div>
-                  <div className="placeholder-footer">
-                    <div className="placeholder-qr"></div>
-                    <div className="placeholder-contact">Apply</div>
+              {/* Show generated image if available, otherwise show placeholder */}
+              {data?.generatedImage ? (
+                <div className="generated-flyer" style={{ transform: `scale(${previewZoom / 100})` }}>
+                  <img 
+                    src={data.generatedImage} 
+                    alt="Generated Leaflet" 
+                    className="generated-flyer-image"
+                  />
+                </div>
+              ) : (
+                <div className="flyer-placeholder">
+                  <div className="placeholder-content">
+                    <div className="placeholder-header">FIRE FITNESS</div>
+                    <div className="placeholder-main">
+                      <div className="placeholder-figure"></div>
+                      <div className="placeholder-text">FREE 1-HOUR TRIAL</div>
+                      <div className="placeholder-subtitle">THIS IS MORE FOR &gt; JUST A FITNESS PLACE IT'S NOT WORLD PLACE<br/>FULL OF VITALITY AND PASSION</div>
+                    </div>
+                    <div className="placeholder-footer">
+                      <div className="placeholder-qr"></div>
+                      <div className="placeholder-contact">Apply</div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
             
             <div className="preview-controls">

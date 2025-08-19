@@ -15,7 +15,7 @@ const Step1Content = ({ onNext }) => {
     adContent: '',
     flyerPrompts: '',
     promotionMessage: '',
-    productPhoto: null,
+    productPhoto: [],
     productDescriptions: '',
     tags: []
   });
@@ -47,8 +47,129 @@ const Step1Content = ({ onNext }) => {
   };
 
   const handleFileUpload = (field) => {
-    // Handle file upload logic
-    console.log(`Uploading file for ${field}`);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    // Only product photos support multiple selection
+    if (field === 'productPhoto') {
+      input.multiple = true;
+    }
+    
+    input.onchange = (event) => {
+      const files = Array.from(event.target.files);
+      
+      if (field === 'productPhoto') {
+        // Handle multiple files for product photos
+        const filePromises = files.map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve({
+              file,
+              name: file.name,
+              size: file.size,
+              preview: e.target.result
+            });
+            reader.readAsDataURL(file);
+          });
+        });
+        
+        Promise.all(filePromises).then(fileObjects => {
+          setFormData(prev => ({
+            ...prev,
+            [field]: [...prev[field], ...fileObjects]
+          }));
+        });
+      } else {
+        // Handle single file for reference flyer and background photo
+        const file = files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setFormData(prev => ({
+              ...prev,
+              [field]: {
+                file,
+                name: file.name,
+                size: file.size,
+                preview: e.target.result
+              }
+            }));
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    };
+    input.click();
+  };
+
+  const handleRemoveImage = (field, index = null) => {
+    if (field === 'productPhoto' && index !== null) {
+      // Remove specific product photo
+      setFormData(prev => ({
+        ...prev,
+        [field]: prev[field].filter((_, i) => i !== index)
+      }));
+    } else {
+      // Remove single image (reference flyer or background photo)
+      setFormData(prev => ({
+        ...prev,
+        [field]: null
+      }));
+    }
+  };
+
+  const ThumbnailRow = ({ images, field }) => {
+    if (!images || images.length === 0) return null;
+    
+    return (
+      <div className="thumbnail-row">
+        {images.map((imageObj, index) => (
+          <div key={index} className="thumbnail-item">
+            <img 
+              src={imageObj.preview} 
+              alt={imageObj.name} 
+              className="thumbnail-image"
+            />
+            <button 
+              type="button"
+              className="thumbnail-remove"
+              onClick={() => handleRemoveImage(field, index)}
+            >
+              ×
+            </button>
+            <div className="thumbnail-name">{imageObj.name}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const SingleImageDisplay = ({ imageObj, field, onRemove }) => {
+    if (!imageObj) return null;
+    
+    return (
+      <div className="single-image-display">
+        <img 
+          src={imageObj.preview} 
+          alt={imageObj.name} 
+          className="single-image"
+        />
+        <button 
+          type="button"
+          className="single-image-remove"
+          onClick={() => onRemove(field)}
+        >
+          ×
+        </button>
+        <div className="single-image-name">{imageObj.name}</div>
+      </div>
+    );
+  };
+
+  const handleNext = () => {
+    // Pass the current form data to the parent component
+    onNext(formData);
   };
 
   return (
@@ -96,9 +217,48 @@ const Step1Content = ({ onNext }) => {
         {/* Upload Reference Flyer Photo */}
         <div className="form-group full-width">
           <label className="form-label">Upload Reference Flyer Photo (optional)</label>
-          <div className="upload-area" onClick={() => handleFileUpload('referenceFlyer')}>
-            <Plus size={24} />
-          </div>
+          {formData.referenceFlyer ? (
+            <SingleImageDisplay 
+              imageObj={formData.referenceFlyer} 
+              field="referenceFlyer" 
+              onRemove={handleRemoveImage}
+            />
+          ) : (
+            <>
+              <input
+                type="file"
+                style={{ display: 'none' }}
+                id="referenceFlyerInput"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        referenceFlyer: {
+                          file,
+                          name: file.name,
+                          size: file.size,
+                          preview: event.target.result
+                        }
+                      }));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <div
+                className="upload-area"
+                onClick={() => document.getElementById('referenceFlyerInput').click()}
+                tabIndex={0}
+                role="button"
+              >
+                <Plus size={24} />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Select Design Style */}
@@ -140,10 +300,48 @@ const Step1Content = ({ onNext }) => {
         {/* Upload Background Photo */}
         <div className="form-group full-width">
           <label className="form-label">Upload Background Photo (optional)</label>
-          <div className="file-select" onClick={() => handleFileUpload('backgroundPhoto')}>
-            <span>Select file</span>
-            <ChevronRight size={16} />
-          </div>
+          {formData.backgroundPhoto ? (
+            <SingleImageDisplay 
+              imageObj={formData.backgroundPhoto} 
+              field="backgroundPhoto" 
+              onRemove={handleRemoveImage}
+            />
+          ) : (
+            <>
+              <input
+                type="file"
+                style={{ display: 'none' }}
+                id="backgroundPhotoInput"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        backgroundPhoto: {
+                          file,
+                          name: file.name,
+                          size: file.size,
+                          preview: event.target.result
+                        }
+                      }));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <div
+                className="upload-area"
+                onClick={() => document.getElementById('backgroundPhotoInput').click()}
+                tabIndex={0}
+                role="button"
+              >
+                <Plus size={24} />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -214,11 +412,12 @@ const Step1Content = ({ onNext }) => {
 
           {/* Upload Product Photo */}
           <div className="form-group full-width">
-            <label className="form-label">Upload Product Photo (optional) <span className="counter">0/5</span></label>
+            <label className="form-label">Upload Product Photo (optional) <span className="counter">{formData.productPhoto.length}/5</span></label>
             <div className="file-select" onClick={() => handleFileUpload('productPhoto')}>
               <span>Select file</span>
               <ChevronRight size={16} />
             </div>
+            <ThumbnailRow images={formData.productPhoto} field="productPhoto" />
           </div>
 
           {/* Product Descriptions */}
