@@ -3,13 +3,26 @@ import Step1Content from '../../../components/Flyer/Leaflet/Step1Content';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
+import ApiService from '../../../services/ApiService';
 import './Leaflet.css';
 
 const LeafletCreation = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [leafletData, setLeafletData] = useState({
-    generatedImage: null, // Will store the generated leaflet image
-    formData: {}
+    aspectRatio: '',
+    adType: '',
+    referenceFlyer: null,
+    designStyle: '',
+    themeColor: '',
+    backgroundPhoto: null,
+    header: '',
+    subheader: '',
+    adContent: '',
+    flyerPrompts: '',
+    promotionMessage: '',
+    productPhoto: [],
+    productDescriptions: '',
+    tags: []
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,44 +30,30 @@ const LeafletCreation = () => {
   // Handle direct upload from flyer selection page
   useEffect(() => {
     if (location.state?.isDirectUpload && location.state?.uploadedImage) {
-      // Set the uploaded image as the generated image and skip to step 2
-      setLeafletData({
-        generatedImage: location.state.uploadedImage,
-        formData: {
-          fileName: location.state.fileName,
-          fileSize: location.state.fileSize,
-          isDirectUpload: true
-        }
-      });
       setCurrentStep(2);
     }
   }, [location.state]);
 
-  const handleNext = (formData) => {
+  const handleNext = async () => {
     if (currentStep < 2) {
-      // Update leaflet data with form data
-      setLeafletData(prev => ({
-        ...prev,
-        formData: formData
-      }));
-      
-      // TODO: Make API call to generate leaflet image
-      // For now, we'll simulate this with a placeholder
-      const simulateApiCall = async () => {
-        console.log('Generating leaflet with data:', formData);
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        console.log('Generating leaflet with data:', leafletData);
         
-        // Simulate generated image (in real implementation, this would be the API response)
-        const generatedImageUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDIwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjNjM2NmYxIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTUwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2Ij5HZW5lcmF0ZWQgTGVhZmxldDwvdGV4dD4KPHR3eHQgeD0iMTAwIiB5PSIxODAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiPkZyb20gQVBJPC90ZXh0Pgo8L3N2Zz4K';
+        // Make API call to generate leaflet image
+        const response = await ApiService.generateLeaflet(leafletData);
         
-        setLeafletData(prev => ({
-          ...prev,
-          generatedImage: generatedImageUrl
-        }));
-      };
+        if (response.success) {
+          setLeafletData(prev => ({
+            ...prev,
+            generatedImage: response.generatedImage,
+          }));
+        } else {
+          console.error('Failed to generate leaflet:', response.message);
+        }
+      } catch (error) {
+        console.error('Error generating leaflet:', error);
+      }
       
-      simulateApiCall();
       setCurrentStep(currentStep + 1);
     }
   };
@@ -67,10 +66,42 @@ const LeafletCreation = () => {
     }
   };
 
-  const handleGenerate = () => {
-    // Handle flyer generation logic here
-    console.log('Generating flyer...');
-    // Could navigate to a preview page or back to flyer list
+  const handleCreate = async () => {
+    try {
+      const { referenceFlyer, productPhoto, backgroundPhoto, ...remainingData } = leafletData;
+
+      console.log('Creating flyer with leaflet data:', remainingData);
+      
+      // Create the final flyer using the API
+      const response = await ApiService.createFlyer({
+        type: 'leaflet',
+        data: remainingData,
+      });
+      
+      if (response.success) {
+        console.log('Flyer created successfully:', response);
+        // Navigate to a success page or back to flyer list
+        navigate('/flyer', { 
+          state: { 
+            success: true, 
+            message: 'Leaflet flyer created successfully!'
+          } 
+        });
+      } else {
+        console.error('Failed to create flyer:', response.message);
+        alert('Failed to create flyer. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating flyer:', error);
+      alert('An error occurred while creating the flyer. Please try again.');
+    }
+  };
+
+  const updateLeafletData = (data) => {
+    setLeafletData(prev => ({
+      ...prev,
+      ...data
+    }));
   };
 
   return (
@@ -91,12 +122,16 @@ const LeafletCreation = () => {
         </div>
 
         <div className="step-content">
-          {currentStep === 1 && <Step1Content onNext={handleNext} />}
+          {currentStep === 1 && (
+            <Step1Content
+              data={leafletData}
+              onUpdate={updateLeafletData}
+            />
+          )}
           {currentStep === 2 && (
             <TargetBudget 
               data={leafletData}
-              onBack={handleBack} 
-              onGenerate={handleGenerate} 
+              onUpdate={updateLeafletData}
             />
           )}
         </div>
@@ -114,8 +149,8 @@ const LeafletCreation = () => {
           )}
           
           {currentStep === 2 && (
-            <button className="nav-button generate-button" onClick={handleGenerate}>
-              GENERATE
+            <button className="nav-button generate-button" onClick={handleCreate}>
+              Create
             </button>
           )}
         </div>

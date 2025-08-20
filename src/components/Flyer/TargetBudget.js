@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, Minus, Plus } from 'lucide-react';
 import './TargetBudget.css';
 
-const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
+const TargetBudget = ({ data, onUpdate }) => {
   const [formData, setFormData] = useState({
     district: data?.district || '',
     propertyEstate: data?.propertyEstate || '',
@@ -11,8 +11,6 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
     noSpecific: data?.noSpecific || false,
     budget: data?.budget || 25000,
     paymentMethod: data?.paymentMethod || '',
-    couponOption: data?.couponOption || 'No Coupon this time',
-    ...data
   });
 
   const [previewZoom, setPreviewZoom] = useState(100);
@@ -24,7 +22,10 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
     };
     setFormData(updatedData);
     if (onUpdate) {
-      onUpdate(updatedData);
+      onUpdate({
+        ...data,
+        targetBudget: updatedData
+      });
     }
   };
 
@@ -35,7 +36,10 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
     };
     setFormData(updatedData);
     if (onUpdate) {
-      onUpdate(updatedData);
+      onUpdate({
+        ...data,
+        targetBudget: updatedData
+      });
     }
   };
 
@@ -46,7 +50,10 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
     };
     setFormData(updatedData);
     if (onUpdate) {
-      onUpdate(updatedData);
+     onUpdate({
+        ...data,
+        targetBudget: updatedData
+      });
     }
   };
 
@@ -195,18 +202,6 @@ const TargetBudget = ({ onBack, onGenerate, data, onUpdate }) => {
                 />
                 <span className="checkbox-text">By FPS</span>
               </label>
-            </div>
-          </div>
-
-          {/* Coupon Option */}
-          <div className="coupon-section">
-            <div className="coupon-buttons">
-              <button 
-                className={`coupon-option-button ${formData.couponOption === 'No Coupon this time' ? 'active' : ''}`}
-                onClick={() => handleInputChange('couponOption', 'No Coupon this time')}
-              >
-                No Coupon this time
-              </button>
             </div>
           </div>
         </div>

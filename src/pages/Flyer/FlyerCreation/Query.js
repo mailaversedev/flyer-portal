@@ -4,6 +4,7 @@ import Step2Survey from '../../../components/Flyer/Query/Step2Survey';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import ApiService from '../../../services/ApiService';
 import './Query.css';
 
 const QueryCreation = () => {
@@ -41,9 +42,45 @@ const QueryCreation = () => {
     }
   };
 
-  const handleComplete = () => {
-    console.log('Completing query creation...', queryData);
-    // Handle completion logic here
+  const handleComplete = async () => {
+    try {
+      console.log('Creating query flyer...', queryData);
+      
+      // Upload only file fields and get their URLs
+      const uploadedFileUrls = await ApiService.uploadFilesFromData(queryData);
+      console.log('Files uploaded, URLs:', uploadedFileUrls);
+      
+      // Merge uploaded URLs with original data
+      const finalQueryData = {
+        ...queryData, // All original data
+        ...uploadedFileUrls // Override with uploaded file URLs
+      };
+      
+      // Create the final flyer using the API
+      const response = await ApiService.createFlyer({
+        type: 'query',
+        data: finalQueryData,
+        targetBudget: finalQueryData.targetBudget || {}
+      });
+      
+      if (response.success) {
+        console.log('Query flyer created successfully:', response);
+        // Navigate to a success page or back to flyer list
+        navigate('/flyer', { 
+          state: { 
+            success: true, 
+            message: 'Survey flyer created successfully!',
+            flyerId: response.flyerId
+          } 
+        });
+      } else {
+        console.error('Failed to create flyer:', response.message);
+        alert('Failed to create flyer. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating flyer:', error);
+      alert('An error occurred while creating the flyer. Please try again.');
+    }
   };
 
   const updateQueryData = (data) => {
@@ -110,7 +147,7 @@ const QueryCreation = () => {
           
           {currentStep === 3 && (
             <button className="nav-button complete-button" onClick={handleComplete}>
-              Complete Query Creation
+              Create
             </button>
           )}
         </div>

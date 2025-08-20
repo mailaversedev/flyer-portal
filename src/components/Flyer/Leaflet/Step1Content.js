@@ -2,48 +2,34 @@ import React, { useState } from 'react';
 import { Plus, ChevronRight } from 'lucide-react';
 import './Step1Content.css';
 
-const Step1Content = ({ onNext }) => {
-  const [formData, setFormData] = useState({
-    aspectRatio: '',
-    adType: '',
-    referenceFlyer: null,
-    designStyle: '',
-    themeColor: '',
-    backgroundPhoto: null,
-    header: '',
-    subheader: '',
-    adContent: '',
-    flyerPrompts: '',
-    promotionMessage: '',
-    productPhoto: [],
-    productDescriptions: '',
-    tags: []
-  });
-
+const Step1Content = ({ data, onUpdate }) => {
   const [newTag, setNewTag] = useState('');
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
+    const updatedData = {
+      ...data,
       [field]: value
-    }));
+    };
+    onUpdate(updatedData);
   };
 
   const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
+    if (newTag.trim() && !data.tags.includes(newTag.trim())) {
+      const updatedData = {
+        ...data,
+        tags: [...data.tags, newTag.trim()]
+      };
+      onUpdate(updatedData);
       setNewTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
+    const updatedData = {
+      ...data,
+      tags: data.tags.filter(tag => tag !== tagToRemove)
+    };
+    onUpdate(updatedData);
   };
 
   const handleFileUpload = (field) => {
@@ -75,10 +61,11 @@ const Step1Content = ({ onNext }) => {
         });
         
         Promise.all(filePromises).then(fileObjects => {
-          setFormData(prev => ({
-            ...prev,
-            [field]: [...prev[field], ...fileObjects]
-          }));
+          const updatedData = {
+            ...data,
+            [field]: [...data[field], ...fileObjects]
+          };
+          onUpdate(updatedData);
         });
       } else {
         // Handle single file for reference flyer and background photo
@@ -86,15 +73,16 @@ const Step1Content = ({ onNext }) => {
         if (file) {
           const reader = new FileReader();
           reader.onload = (e) => {
-            setFormData(prev => ({
-              ...prev,
+            const updatedData = {
+              ...data,
               [field]: {
                 file,
                 name: file.name,
                 size: file.size,
                 preview: e.target.result
               }
-            }));
+            };
+            onUpdate(updatedData);
           };
           reader.readAsDataURL(file);
         }
@@ -106,16 +94,18 @@ const Step1Content = ({ onNext }) => {
   const handleRemoveImage = (field, index = null) => {
     if (field === 'productPhoto' && index !== null) {
       // Remove specific product photo
-      setFormData(prev => ({
-        ...prev,
-        [field]: prev[field].filter((_, i) => i !== index)
-      }));
+      const updatedData = {
+        ...data,
+        [field]: data[field].filter((_, i) => i !== index)
+      };
+      onUpdate(updatedData);
     } else {
       // Remove single image (reference flyer or background photo)
-      setFormData(prev => ({
-        ...prev,
+      const updatedData = {
+        ...data,
         [field]: null
-      }));
+      };
+      onUpdate(updatedData);
     }
   };
 
@@ -167,10 +157,6 @@ const Step1Content = ({ onNext }) => {
     );
   };
 
-  const handleNext = () => {
-    // Pass the current form data to the parent component
-    onNext(formData);
-  };
 
   return (
     <div className="step1-content">
@@ -184,7 +170,7 @@ const Step1Content = ({ onNext }) => {
           <div className="select-wrapper">
             <select 
               className="form-select"
-              value={formData.aspectRatio}
+              value={data.aspectRatio}
               onChange={(e) => handleInputChange('aspectRatio', e.target.value)}
             >
               <option value="">Please select</option>
@@ -202,7 +188,7 @@ const Step1Content = ({ onNext }) => {
           <div className="select-wrapper">
             <select 
               className="form-select"
-              value={formData.adType}
+              value={data.adType}
               onChange={(e) => handleInputChange('adType', e.target.value)}
             >
               <option value="">Please select</option>
@@ -217,9 +203,9 @@ const Step1Content = ({ onNext }) => {
         {/* Upload Reference Flyer Photo */}
         <div className="form-group full-width">
           <label className="form-label">Upload Reference Flyer Photo (optional)</label>
-          {formData.referenceFlyer ? (
+          {data.referenceFlyer ? (
             <SingleImageDisplay 
-              imageObj={formData.referenceFlyer} 
+              imageObj={data.referenceFlyer} 
               field="referenceFlyer" 
               onRemove={handleRemoveImage}
             />
@@ -235,15 +221,12 @@ const Step1Content = ({ onNext }) => {
                   if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        referenceFlyer: {
-                          file,
-                          name: file.name,
-                          size: file.size,
-                          preview: event.target.result
-                        }
-                      }));
+                      handleInputChange('referenceFlyer', {
+                        file,
+                        name: file.name,
+                        size: file.size,
+                        preview: event.target.result
+                      });
                     };
                     reader.readAsDataURL(file);
                   }
@@ -267,7 +250,7 @@ const Step1Content = ({ onNext }) => {
           <div className="select-wrapper">
             <select 
               className="form-select"
-              value={formData.designStyle}
+              value={data.designStyle}
               onChange={(e) => handleInputChange('designStyle', e.target.value)}
             >
               <option value="">Please select</option>
@@ -285,7 +268,7 @@ const Step1Content = ({ onNext }) => {
           <div className="select-wrapper">
             <select 
               className="form-select"
-              value={formData.themeColor}
+              value={data.themeColor}
               onChange={(e) => handleInputChange('themeColor', e.target.value)}
             >
               <option value="">Please select</option>
@@ -300,9 +283,9 @@ const Step1Content = ({ onNext }) => {
         {/* Upload Background Photo */}
         <div className="form-group full-width">
           <label className="form-label">Upload Background Photo (optional)</label>
-          {formData.backgroundPhoto ? (
+          {data.backgroundPhoto ? (
             <SingleImageDisplay 
-              imageObj={formData.backgroundPhoto} 
+              imageObj={data.backgroundPhoto} 
               field="backgroundPhoto" 
               onRemove={handleRemoveImage}
             />
@@ -318,15 +301,12 @@ const Step1Content = ({ onNext }) => {
                   if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        backgroundPhoto: {
-                          file,
-                          name: file.name,
-                          size: file.size,
-                          preview: event.target.result
-                        }
-                      }));
+                      handleInputChange('backgroundPhoto', {
+                        file,
+                        name: file.name,
+                        size: file.size,
+                        preview: event.target.result
+                      });
                     };
                     reader.readAsDataURL(file);
                   }
@@ -357,7 +337,7 @@ const Step1Content = ({ onNext }) => {
               type="text"
               className="form-input"
               placeholder="Please enter"
-              value={formData.header}
+              value={data.header}
               onChange={(e) => handleInputChange('header', e.target.value)}
             />
           </div>
@@ -369,7 +349,7 @@ const Step1Content = ({ onNext }) => {
               type="text"
               className="form-input"
               placeholder="Please enter"
-              value={formData.subheader}
+              value={data.subheader}
               onChange={(e) => handleInputChange('subheader', e.target.value)}
             />
           </div>
@@ -381,7 +361,7 @@ const Step1Content = ({ onNext }) => {
               className="form-textarea"
               placeholder="Please enter the promotional content/message"
               rows={4}
-              value={formData.adContent}
+              value={data.adContent}
               onChange={(e) => handleInputChange('adContent', e.target.value)}
             />
           </div>
@@ -393,7 +373,7 @@ const Step1Content = ({ onNext }) => {
               className="form-textarea"
               placeholder="Please describe the design, content & message of the flyer"
               rows={6}
-              value={formData.flyerPrompts}
+              value={data.flyerPrompts}
               onChange={(e) => handleInputChange('flyerPrompts', e.target.value)}
             />
           </div>
@@ -405,19 +385,19 @@ const Step1Content = ({ onNext }) => {
               className="form-textarea"
               placeholder="Please enter"
               rows={3}
-              value={formData.promotionMessage}
+              value={data.promotionMessage}
               onChange={(e) => handleInputChange('promotionMessage', e.target.value)}
             />
           </div>
 
           {/* Upload Product Photo */}
           <div className="form-group full-width">
-            <label className="form-label">Upload Product Photo (optional) <span className="counter">{formData.productPhoto.length}/5</span></label>
+            <label className="form-label">Upload Product Photo (optional) <span className="counter">{data.productPhoto.length}/5</span></label>
             <div className="file-select" onClick={() => handleFileUpload('productPhoto')}>
               <span>Select file</span>
               <ChevronRight size={16} />
             </div>
-            <ThumbnailRow images={formData.productPhoto} field="productPhoto" />
+            <ThumbnailRow images={data.productPhoto} field="productPhoto" />
           </div>
 
           {/* Product Descriptions */}
@@ -427,7 +407,7 @@ const Step1Content = ({ onNext }) => {
               type="text"
               className="form-input"
               placeholder="Please enter"
-              value={formData.productDescriptions}
+              value={data.productDescriptions}
               onChange={(e) => handleInputChange('productDescriptions', e.target.value)}
             />
           </div>
@@ -446,9 +426,9 @@ const Step1Content = ({ onNext }) => {
                   onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                 />
               </div>
-              {formData.tags.length > 0 && (
+              {data.tags.length > 0 && (
                 <div className="tags-display">
-                  {formData.tags.map((tag, index) => (
+                  {data.tags.map((tag, index) => (
                     <span key={index} className="tag">
                       #{tag}
                       <button 

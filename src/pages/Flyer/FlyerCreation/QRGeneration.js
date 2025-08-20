@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Upload, Minus, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import QRCode from 'qrcode';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
+import ApiService from '../../../services/ApiService';
 import './QRGeneration.css';
 
 // Simple QR Code component
@@ -60,6 +61,7 @@ const QRGeneration = () => {
     zoom: 100
   });
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   const handleBack = () => {
     if (currentStep > 1) {
@@ -95,7 +97,82 @@ const QRGeneration = () => {
   };
 
   const handleUpload = () => {
-    console.log('Uploading QR flyer...');
+    // Trigger the hidden file input
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      try {
+        // Upload the file using the API
+        const uploadResponse = await ApiService.uploadFile(file, 'cover-photo');
+        
+        if (uploadResponse.success) {
+          // Use the returned URL from the upload
+          handleInputChange('coverPhoto', uploadResponse.url);
+        } else {
+          console.error('Failed to upload file:', uploadResponse.message);
+          // Fallback to local preview if upload fails
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            handleInputChange('coverPhoto', e.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        // Fallback to local preview if upload fails
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          handleInputChange('coverPhoto', e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const handleCreate = async () => {
+    try {
+      console.log('Creating QR flyer...', qrData);
+      
+      // Upload only file fields and get their URLs
+      const uploadedFileUrls = await ApiService.uploadFilesFromData(qrData);
+      console.log('Files uploaded, URLs:', uploadedFileUrls);
+      
+      // Merge uploaded URLs with original data
+      const finalQrData = {
+        ...qrData, // All original data
+        ...uploadedFileUrls // Override with uploaded file URLs
+      };
+      
+      // Create the final flyer using the API
+      const response = await ApiService.createFlyer({
+        type: 'qr',
+        data: finalQrData,
+        targetBudget: finalQrData.targetBudget || {}
+      });
+      
+      if (response.success) {
+        console.log('QR flyer created successfully:', response);
+        // Navigate to a success page or back to flyer list
+        navigate('/flyer', { 
+          state: { 
+            success: true, 
+            message: 'QR Code flyer created successfully!',
+            flyerId: response.flyerId
+          } 
+        });
+      } else {
+        console.error('Failed to create flyer:', response.message);
+        alert('Failed to create flyer. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating flyer:', error);
+      alert('An error occurred while creating the flyer. Please try again.');
+    }
   };
 
   const updateQrData = (data) => {
@@ -127,6 +204,15 @@ const QRGeneration = () => {
 
   return (
     <div className="qr-generation">
+      {/* Hidden file input for cover photo upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+      
       <div className="qr-container">
         <div className="step-header">
           <div className="step-indicators">
@@ -331,8 +417,8 @@ const QRGeneration = () => {
           )}
           
           {currentStep === 2 && (
-            <button className="nav-button complete-button" onClick={() => console.log('Complete QR Generation')}>
-              Complete QR Generation
+            <button className="nav-button complete-button" onClick={handleCreate}>
+              Create
             </button>
           )}
         </div>
