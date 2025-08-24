@@ -23,6 +23,17 @@
   align-items: start;
 }
 
+.flyer-success-banner {
+  background: #4BB543;
+  color: white;
+  padding: 16px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 6px;
+  margin-top: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
 @media (max-width: 768px) {
   .flyer {
     padding: 16px;

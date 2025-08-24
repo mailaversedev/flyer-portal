@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import FlyerDistributionCard from '../../components/Flyer/FlyerDistributionCard';
 import './Flyer.css';
 
 const Flyer = () => {
+  const [showBanner, setShowBanner] = useState(false);
+
+  const location = useLocation();
+  const successMessage = location.state?.success ? (location.state?.message || 'Flyer created successfully!') : null;
+
+  useEffect(() => {
+    if (successMessage) {
+      setShowBanner(true);
+      const timer = setTimeout(() => setShowBanner(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const flyerTypes = [
     {
       id: 1,
@@ -39,7 +53,6 @@ const Flyer = () => {
       <div className="flyer-header">
         <h1 className="flyer-title">Types of Flyer Distribution</h1>
       </div>
-      
       <div className="flyer-distribution-grid">
         {flyerTypes.map((type) => (
           <FlyerDistributionCard
@@ -54,6 +67,11 @@ const Flyer = () => {
           />
         ))}
       </div>
+      {showBanner && (
+        <div className="flyer-success-banner">
+          {successMessage}
+        </div>
+      )}
     </div>
   );
 };

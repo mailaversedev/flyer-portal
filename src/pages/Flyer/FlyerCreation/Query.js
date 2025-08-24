@@ -70,7 +70,6 @@ const QueryCreation = () => {
           state: { 
             success: true, 
             message: 'Survey flyer created successfully!',
-            flyerId: response.flyerId
           } 
         });
       } else {

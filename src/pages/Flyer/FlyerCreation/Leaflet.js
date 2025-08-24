@@ -84,7 +84,7 @@ const LeafletCreation = () => {
         navigate('/flyer', { 
           state: { 
             success: true, 
-            message: 'Leaflet flyer created successfully!'
+            message: 'Leaflet flyer created successfully!',
           } 
         });
       } else {

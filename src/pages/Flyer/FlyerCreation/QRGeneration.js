@@ -162,7 +162,6 @@ const QRGeneration = () => {
           state: { 
             success: true, 
             message: 'QR Code flyer created successfully!',
-            flyerId: response.flyerId
           } 
         });
       } else {
