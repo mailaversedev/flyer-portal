@@ -47,6 +47,7 @@ const QRCodeComponent = ({ website }) => {
 const QRGeneration = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [errors, setErrors] = useState({});
   const [qrData, setQrData] = useState({
     // Step 1 - Background data
     coverPhoto: null,
@@ -56,11 +57,12 @@ const QRGeneration = () => {
     startingDate: '',
     header: '',
     content: '',
-    // QR specific data
-    qrCodeGenerated: false,
-    zoom: 100
+    zoom: 100,
+    selectedSize: '500*800' // Default to the second option
   });
+
   const navigate = useNavigate();
+
   const fileInputRef = useRef(null);
 
   const handleBack = () => {
@@ -72,9 +74,9 @@ const QRGeneration = () => {
   };
 
   const handleProceedToQRCode = () => {
-    // Validate website field
-    if (!qrData.website || qrData.website.trim() === '') {
-      alert('Website is mandatory. Please enter a website URL before proceeding.');
+    // Validate required fields before proceeding
+    if (!validateRequiredFields()) {
+      // Validation failed, errors will be shown in the form
       return;
     }
 
@@ -84,10 +86,6 @@ const QRGeneration = () => {
 
   const handleSaveAndProceed = () => {
     console.log('Saving QR Code and proceeding...', qrData);
-    setQrData(prev => ({
-      ...prev,
-      qrCodeGenerated: true
-    }));
     setShowQRModal(false);
     setCurrentStep(2); // Proceed to next step
   };
@@ -181,7 +179,27 @@ const QRGeneration = () => {
     }));
   };
 
+  const validateRequiredFields = () => {
+    const newErrors = {};
+    
+    if (!qrData.website || qrData.website.trim() === '') {
+      newErrors.website = 'Website is required';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleInputChange = (field, value) => {
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+    
     updateQrData({ [field]: value });
   };
 
@@ -240,11 +258,19 @@ const QRGeneration = () => {
                     <label className="form-label">Upload Cover Photo</label>
                     <div className="upload-options">
                       <div className="size-options">
-                        <div className="size-option">
+                        <div 
+                          className={`size-option ${qrData.selectedSize === '500*500' ? 'active' : ''}`}
+                          onClick={() => handleInputChange('selectedSize', '500*500')}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="size-box"></div>
                           <span className="size-label">500*500</span>
                         </div>
-                        <div className="size-option active">
+                        <div 
+                          className={`size-option ${qrData.selectedSize === '500*800' ? 'active' : ''}`}
+                          onClick={() => handleInputChange('selectedSize', '500*800')}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="size-box"></div>
                           <span className="size-label">500*800</span>
                         </div>
@@ -288,12 +314,13 @@ const QRGeneration = () => {
                     <label className="form-label">Website <span style={{color: '#ff4444'}}>*</span></label>
                     <input
                       type="url"
-                      className="form-input"
+                      className={`form-input ${errors.website ? 'error' : ''}`}
                       placeholder="Please enter url (required)"
                       value={qrData.website}
                       onChange={(e) => handleInputChange('website', e.target.value)}
                       required
                     />
+                    {errors.website && <span className="error-message">{errors.website}</span>}
                   </div>
 
                   {/* Starting Date */}
@@ -407,9 +434,9 @@ const QRGeneration = () => {
           
           {currentStep === 1 && (
             <button 
-              className={`nav-button next-button ${!qrData.website || qrData.website.trim() === '' ? 'disabled' : ''}`}
+              className={`nav-button next-button ${errors.website || !qrData.website || qrData.website.trim() === '' ? 'disabled' : ''}`}
               onClick={handleProceedToQRCode}
-              disabled={!qrData.website || qrData.website.trim() === ''}
+              disabled={errors.website || !qrData.website || qrData.website.trim() === ''}
             >
             Proceed to QR Code
             </button>

@@ -1,11 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import { Plus, ChevronRight } from 'lucide-react';
 import './Step1Content.css';
 
-const Step1Content = ({ data, onUpdate }) => {
+const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
   const [newTag, setNewTag] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const validateRequiredFields = () => {
+    const newErrors = {};
+    
+    if (!data.aspectRatio || data.aspectRatio.trim() === '') {
+      newErrors.aspectRatio = 'Aspect Ratio is required';
+    }
+    
+    if (!data.adType || data.adType.trim() === '') {
+      newErrors.adType = 'Ad Type is required';
+    }
+    
+    if (!data.header || data.header.trim() === '') {
+      newErrors.header = 'Header is required';
+    }
+    
+    if (!data.adContent || data.adContent.trim() === '') {
+      newErrors.adContent = 'Ad Content is required';
+    }
+    
+    if (!data.flyerPrompts || data.flyerPrompts.trim() === '') {
+      newErrors.flyerPrompts = 'Flyer Prompts is required';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Expose validation function to parent via ref
+  useImperativeHandle(ref, () => ({
+    validateRequiredFields
+  }));
 
   const handleInputChange = (field, value) => {
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+    
     const updatedData = {
       ...data,
       [field]: value
@@ -157,7 +199,6 @@ const Step1Content = ({ data, onUpdate }) => {
     );
   };
 
-
   return (
     <div className="step1-content">
       <div className="form-grid">
@@ -169,7 +210,7 @@ const Step1Content = ({ data, onUpdate }) => {
           </label>
           <div className="select-wrapper">
             <select 
-              className="form-select"
+              className={`form-select ${errors.aspectRatio ? 'error' : ''}`}
               value={data.aspectRatio}
               onChange={(e) => handleInputChange('aspectRatio', e.target.value)}
             >
@@ -180,6 +221,7 @@ const Step1Content = ({ data, onUpdate }) => {
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
+          {errors.aspectRatio && <span className="error-message">{errors.aspectRatio}</span>}
         </div>
 
         {/* Select Ad Type */}
@@ -187,7 +229,7 @@ const Step1Content = ({ data, onUpdate }) => {
           <label className="form-label">Select Ad Type*</label>
           <div className="select-wrapper">
             <select 
-              className="form-select"
+              className={`form-select ${errors.adType ? 'error' : ''}`}
               value={data.adType}
               onChange={(e) => handleInputChange('adType', e.target.value)}
             >
@@ -198,6 +240,7 @@ const Step1Content = ({ data, onUpdate }) => {
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
+          {errors.adType && <span className="error-message">{errors.adType}</span>}
         </div>
 
         {/* Upload Reference Flyer Photo */}
@@ -335,11 +378,12 @@ const Step1Content = ({ data, onUpdate }) => {
             <label className="form-label">Header*</label>
             <input
               type="text"
-              className="form-input"
+              className={`form-input ${errors.header ? 'error' : ''}`}
               placeholder="Please enter"
               value={data.header}
               onChange={(e) => handleInputChange('header', e.target.value)}
             />
+            {errors.header && <span className="error-message">{errors.header}</span>}
           </div>
 
           {/* Subheader */}
@@ -358,24 +402,26 @@ const Step1Content = ({ data, onUpdate }) => {
           <div className="form-group full-width">
             <label className="form-label">Ad Content*</label>
             <textarea
-              className="form-textarea"
+              className={`form-textarea ${errors.adContent ? 'error' : ''}`}
               placeholder="Please enter the promotional content/message"
               rows={4}
               value={data.adContent}
               onChange={(e) => handleInputChange('adContent', e.target.value)}
             />
+            {errors.adContent && <span className="error-message">{errors.adContent}</span>}
           </div>
 
           {/* Prompts of Your Flyer */}
           <div className="form-group full-width">
             <label className="form-label">Prompts of Your Flyer*</label>
             <textarea
-              className="form-textarea"
+              className={`form-textarea ${errors.flyerPrompts ? 'error' : ''}`}
               placeholder="Please describe the design, content & message of the flyer"
               rows={6}
               value={data.flyerPrompts}
               onChange={(e) => handleInputChange('flyerPrompts', e.target.value)}
             />
+            {errors.flyerPrompts && <span className="error-message">{errors.flyerPrompts}</span>}
           </div>
 
           {/* Promotion Message/Slogan */}
@@ -448,6 +494,41 @@ const Step1Content = ({ data, onUpdate }) => {
       </div>
     </div>
   );
+});
+
+// Export validation function for parent component to use (keeping for backward compatibility)
+Step1Content.validateRequiredFields = (data, setErrorsCallback = null) => {
+  const errors = {};
+  
+  if (!data.aspectRatio || data.aspectRatio.trim() === '') {
+    errors.aspectRatio = 'Aspect Ratio is required';
+  }
+  
+  if (!data.adType || data.adType.trim() === '') {
+    errors.adType = 'Ad Type is required';
+  }
+  
+  if (!data.header || data.header.trim() === '') {
+    errors.header = 'Header is required';
+  }
+  
+  if (!data.adContent || data.adContent.trim() === '') {
+    errors.adContent = 'Ad Content is required';
+  }
+  
+  if (!data.flyerPrompts || data.flyerPrompts.trim() === '') {
+    errors.flyerPrompts = 'Flyer Prompts is required';
+  }
+  
+  // Set errors in component state if callback provided
+  if (setErrorsCallback) {
+    setErrorsCallback(errors);
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
 };
 
 export default Step1Content;

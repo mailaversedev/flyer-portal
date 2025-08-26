@@ -135,7 +135,7 @@ app.post('/api/leaflet', (req, res) => {
     // Placeholder response - replace with actual leaflet generation
     const generatedLeaflet = {
       success: true,
-      generatedImage: 'https://img.freepik.com/premium-vector/creative-modern-corporate-business-flyer-design-leaflet-design-template-with-different-layout_1147200-3.jpg',
+      coverPhoto: 'https://img.freepik.com/premium-vector/creative-modern-corporate-business-flyer-design-leaflet-design-template-with-different-layout_1147200-3.jpg',
       metadata: {
         title,
         description,

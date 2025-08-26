@@ -211,10 +211,10 @@ const TargetBudget = ({ data, onUpdate }) => {
           <div className="preview-container">
             <div className="preview-image">
               {/* Show generated image if available, otherwise show placeholder */}
-              {data?.generatedImage ? (
+              {data?.coverPhoto ? (
                 <div className="generated-flyer" style={{ transform: `scale(${previewZoom / 100})` }}>
                   <img 
-                    src={data.generatedImage} 
+                    src={data.coverPhoto} 
                     alt="Generated Leaflet" 
                     className="generated-flyer-image"
                   />

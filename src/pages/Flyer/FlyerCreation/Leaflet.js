@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Step1Content from '../../../components/Flyer/Leaflet/Step1Content';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
 import { ChevronLeft } from 'lucide-react';
@@ -24,6 +24,9 @@ const LeafletCreation = () => {
     productDescriptions: '',
     tags: []
   });
+
+  const step1Ref = useRef();
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -36,6 +39,12 @@ const LeafletCreation = () => {
 
   const handleNext = async () => {
     if (currentStep < 2) {
+      // Validate required fields before proceeding
+      if (step1Ref.current && !step1Ref.current.validateRequiredFields()) {
+        // Validation failed, errors will be shown in the component
+        return;
+      }
+
       try {
         console.log('Generating leaflet with data:', leafletData);
         
@@ -45,7 +54,7 @@ const LeafletCreation = () => {
         if (response.success) {
           setLeafletData(prev => ({
             ...prev,
-            generatedImage: response.generatedImage,
+            coverPhoto: response.coverPhoto,
           }));
         } else {
           console.error('Failed to generate leaflet:', response.message);
@@ -124,6 +133,7 @@ const LeafletCreation = () => {
         <div className="step-content">
           {currentStep === 1 && (
             <Step1Content
+              ref={step1Ref}
               data={leafletData}
               onUpdate={updateLeafletData}
             />

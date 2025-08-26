@@ -12,7 +12,7 @@ const Flyer = () => {
   useEffect(() => {
     if (successMessage) {
       setShowBanner(true);
-      const timer = setTimeout(() => setShowBanner(false), 2000);
+      const timer = setTimeout(() => setShowBanner(false), 4000);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
