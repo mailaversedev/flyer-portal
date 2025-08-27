@@ -153,6 +153,105 @@ app.post('/api/leaflet', (req, res) => {
   }
 });
 
+// GET /api/flyers - Get all flyers with pagination and sorting
+app.get('/api/flyers', async (req, res) => {
+  try {
+    const { 
+      limit = '100', 
+      after, 
+      sortBy = 'createdAt', 
+      direction = 'desc' 
+    } = req.query;
+
+    // Convert limit to number and validate
+    const limitNum = parseInt(limit);
+    if (isNaN(limitNum) || limitNum <= 0 || limitNum > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid limit. Must be a number between 1 and 1000.'
+      });
+    }
+
+    // Validate direction
+    if (!['asc', 'desc'].includes(direction.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid direction. Must be "asc" or "desc".'
+      });
+    }
+
+    // Valid sortBy fields
+    const validSortFields = ['createdAt', 'updatedAt', 'type', 'status'];
+    if (!validSortFields.includes(sortBy)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid sortBy field. Must be one of: ${validSortFields.join(', ')}.`
+      });
+    }
+
+    let query = db.collection('flyers');
+
+    // Apply sorting
+    query = query.orderBy(sortBy, direction.toLowerCase());
+
+    // Apply cursor-based pagination if 'after' is provided
+    if (after) {
+      try {
+        const afterDoc = await db.collection('flyers').doc(after).get();
+        if (!afterDoc.exists) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid cursor. Document not found.'
+          });
+        }
+        query = query.startAfter(afterDoc);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid cursor format.'
+        });
+      }
+    }
+
+    // Apply limit
+    query = query.limit(limitNum);
+
+    // Execute query
+    const snapshot = await query.get();
+    
+    const flyers = [];
+    snapshot.forEach(doc => {
+      flyers.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    // Get the last document for next cursor (if there are results)
+    let nextCursor = null;
+    if (flyers.length === limitNum && flyers.length > 0) {
+      nextCursor = flyers[flyers.length - 1].id;
+    }
+
+    const response = {
+      success: true,
+      data: flyers,
+      pagination: {
+        nextCursor: nextCursor,
+      }
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error fetching flyers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch flyers',
+      error: error.message
+    });
+  }
+});
+
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, 'build')));
 
