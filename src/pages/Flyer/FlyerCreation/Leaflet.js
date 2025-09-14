@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from 'react-router';
 import ApiService from '../../../services/ApiService';
 import './Leaflet.css';
 
+
 const LeafletCreation = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [leafletData, setLeafletData] = useState({
@@ -24,6 +25,7 @@ const LeafletCreation = () => {
     productDescriptions: '',
     tags: []
   });
+  const [loading, setLoading] = useState(false);
 
   const step1Ref = useRef();
 
@@ -45,24 +47,24 @@ const LeafletCreation = () => {
         return;
       }
 
+      setLoading(true);
       try {
         console.log('Generating leaflet with data:', leafletData);
-        
         // Make API call to generate leaflet image
         const response = await ApiService.generateLeaflet(leafletData);
-        
-        if (response.success) {
+        if (response.flyer_output_path) {
           setLeafletData(prev => ({
             ...prev,
-            coverPhoto: response.coverPhoto,
+            coverPhoto: response.flyer_output_path,
           }));
         } else {
           console.error('Failed to generate leaflet:', response.message);
         }
       } catch (error) {
         console.error('Error generating leaflet:', error);
+      } finally {
+        setLoading(false);
       }
-      
       setCurrentStep(currentStep + 1);
     }
   };
@@ -146,20 +148,29 @@ const LeafletCreation = () => {
           )}
         </div>
 
+        {loading && (
+          <div className="loading-indicator-overlay">
+            <div className="loading-indicator-content">
+              <div className="spinner" />
+              <span className="loading-indicator-text">Generating leaflet, please wait...</span>
+            </div>
+          </div>
+        )}
+
         <div className="step-navigation">
-          <button className="nav-button back-button" onClick={handleBack}>
+          <button className="nav-button back-button" onClick={handleBack} disabled={loading}>
             <ChevronLeft size={16} />
             Back
           </button>
           
           {currentStep === 1 && (
-            <button className="nav-button next-button" onClick={handleNext}>
-              Next
+            <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
+              {loading ? 'Generating...' : 'Next'}
             </button>
           )}
           
           {currentStep === 2 && (
-            <button className="nav-button generate-button" onClick={handleCreate}>
+            <button className="nav-button generate-button" onClick={handleCreate} disabled={loading}>
               Create
             </button>
           )}

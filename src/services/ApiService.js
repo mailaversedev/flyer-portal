@@ -58,10 +58,35 @@ class ApiService {
 
   // POST /api/leaflet - Generate leaflet
   static async generateLeaflet(leafletData) {
-    return this.makeRequest('/api/leaflet', {
-      method: 'POST',
-      body: JSON.stringify(leafletData),
-    });
+    const formData = new FormData();
+    formData.append('logo_image', leafletData.backgroundPhoto.file);
+    formData.append('template_image', leafletData.referenceFlyer.file);
+    formData.append('user_prompt', leafletData.promotionMessage);
+    formData.append('flyer_text', JSON.stringify({
+      header: leafletData.header,
+      subheader: leafletData.subheader,
+      content: null,
+    }));
+    formData.append('company_info', '{"company_name":"keeta","company_email":"keeta@gmail.com","company_phone":"+852 2522 2222","company_website":"https://www.keeta.com"}');
+    formData.append('display_company_info', 'false');
+    formData.append('generation_id', crypto.randomUUID());
+
+    // External endpoint (not using API_BASE_URL)
+    const endpoint = 'https://flyergenie-backend-91102396327.europe-west1.run.app/flyer/generate-multipart';
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        body: formData,
+        // Let browser set Content-Type with boundary
+      });
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('FlyerGenie API Request failed:', error);
+      throw error;
+    }
   }
 
   // Helper method to upload only file fields and return their URLs

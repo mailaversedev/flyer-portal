@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
-  databaseURL: "https://payment-mgmt.firebaseio.com",
+  databaseURL: "https://flyer-genie.firebaseio.com",
 });
 const db = admin.firestore();
 
