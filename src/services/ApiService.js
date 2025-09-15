@@ -1,10 +1,36 @@
 // API service for flyer-portal
+
+// API service for flyer-portal
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '' // Use relative URLs in production
   : 'http://localhost:3000'; // Development server
 
 class ApiService {
-  
+  static _currentCompany = null;
+
+  static async getCurrentCompanyIconFile() {
+    console.log('Getting icon for company:', ApiService._currentCompany);
+    if (ApiService._currentCompany && ApiService._currentCompany.id) {
+      const url = `/${ApiService._currentCompany.id}.png`;
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      // Use the company id as the filename
+      return new File([blob], `${ApiService._currentCompany.id}.png`, { type: blob.type });
+    }
+    return null;
+  }
+
+  // Set current company (called from Header)
+  static setCurrentCompany(company) {
+    ApiService._currentCompany = company;
+  }
+
+  // Get current company
+  static getCurrentCompany() {
+    return ApiService._currentCompany;
+  }
+
   // Helper method for making API requests
   static async makeRequest(endpoint, options = {}) {
     try {
@@ -59,15 +85,16 @@ class ApiService {
   // POST /api/leaflet - Generate leaflet
   static async generateLeaflet(leafletData) {
     const formData = new FormData();
-    formData.append('logo_image', leafletData.backgroundPhoto.file);
+    formData.append('logo_image', await ApiService.getCurrentCompanyIconFile());
     formData.append('template_image', leafletData.referenceFlyer.file);
     formData.append('user_prompt', leafletData.promotionMessage);
+    formData.append('flyer_ratio', leafletData.aspectRatio);
     formData.append('flyer_text', JSON.stringify({
       header: leafletData.header,
       subheader: leafletData.subheader,
       content: null,
     }));
-    formData.append('company_info', '{"company_name":"keeta","company_email":"keeta@gmail.com","company_phone":"+852 2522 2222","company_website":"https://www.keeta.com"}');
+    formData.append('company_info', '{}');
     formData.append('display_company_info', 'false');
     formData.append('generation_id', crypto.randomUUID());
 

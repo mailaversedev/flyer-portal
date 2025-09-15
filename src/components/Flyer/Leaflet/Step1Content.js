@@ -206,7 +206,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         <div className="form-group">
           <label className="form-label">
             Aspect Ratio* 
-            <span className="ratio-options">1:1 4:5 9:16</span>
+            <span className="ratio-options">1:1 3:4 9:16</span>
           </label>
           <div className="select-wrapper">
             <select 
@@ -216,7 +216,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
             >
               <option value="">Please select</option>
               <option value="1:1">1:1</option>
-              <option value="4:5">4:5</option>
+              <option value="3:4">3:4</option>
               <option value="9:16">9:16</option>
             </select>
             <ChevronRight className="select-icon" size={16} />

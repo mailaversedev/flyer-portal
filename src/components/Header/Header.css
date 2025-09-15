@@ -1,3 +1,39 @@
+.company-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  min-width: 220px;
+  margin-top: 8px;
+  z-index: 100;
+}
+
+.company-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #222;
+  transition: background 0.15s;
+}
+.company-option:hover {
+  background: #f3f4f6;
+}
+.company-option.selected {
+  background: #e0e7ff;
+  font-weight: 600;
+}
+.company-icon {
+  font-size: 20px;
+}
+.company-name {
+  flex: 1;
+}
 .header {
   display: flex;
   align-items: center;
