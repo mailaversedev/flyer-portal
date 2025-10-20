@@ -25,7 +25,7 @@ const LeafletCreation = () => {
     productDescriptions: '',
     tags: []
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState('');
 
   const step1Ref = useRef();
 
@@ -47,9 +47,10 @@ const LeafletCreation = () => {
         return;
       }
 
-      setLoading(true);
+      setLoading('Generating leaflet, please wait...');
+      console.log('Generating leaflet with data:', leafletData);
+
       try {
-        console.log('Generating leaflet with data:', leafletData);
         // Make API call to generate leaflet image
         const response = await ApiService.generateLeaflet(leafletData);
         if (response.flyer_output_path) {
@@ -63,7 +64,7 @@ const LeafletCreation = () => {
       } catch (error) {
         console.error('Error generating leaflet:', error);
       } finally {
-        setLoading(false);
+        setLoading('');
       }
       setCurrentStep(currentStep + 1);
     }
@@ -82,6 +83,7 @@ const LeafletCreation = () => {
       const { referenceFlyer, productPhoto, backgroundPhoto, ...remainingData } = leafletData;
 
       console.log('Creating flyer with leaflet data:', remainingData);
+      setLoading('Creating flyer, please wait...');
       
       // Create the final flyer using the API
       const response = await ApiService.createFlyer({
@@ -105,6 +107,8 @@ const LeafletCreation = () => {
     } catch (error) {
       console.error('Error creating flyer:', error);
       alert('An error occurred while creating the flyer. Please try again.');
+    } finally {
+      setLoading('');
     }
   };
 
@@ -152,7 +156,7 @@ const LeafletCreation = () => {
           <div className="loading-indicator-overlay">
             <div className="loading-indicator-content">
               <div className="spinner" />
-              <span className="loading-indicator-text">Generating leaflet, please wait...</span>
+              <span className="loading-indicator-text">{loading}</span>
             </div>
           </div>
         )}
