@@ -50,6 +50,21 @@ router.get("/", async (req, res) => {
       .collection("claims")
       .doc(userId);
 
+    // Find user's wallet
+    const walletQuery = await db
+      .collection("wallets")
+      .where("userId", "==", userId)
+      .limit(1)
+      .get();
+
+    if (walletQuery.empty) {
+      return res.status(404).json({
+        success: false,
+        message: "User wallet not found",
+      });
+    }
+    const walletRef = walletQuery.docs[0].ref;
+
     // --- Transaction for idempotency and atomicity ---
     await db.runTransaction(async (transaction) => {
       // 1. Check if user already claimed
@@ -118,6 +133,8 @@ router.get("/", async (req, res) => {
         remaining: newRemaining,
       });
 
+
+
       // 6. Record user claim
       const claimData = {
         userId,
@@ -131,7 +148,17 @@ router.get("/", async (req, res) => {
       };
       transaction.set(userClaimsRef, claimData);
 
-      // 7. Respond
+      // 7. Update user wallet
+      const walletDoc = await transaction.get(walletRef);
+      if (walletDoc.exists) {
+        const currentBalance = walletDoc.data().balance || 0;
+        transaction.update(walletRef, {
+          balance: currentBalance + reward,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      // 8. Respond
       res.status(200).json({
         success: true,
         ...claimData,
