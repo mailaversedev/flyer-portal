@@ -1,0 +1,157 @@
+const express = require("express");
+const router = express.Router();
+const admin = require("firebase-admin");
+const db = admin.firestore();
+
+// GET /api/lottery - Lottery endpoint (idempotent per user, fluctuating reward, pool depletion)
+// Requires ?userId=xxx&flyerId=xxx as query params
+router.get("/", async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    const flyerId = req.query.flyerId;
+    if (!userId || !flyerId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and flyerId are required" });
+    }
+
+    // Retrieve flyer for event/lottery parameters
+    const flyerDoc = await db.collection("flyers").doc(flyerId).get();
+    if (!flyerDoc.exists) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Flyer not found" });
+    }
+
+    const flyer = flyerDoc.data();
+    // Use flyer fields or fallback to defaults
+    const pool = flyer.targetBudget.budget || 5000;
+    const lotteryFactor = 20;
+    const spreadingCoefficient = 0.6;
+    const eventCostPercent = 0.2;
+    const eventUsagePercent = 0.8;
+
+    // Step 1: Calculate final pool after spreading
+    const finalPool = pool / spreadingCoefficient;
+    // Step 2: Max number of users to get the lottery
+    const maxUsers = Math.floor(finalPool / lotteryFactor);
+    // Step 3: 80% of original pool used for event, 20% as cost
+    const eventMoney = pool * (1 - eventCostPercent);
+    // Step 4: 80% of event money used for lottery
+    const lotteryMoney = eventMoney * eventUsagePercent;
+    // Step 5: Average money per user
+    const avgMoneyPerUser = lotteryMoney / maxUsers;
+
+    // --- Firestore collections ---
+    const lotteryStateRef = db.collection("lottery").doc(flyerId);
+    const userClaimsRef = db
+      .collection("lottery")
+      .doc(flyerId)
+      .collection("claims")
+      .doc(userId);
+
+    // --- Transaction for idempotency and atomicity ---
+    await db.runTransaction(async (transaction) => {
+      // 1. Check if user already claimed
+      const userClaimDoc = await transaction.get(userClaimsRef);
+      if (userClaimDoc.exists) {
+        // Already claimed, return previous result
+        const data = userClaimDoc.data();
+        res.status(200).json({
+          success: true,
+          message: "Already claimed",
+          ...data,
+          avgMoneyPerUser,
+          maxUsers,
+        });
+        throw new Error("__ALREADY_CLAIMED__"); // abort transaction
+      }
+
+      // 2. Get or initialize lottery state
+      let lotteryStateDoc = await transaction.get(lotteryStateRef);
+      let state;
+      if (!lotteryStateDoc.exists) {
+        // First claim, initialize state
+        state = {
+          pool,
+          lotteryMoney,
+          maxUsers,
+          claims: 0,
+          remaining: lotteryMoney,
+        };
+        transaction.set(lotteryStateRef, state);
+      } else {
+        state = lotteryStateDoc.data();
+      }
+
+      // 3. Check if pool is depleted or max users reached
+      if (state.claims >= state.maxUsers || state.remaining <= 0) {
+        res.status(200).json({
+          success: false,
+          message: "All lottery rewards have been claimed",
+          avgMoneyPerUser,
+          maxUsers,
+        });
+        throw new Error("__POOL_DEPLETED__");
+      }
+
+      // 4. Calculate reward for this user
+      let reward;
+      if (state.claims === state.maxUsers - 1) {
+        // Last user gets all remaining
+        reward = state.remaining;
+      } else {
+        // Fluctuate +-50% of avgMoneyPerUser, but not more than remaining
+        const min = Math.max(0, avgMoneyPerUser * 0.5);
+        const max = Math.min(state.remaining, avgMoneyPerUser * 1.5);
+        reward = Math.random() * (max - min) + min;
+        reward = Math.floor(reward * 100) / 100; // round to 2 decimals
+        // Don't let reward exceed remaining for last user
+        if (reward > state.remaining) reward = state.remaining;
+      }
+
+      // 5. Update state
+      const newClaims = state.claims + 1;
+      const newRemaining = Math.max(0, state.remaining - reward);
+      transaction.update(lotteryStateRef, {
+        claims: newClaims,
+        remaining: newRemaining,
+      });
+
+      // 6. Record user claim
+      const claimData = {
+        userId,
+        flyerId,
+        reward,
+        claimedAt: new Date().toISOString(),
+        claimNumber: newClaims,
+        avgMoneyPerUser,
+        maxUsers,
+        remainingAfter: newRemaining,
+      };
+      transaction.set(userClaimsRef, claimData);
+
+      // 7. Respond
+      res.status(200).json({
+        success: true,
+        ...claimData,
+      });
+    });
+  } catch (error) {
+    if (
+      error.message === "__ALREADY_CLAIMED__" ||
+      error.message === "__POOL_DEPLETED__"
+    ) {
+      // Response already sent
+      return;
+    }
+    console.error("Lottery error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;
