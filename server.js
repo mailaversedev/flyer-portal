@@ -2,6 +2,12 @@ const path = require("path");
 const express = require("express");
 const admin = require("firebase-admin");
 
+// must be initialized before importing routes
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+  databaseURL: "https://flyer-genie.firebaseio.com",
+});
+
 // Import Routes
 const flyerRoutes = require("./routes/flyer");
 const fileRoutes = require("./routes/file");
@@ -11,11 +17,6 @@ const lotteryRoutes = require("./routes/lottery");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  databaseURL: "https://flyer-genie.firebaseio.com",
-});
 
 // Middleware for parsing JSON requests (for non-file endpoints)
 app.use(express.json({ limit: "10mb" }));

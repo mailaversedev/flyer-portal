@@ -280,13 +280,12 @@ router.post("/staff/register", async (req, res) => {
         const companyRef = db.collection("companies").doc();
         companyData = {
           name: companyName,
-          icon: companyIcon || null,
-          address: address || null,
-          contact: contact || null,
+          icon: companyIcon,
+          address,
+          contact,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           isActive: true,
-          createdBy: username,
         };
         transaction.set(companyRef, companyData);
         companyId = companyRef.id;

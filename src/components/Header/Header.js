@@ -1,46 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router';
-import { Search, Bell, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { Search, Bell, LogOut } from 'lucide-react';
 
 import ApiService from '../../services/ApiService';
 
 import './Header.css';
 
-
-// Example companies (replace with real data or fetch from API)
-const COMPANIES = [
-  { name: 'Fire Fitness Co. Ltd', id: 'fitness' },
-  { name: 'Keeta', id: 'keeta' },
-  { name: 'DiDi', id: 'dd' },
-];
-
 const Header = () => {
   const location = useLocation();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [companies] = useState(COMPANIES);
-  const [selectedCompany, setSelectedCompany] = useState(COMPANIES[0]);
-  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+  const [company, setCompany] = useState(null);
 
   useEffect(() => {
-    if (ApiService) {
-      ApiService.setCurrentCompany(selectedCompany);
-    }
-  }, [selectedCompany]);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
+    const storedCompany = localStorage.getItem('company');
+    if (storedCompany) {
+      try {
+        const parsedCompany = JSON.parse(storedCompany);
+        setCompany(parsedCompany);
+        ApiService.setCurrentCompany(parsedCompany);
+      } catch (e) {
+        console.error("Failed to parse company info", e);
       }
-    };
-    if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownOpen]);
+  }, []);
 
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -60,9 +42,11 @@ const Header = () => {
     }
   };
 
-  const handleCompanySelect = (company) => {
-    setSelectedCompany(company);
-    setDropdownOpen(false);
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('company');
+    navigate('/staff/login');
   };
 
   return (
@@ -84,41 +68,28 @@ const Header = () => {
         <button className="notification-btn">
           <Bell size={20} />
         </button>
-        <div className="user-menu" ref={dropdownRef}>
-          <div className="user-info" onClick={() => setDropdownOpen((open) => !open)} style={{ cursor: 'pointer' }}>
+        
+        {company && (
+          <div className="user-info">
             <div className="user-avatar">
-              <img
-                src={`/${selectedCompany.id}.png`}
-                alt={selectedCompany.name}
-                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
-                onError={e => { e.target.style.display = 'none'; }}
-              />
+              {company.icon ? (
+                <img
+                  src={company.icon}
+                  alt={company.name}
+                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: '#ccc' }}></div>
+              )}
             </div>
-            <span className="user-name">{selectedCompany.name}</span>
-            <ChevronDown size={16} />
+            <span className="user-name">{company.name}</span>
           </div>
-          {dropdownOpen && (
-            <div className="company-dropdown">
-              {companies.map((company) => (
-                <div
-                  key={company.id}
-                  className={`company-option${company.id === selectedCompany.id ? ' selected' : ''}`}
-                  onClick={() => handleCompanySelect(company)}
-                >
-                  <span className="company-icon">
-                    <img
-                      src={`/${company.id}.png`}
-                      alt={company.name}
-                      style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
-                      onError={e => { e.target.style.display = 'none'; }}
-                    />
-                  </span>
-                  <span className="company-name">{company.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
+
+        <button className="logout-btn" onClick={handleLogout} title="Logout">
+          <LogOut size={20} />
+        </button>
       </div>
     </header>
   );
