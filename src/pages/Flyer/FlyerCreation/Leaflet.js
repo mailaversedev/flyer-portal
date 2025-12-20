@@ -92,10 +92,7 @@ const LeafletCreation = () => {
       // Create the final flyer using the API
       const response = await ApiService.createFlyer({
         type: "leaflet",
-        data: {
-          ...remainingData,
-          companyInfo: JSON.parse(localStorage.getItem("company") || "{}"),
-        },
+        data: remainingData,
       });
 
       if (response.success) {

@@ -20,11 +20,7 @@ router.post("/flyer", async (req, res) => {
       createdAt: new Date().toISOString(),
       status: "active",
     };
-
-    // Enforce companyId from token if available (Staff)
-    if (req.user && req.user.companyId) {
-      flyerData.companyId = req.user.companyId;
-    }
+    flyerData.companyId = req.user.companyId;
 
     // 2. Prepare Lottery Data
     const pool = 5000;
