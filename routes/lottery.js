@@ -4,15 +4,15 @@ const admin = require("firebase-admin");
 const db = admin.firestore();
 
 // GET /api/lottery - Lottery endpoint (idempotent per user, fluctuating reward, pool depletion)
-// Requires ?userId=xxx&flyerId=xxx as query params
+// Requires ?flyerId=xxx as query params. userId is extracted from the token.
 router.get("/", async (req, res) => {
   try {
-    const userId = req.query.userId;
+    const userId = req.user.userId;
     const flyerId = req.query.flyerId;
-    if (!userId || !flyerId) {
+    if (!flyerId) {
       return res
         .status(400)
-        .json({ success: false, message: "userId and flyerId are required" });
+        .json({ success: false, message: "flyerId is required" });
     }
 
     // Retrieve flyer for event/lottery parameters
@@ -133,8 +133,6 @@ router.get("/", async (req, res) => {
         remaining: newRemaining,
       });
 
-
-
       // 6. Record user claim
       const claimData = {
         userId,
@@ -158,7 +156,40 @@ router.get("/", async (req, res) => {
         });
       }
 
-      // 8. Respond
+      // 8. Update Company Statistics (if flyer belongs to a company)
+      if (flyer.companyId) {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1; // 1-12
+        const statsDocId = `${year}-${String(month).padStart(2, "0")}`;
+
+        const statsRef = db
+          .collection("companies")
+          .doc(flyer.companyId)
+          .collection("statistics")
+          .doc(statsDocId);
+
+        const statsDoc = await transaction.get(statsRef);
+
+        if (statsDoc.exists) {
+          transaction.update(statsRef, {
+            claimCount: admin.firestore.FieldValue.increment(1),
+            totalReward: admin.firestore.FieldValue.increment(reward),
+            updatedAt: new Date().toISOString(),
+          });
+        } else {
+          transaction.set(statsRef, {
+            year,
+            month,
+            claimCount: 1,
+            totalReward: reward,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      // 9. Respond
       res.status(200).json({
         success: true,
         ...claimData,

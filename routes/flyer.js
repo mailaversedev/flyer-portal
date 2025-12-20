@@ -11,7 +11,9 @@ router.post("/flyer", async (req, res) => {
   try {
     const { type, data } = req.body;
 
-    // Placeholder response - replace with actual implementation
+    // 1. Prepare Flyer Data
+    // Generate ID first so we can use it in the transaction
+    const flyerRef = db.collection("flyers").doc();
     const flyerData = {
       type,
       ...data,
@@ -19,11 +21,12 @@ router.post("/flyer", async (req, res) => {
       status: "active",
     };
 
-    // Save flyerData to Firestore and get the flyer doc id
-    const flyerRef = await db.collection("flyers").add(flyerData);
+    // Enforce companyId from token if available (Staff)
+    if (req.user && req.user.companyId) {
+      flyerData.companyId = req.user.companyId;
+    }
 
-    // Create a lottery event for this flyer (doc id = flyer doc id)
-    // Use same lottery parameters as in /api/lottery
+    // 2. Prepare Lottery Data
     const pool = 5000;
     const eventCostPercent = 0.2;
     const eventUsagePercent = 0.8;
@@ -48,9 +51,66 @@ router.post("/flyer", async (req, res) => {
       createdAt: new Date().toISOString(),
       status: "active",
     };
-    await db.collection("lottery").doc(flyerRef.id).set(lotteryEvent);
 
-    // Distribute 20% of pool to all active users
+    // 3. Prepare Stats Data (if applicable)
+    let statsRef = null;
+    let statsYear = null;
+    let statsMonth = null;
+
+    if (flyerData.companyId) {
+      const date = new Date();
+      statsYear = date.getFullYear();
+      statsMonth = date.getMonth() + 1;
+      const statsDocId = `${statsYear}-${String(statsMonth).padStart(2, "0")}`;
+
+      statsRef = db
+        .collection("companies")
+        .doc(flyerData.companyId)
+        .collection("statistics")
+        .doc(statsDocId);
+    }
+
+    // 4. Execute Core Transaction (Flyer + Lottery + Stats)
+    await db.runTransaction(async (transaction) => {
+      // Reads must come before writes
+      let statsDoc = null;
+      if (statsRef) {
+        statsDoc = await transaction.get(statsRef);
+      }
+
+      // Create Flyer
+      transaction.set(flyerRef, flyerData);
+
+      // Create Lottery Event
+      const lotteryRef = db.collection("lottery").doc(flyerRef.id);
+      transaction.set(lotteryRef, lotteryEvent);
+
+      // Update Stats (if applicable)
+      if (statsRef) {
+        if (statsDoc && statsDoc.exists) {
+          transaction.update(statsRef, {
+            flyerCount: admin.firestore.FieldValue.increment(1),
+            totalMaxUsers: admin.firestore.FieldValue.increment(maxUsers),
+            totalEventMoney: admin.firestore.FieldValue.increment(eventMoney),
+            updatedAt: new Date().toISOString(),
+          });
+        } else {
+          transaction.set(statsRef, {
+            year: statsYear,
+            month: statsMonth,
+            flyerCount: 1,
+            totalMaxUsers: maxUsers,
+            totalEventMoney: eventMoney,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+    });
+
+    // 5. Distribute 20% of pool to all active users
+    // Note: This is kept outside the transaction to avoid hitting Firestore operation limits (500 ops)
+    // as the user base grows. It runs only if the transaction above succeeds.
     const distributionAmount = pool * eventCostPercent;
     const usersSnapshot = await db
       .collection("users")
