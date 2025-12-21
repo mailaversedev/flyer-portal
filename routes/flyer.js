@@ -2,12 +2,13 @@ const express = require("express");
 const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
+const { authenticateToken } = require("./auth");
 
 const spreadingCoefficient = 0.6;
 const lotteryFactor = 20;
 
 // POST /api/flyer - Create flyer (leaflet, query, or qr code)
-router.post("/flyer", async (req, res) => {
+router.post("/flyer", authenticateToken, async (req, res) => {
   try {
     const { type, data } = req.body;
 

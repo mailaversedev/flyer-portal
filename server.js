@@ -28,9 +28,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Public Routes
 app.use("/api/auth", authRoutes); // /api/auth/register, /api/auth/login, /api/auth/profile
 app.use("/api/auth/staff", staffAuthRoutes); // /api/auth/staff/register, /api/auth/staff/login
+app.use("/api", flyerRoutes); // /api/flyer (protected), /api/flyers (public)
 
 // Protected Routes
-app.use("/api", authenticateToken, flyerRoutes); // /api/flyer, /api/leaflet, /api/flyers
 app.use("/api", authenticateToken, fileRoutes); // /api/file
 app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-tokens, etc.
 app.use("/api/lottery", authenticateToken, lotteryRoutes); // /api/lottery
