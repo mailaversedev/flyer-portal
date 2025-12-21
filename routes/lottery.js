@@ -94,7 +94,7 @@ router.get("/", async (req, res) => {
           claims: 0,
           remaining: lotteryMoney,
         };
-        transaction.set(lotteryStateRef, state);
+        // We must perform the write later, after all reads
       } else {
         state = lotteryStateDoc.data();
       }
@@ -108,6 +108,34 @@ router.get("/", async (req, res) => {
           maxUsers,
         });
         throw new Error("__POOL_DEPLETED__");
+      }
+
+      // 7. Get user wallet (READ)
+      const walletDoc = await transaction.get(walletRef);
+
+      // 8. Get Company Statistics (READ)
+      let statsRef;
+      let statsDoc;
+      if (flyer.companyId) {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1; // 1-12
+        const statsDocId = `${year}-${String(month).padStart(2, "0")}`;
+
+        statsRef = db
+          .collection("companies")
+          .doc(flyer.companyId)
+          .collection("statistics")
+          .doc(statsDocId);
+
+        statsDoc = await transaction.get(statsRef);
+      }
+
+      // --- ALL READS COMPLETE, START WRITES ---
+
+      // 2b. Initialize lottery state if needed (WRITE)
+      if (!lotteryStateDoc.exists) {
+        transaction.set(lotteryStateRef, state);
       }
 
       // 4. Calculate reward for this user
@@ -125,7 +153,7 @@ router.get("/", async (req, res) => {
         if (reward > state.remaining) reward = state.remaining;
       }
 
-      // 5. Update state
+      // 5. Update state (WRITE)
       const newClaims = state.claims + 1;
       const newRemaining = Math.max(0, state.remaining - reward);
       transaction.update(lotteryStateRef, {
@@ -133,7 +161,7 @@ router.get("/", async (req, res) => {
         remaining: newRemaining,
       });
 
-      // 6. Record user claim
+      // 6. Record user claim (WRITE)
       const claimData = {
         userId,
         flyerId,
@@ -146,8 +174,7 @@ router.get("/", async (req, res) => {
       };
       transaction.set(userClaimsRef, claimData);
 
-      // 7. Update user wallet
-      const walletDoc = await transaction.get(walletRef);
+      // 7b. Update user wallet (WRITE)
       if (walletDoc.exists) {
         const currentBalance = walletDoc.data().balance || 0;
         transaction.update(walletRef, {
@@ -156,21 +183,8 @@ router.get("/", async (req, res) => {
         });
       }
 
-      // 8. Update Company Statistics (if flyer belongs to a company)
-      if (flyer.companyId) {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1; // 1-12
-        const statsDocId = `${year}-${String(month).padStart(2, "0")}`;
-
-        const statsRef = db
-          .collection("companies")
-          .doc(flyer.companyId)
-          .collection("statistics")
-          .doc(statsDocId);
-
-        const statsDoc = await transaction.get(statsRef);
-
+      // 8b. Update Company Statistics (WRITE)
+      if (flyer.companyId && statsRef) {
         if (statsDoc.exists) {
           transaction.update(statsRef, {
             claimCount: admin.firestore.FieldValue.increment(1),
@@ -178,9 +192,10 @@ router.get("/", async (req, res) => {
             updatedAt: new Date().toISOString(),
           });
         } else {
+          const date = new Date();
           transaction.set(statsRef, {
-            year,
-            month,
+            year: date.getFullYear(),
+            month: date.getMonth() + 1,
             claimCount: 1,
             totalReward: reward,
             createdAt: new Date().toISOString(),
