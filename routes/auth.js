@@ -8,6 +8,12 @@ const db = admin.firestore();
 // JWT Secret - In production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || "flyer-portal-secret-key-2024";
 
+const JWT_OPTIONS = {
+  expiresIn: "24h",
+  issuer: "flyer-portal",
+  audience: "flyer-portal-users",
+};
+
 // JWT Middleware for protected routes (optional usage)
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -187,11 +193,7 @@ router.post("/login", async (req, res) => {
       displayName: userData.displayName,
     };
 
-    const token = jwt.sign(tokenPayload, JWT_SECRET, {
-      expiresIn: "24h",
-      issuer: "flyer-portal",
-      audience: "flyer-portal-users",
-    });
+    const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
 
     // Update last login timestamp
     await db.collection("users").doc(userDoc.id).update({
@@ -217,6 +219,57 @@ router.post("/login", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error during login",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/auth/refresh-token - Refresh a valid token
+router.post("/refresh-token", authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.user;
+
+    // Check if user exists in DB
+    const userDoc = await db.collection("users").doc(userId).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const userData = userDoc.data();
+
+    // Check if user is active
+    if (!userData.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "User account is deactivated",
+      });
+    }
+
+    // Generate a new JWT token using latest data
+    const tokenPayload = {
+      userId: userDoc.id,
+      username: userData.username,
+      displayName: userData.displayName,
+    };
+
+    const newToken = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
+
+    res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        token: newToken,
+      },
+    });
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during token refresh",
       error: error.message,
     });
   }
@@ -253,6 +306,76 @@ router.get("/profile", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// DELETE /api/auth/delete - Delete user account and all related data
+router.delete("/delete", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const batchSize = 500;
+
+    // Helper function to delete documents in batches
+    const deleteQueryBatch = async (query, resolve) => {
+      const snapshot = await query.limit(batchSize).get();
+
+      if (snapshot.empty) {
+        // When there are no documents left, we are done
+        resolve();
+        return;
+      }
+
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
+      // Recurse on the next process tick, to avoid stack overflow
+      process.nextTick(() => {
+        deleteQueryBatch(query, resolve);
+      });
+    };
+
+    // 1. Delete User Document
+    await db.collection("users").doc(userId).delete();
+
+    // 2. Delete Wallet
+    const walletQuery = db.collection("wallets").where("userId", "==", userId);
+    await new Promise((resolve, reject) => {
+      deleteQueryBatch(walletQuery, resolve).catch(reject);
+    });
+
+    // 3. Delete Transactions
+    const transactionsQuery = db.collection("transactions").where("userId", "==", userId);
+    await new Promise((resolve, reject) => {
+      deleteQueryBatch(transactionsQuery, resolve).catch(reject);
+    });
+
+    // 4. Delete Flyers (if any created by user)
+    const flyersQuery = db.collection("flyers").where("userId", "==", userId);
+    await new Promise((resolve, reject) => {
+      deleteQueryBatch(flyersQuery, resolve).catch(reject);
+    });
+
+    // 5. Delete Claims (Collection Group)
+    // Note: This requires a composite index on claims collection for userId
+    const claimsQuery = db.collectionGroup("claims").where("userId", "==", userId);
+    await new Promise((resolve, reject) => {
+      deleteQueryBatch(claimsQuery, resolve).catch(reject);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User account and related data deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during account deletion",
       error: error.message,
     });
   }

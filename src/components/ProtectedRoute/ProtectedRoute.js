@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, useLocation } from "react-router";
+import ApiService from "../../services/ApiService";
 
 const isTokenExpired = (token) => {
   if (!token) return true;
@@ -22,6 +23,28 @@ const isTokenExpired = (token) => {
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   const location = useLocation();
+
+  useEffect(() => {
+    const refreshToken = async () => {
+      if (token && !isTokenExpired(token)) {
+        try {
+          const result = await ApiService.refreshStaffToken(token);
+          if (result.success && result.data.token) {
+            localStorage.setItem("token", result.data.token);
+          }
+        } catch (error) {
+          console.error("Token refresh failed:", error);
+          // If refresh fails (likely 401/404 from API), clear session
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("company");
+          window.location.href = "/staff/login";
+        }
+      }
+    };
+
+    refreshToken();
+  }, [token]);
 
   if (!token || isTokenExpired(token)) {
     // Clear invalid token

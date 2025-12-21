@@ -91,6 +91,26 @@ class ApiService {
     });
   }
 
+  // POST /api/auth/staff/refresh-token - Refresh Staff Token
+  static async refreshStaffToken(token) {
+    // We use fetch directly here to avoid circular dependency with makeRequest's error handling
+    // and because we need specific handling for this endpoint
+    const response = await fetch(`${API_BASE_URL}/api/auth/staff/refresh-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      // If refresh fails (401/404), the caller should handle logout
+      throw new Error(`Token refresh failed: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
   // POST /api/flyer - Create flyer (leaflet, query, or qr code)
   static async createFlyer(flyerData) {
     return this.makeRequest("/api/flyer", {

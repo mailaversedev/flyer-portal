@@ -4,9 +4,16 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
 const db = admin.firestore();
+const { authenticateToken } = require("./auth");
 
 // JWT Secret - In production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || "flyer-portal-secret-key-2024";
+
+const JWT_OPTIONS = {
+  expiresIn: "12h", // Staff tokens might have different expiry
+  issuer: "flyer-portal",
+  audience: "flyer-portal-staff",
+};
 
 // POST /register - Register a new staff user
 // Mounted at /api/auth/staff/register
@@ -212,11 +219,7 @@ router.post("/login", async (req, res) => {
       companyId: staffData.companyId,
     };
 
-    const token = jwt.sign(tokenPayload, JWT_SECRET, {
-      expiresIn: "12h", // Staff tokens might have different expiry
-      issuer: "flyer-portal",
-      audience: "flyer-portal-staff",
-    });
+    const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
 
     // Update last login timestamp
     await db.collection("staffs").doc(staffDoc.id).update({
@@ -245,6 +248,59 @@ router.post("/login", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error during staff login",
+      error: error.message,
+    });
+  }
+});
+
+// POST /refresh-token - Refresh a valid staff token
+router.post("/refresh-token", authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.user;
+
+    // Check if staff exists in DB
+    const staffDoc = await db.collection("staffs").doc(userId).get();
+
+    if (!staffDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Staff not found",
+      });
+    }
+
+    const staffData = staffDoc.data();
+
+    // Check if staff is active
+    if (!staffData.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "Staff account is deactivated",
+      });
+    }
+
+    // Generate a new JWT token using latest data
+    const tokenPayload = {
+      userId: staffDoc.id,
+      username: staffData.username,
+      displayName: staffData.displayName,
+      role: staffData.role,
+      companyId: staffData.companyId,
+    };
+
+    const newToken = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
+
+    res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        token: newToken,
+      },
+    });
+  } catch (error) {
+    console.error("Error refreshing staff token:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during token refresh",
       error: error.message,
     });
   }
