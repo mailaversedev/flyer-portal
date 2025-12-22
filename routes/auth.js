@@ -207,11 +207,7 @@ router.post("/login", async (req, res) => {
       message: "Login successful",
       data: {
         token: token,
-        user: {
-          id: userDoc.id,
-          username: userData.username,
-          displayName: userData.displayName,
-        },
+        user: tokenPayload,
       },
     });
   } catch (error) {
@@ -262,6 +258,7 @@ router.post("/refresh-token", authenticateToken, async (req, res) => {
       success: true,
       message: "Token refreshed successfully",
       data: {
+        user: tokenPayload,
         token: newToken,
       },
     });

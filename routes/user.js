@@ -113,7 +113,7 @@ router.delete("/delete", async (req, res) => {
 router.post("/device-token", async (req, res) => {
   try {
     const { token } = req.body;
-    const userId = req.user.userId;
+    const { userId } = req.user;
 
     if (!token) {
       return res.status(400).json({
