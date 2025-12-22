@@ -3,9 +3,9 @@ const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
 
-// GET /api/statistic
+// GET /api/internal/statistic
 // Query params: year (optional), month (optional)
-router.get("/", async (req, res) => {
+router.get("/statistic", async (req, res) => {
   try {
     let { year, month } = req.query;
 
@@ -57,6 +57,44 @@ router.get("/", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/internal/notification - Send push notification to a specific device
+router.post("/notification", async (req, res) => {
+  try {
+    const { token, title, body, data } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Device token is required",
+      });
+    }
+
+    const message = {
+      notification: {
+        title: title || "New Notification",
+        body: body || "",
+      },
+      data: data || {},
+      token: token,
+    };
+
+    const response = await admin.messaging().send(message);
+
+    res.status(200).json({
+      success: true,
+      message: "Notification sent successfully",
+      messageId: response,
+    });
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send notification",
       error: error.message,
     });
   }
