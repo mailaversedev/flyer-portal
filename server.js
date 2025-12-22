@@ -13,6 +13,7 @@ const flyerRoutes = require("./routes/flyer");
 const fileRoutes = require("./routes/file");
 const { router: authRoutes, authenticateToken } = require("./routes/auth");
 const staffAuthRoutes = require("./routes/staffAuth");
+const userRoutes = require("./routes/user");
 const paymentRoutes = require("./routes/payment");
 const lotteryRoutes = require("./routes/lottery");
 const statisticRoutes = require("./routes/statistic");
@@ -26,12 +27,13 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Use Routes
 // Public Routes
-app.use("/api/auth", authRoutes); // /api/auth/register, /api/auth/login, /api/auth/profile
+app.use("/api/auth", authRoutes); // /api/auth/register, /api/auth/login
 app.use("/api/auth/staff", staffAuthRoutes); // /api/auth/staff/register, /api/auth/staff/login
 app.use("/api", flyerRoutes); // /api/flyer (protected), /api/flyers (public)
 
 // Protected Routes
 app.use("/api", authenticateToken, fileRoutes); // /api/file
+app.use("/api/user", authenticateToken, userRoutes); // /api/user/profile, /api/user/delete
 app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-tokens, etc.
 app.use("/api/lottery", authenticateToken, lotteryRoutes); // /api/lottery
 app.use("/api/statistic", authenticateToken, statisticRoutes); // /api/statistic
