@@ -128,8 +128,6 @@ class ApiService {
     return this.makeRequest("/api/file", {
       method: "POST",
       body: formData,
-      // Don't set Content-Type header - let browser set it with boundary
-      headers: {},
     });
   }
 
