@@ -11,17 +11,17 @@ import './Leaflet.css';
 const LeafletCreation = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [leafletData, setLeafletData] = useState({
-    aspectRatio: '',
-    adType: '',
+    aspectRatio: "",
+    adType: "",
     referenceFlyer: null,
-    designStyle: '',
-    themeColor: '',
+    designStyle: "",
+    themeColor: "",
     backgroundPhoto: null,
-    header: '',
-    subheader: '',
-    adContent: '',
-    flyerPrompts: '',
-    promotionMessage: '',
+    header: "",
+    subheader: "",
+    adContent: "",
+    flyerPrompts: "",
+    promotionMessage: "",
     productPhoto: [],
     productDescriptions: '',
     tags: [],
@@ -31,7 +31,7 @@ const LeafletCreation = () => {
     termsConditions: '',
     expiredDate: ''
   });
-  const [loading, setLoading] = useState('');
+  const [loading, setLoading] = useState("");
 
   const step1Ref = useRef();
 
@@ -53,24 +53,24 @@ const LeafletCreation = () => {
         return;
       }
 
-      setLoading('Generating leaflet, please wait...');
-      console.log('Generating leaflet with data:', leafletData);
+      setLoading("Generating leaflet, please wait...");
+      console.log("Generating leaflet with data:", leafletData);
 
       try {
         // Make API call to generate leaflet image
         const response = await ApiService.generateLeaflet(leafletData);
         if (response.flyer_output_path) {
-          setLeafletData(prev => ({
+          setLeafletData((prev) => ({
             ...prev,
             coverPhoto: response.flyer_output_path,
           }));
         } else {
-          console.error('Failed to generate leaflet:', response.message);
+          console.error("Failed to generate leaflet:", response.message);
         }
       } catch (error) {
-        console.error('Error generating leaflet:', error);
+        console.error("Error generating leaflet:", error);
       } finally {
-        setLoading('');
+        setLoading("");
       }
       setCurrentStep(2);
     } else if (currentStep === 2) {
@@ -82,62 +82,66 @@ const LeafletCreation = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
-      navigate('/flyer');
+      navigate("/flyer");
     }
   };
 
   const handleCreate = async () => {
     try {
-      setLoading('Creating flyer, please wait...');
-
+      setLoading("Creating flyer, please wait...");
+      
       // Upload coupon file if exists
       const uploadedFileUrls = await ApiService.uploadFilesFromData({
         couponFile: leafletData.couponFile
       });
 
-      const { referenceFlyer, productPhoto, backgroundPhoto, couponFile, ...remainingData } = leafletData;
+      const {
+        referenceFlyer,
+        productPhoto,
+        backgroundPhoto,
+        couponFile,
+        ...remainingData
+      } = leafletData;
 
-      // Merge uploaded coupon URL
       const finalData = {
         ...remainingData,
         ...uploadedFileUrls,
-        // Make sure we pass the generated coverPhoto if it exists
         coverPhoto: leafletData.coverPhoto 
       };
 
-      console.log('Creating flyer with leaflet data:', finalData);
-      
+      console.log("Creating flyer with leaflet data:", finalData);
+
       // Create the final flyer using the API
       const response = await ApiService.createFlyer({
-        type: 'leaflet',
+        type: "leaflet",
         data: finalData,
       });
-      
+
       if (response.success) {
-        console.log('Flyer created successfully:', response);
+        console.log("Flyer created successfully:", response);
         // Navigate to a success page or back to flyer list
-        navigate('/flyer', { 
-          state: { 
-            success: true, 
-            message: 'Leaflet flyer created successfully!',
-          } 
+        navigate("/flyer", {
+          state: {
+            success: true,
+            message: "Leaflet flyer created successfully!",
+          },
         });
       } else {
-        console.error('Failed to create flyer:', response.message);
-        alert('Failed to create flyer. Please try again.');
+        console.error("Failed to create flyer:", response.message);
+        alert("Failed to create flyer. Please try again.");
       }
     } catch (error) {
-      console.error('Error creating flyer:', error);
-      alert('An error occurred while creating the flyer. Please try again.');
+      console.error("Error creating flyer:", error);
+      alert("An error occurred while creating the flyer. Please try again.");
     } finally {
-      setLoading('');
+      setLoading("");
     }
   };
 
   const updateLeafletData = (data) => {
-    setLeafletData(prev => ({
+    setLeafletData((prev) => ({
       ...prev,
-      ...data
+      ...data,
     }));
   };
 
@@ -146,12 +150,18 @@ const LeafletCreation = () => {
       <div className="creation-container">
         <div className="step-header">
           <div className="step-indicators">
-            <div className={`step-indicator ${currentStep >= 1 ? 'active' : ''}`}>
+            <div
+              className={`step-indicator ${currentStep >= 1 ? "active" : ""}`}
+            >
               <span className="step-number">1</span>
               <span className="step-label">Content</span>
             </div>
-            <div className={`step-connector ${currentStep >= 2 ? 'active' : ''}`}></div>
-            <div className={`step-indicator ${currentStep >= 2 ? 'active' : ''}`}>
+            <div
+              className={`step-connector ${currentStep >= 2 ? "active" : ""}`}
+            ></div>
+            <div
+              className={`step-indicator ${currentStep >= 2 ? "active" : ""}`}
+            >
               <span className="step-number">2</span>
               <span className="step-label">Target & Budget</span>
             </div>
@@ -172,10 +182,7 @@ const LeafletCreation = () => {
             />
           )}
           {currentStep === 2 && (
-            <TargetBudget 
-              data={leafletData}
-              onUpdate={updateLeafletData}
-            />
+            <TargetBudget data={leafletData} onUpdate={updateLeafletData} />
           )}
           {currentStep === 3 && (
             <CouponBuilder 
@@ -195,19 +202,31 @@ const LeafletCreation = () => {
         )}
 
         <div className="step-navigation">
-          <button className="nav-button back-button" onClick={handleBack} disabled={loading}>
+          <button
+            className="nav-button back-button"
+            onClick={handleBack}
+            disabled={loading}
+          >
             <ChevronLeft size={16} />
             Back
           </button>
-          
+
           {currentStep < 3 && (
-            <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
-              {loading ? 'Generating...' : 'Next'}
+            <button
+              className="nav-button next-button"
+              onClick={handleNext}
+              disabled={loading}
+            >
+              {loading ? "Generating..." : "Next"}
             </button>
           )}
-          
+
           {currentStep === 3 && (
-            <button className="nav-button generate-button" onClick={handleCreate} disabled={loading}>
+            <button
+              className="nav-button generate-button"
+              onClick={handleCreate}
+              disabled={loading}
+            >
               Create
             </button>
           )}
