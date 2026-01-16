@@ -3,6 +3,7 @@ import { ChevronLeft, Upload, Minus, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import QRCode from 'qrcode';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
+import CouponBuilder from '../../../components/Flyer/CouponBuilder';
 import ApiService from '../../../services/ApiService';
 import './QRGeneration.css';
 
@@ -58,7 +59,12 @@ const QRGeneration = () => {
     header: '',
     content: '',
     zoom: 100,
-    selectedSize: '500*800' // Default to the second option
+    selectedSize: '500*800', // Default to the second option
+    // Step 3 - Coupon data
+    couponType: '',
+    couponFile: null,
+    termsConditions: '',
+    expiredDate: ''
   });
 
   const navigate = useNavigate();
@@ -88,6 +94,12 @@ const QRGeneration = () => {
     console.log('Saving QR Code and proceeding...', qrData);
     setShowQRModal(false);
     setCurrentStep(2); // Proceed to next step
+  };
+
+  const handleNext = () => {
+    if (currentStep === 2) {
+      setCurrentStep(3);
+    }
   };
 
   const handleCloseModal = () => {
@@ -241,6 +253,11 @@ const QRGeneration = () => {
             <div className={`step-indicator ${currentStep >= 2 ? 'active' : ''}`}>
               <span className="step-number">2</span>
               <span className="step-label">Target & Budget</span>
+            </div>
+            <div className={`step-connector ${currentStep >= 3 ? 'active' : ''}`}></div>
+            <div className={`step-indicator ${currentStep >= 3 ? 'active' : ''}`}>
+              <span className="step-number">3</span>
+              <span className="step-label">Create Coupon</span>
             </div>
           </div>
         </div>
@@ -424,6 +441,13 @@ const QRGeneration = () => {
               onUpdate={updateQrData}
             />
           )}
+
+          {currentStep === 3 && (
+            <CouponBuilder 
+              data={qrData} 
+              onUpdate={updateQrData}
+            />
+          )}
         </div>
 
         <div className="step-navigation">
@@ -441,8 +465,14 @@ const QRGeneration = () => {
             Proceed to QR Code
             </button>
           )}
-          
+
           {currentStep === 2 && (
+            <button className="nav-button next-button" onClick={handleNext}>
+              Next: Create Coupon
+            </button>
+          )}
+          
+          {currentStep === 3 && (
             <button className="nav-button complete-button" onClick={handleCreate}>
               Create
             </button>

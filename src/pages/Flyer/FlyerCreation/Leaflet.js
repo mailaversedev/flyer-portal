@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Step1Content from '../../../components/Flyer/Leaflet/Step1Content';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
+import CouponBuilder from '../../../components/Flyer/CouponBuilder';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import ApiService from '../../../services/ApiService';
@@ -23,7 +24,12 @@ const LeafletCreation = () => {
     promotionMessage: '',
     productPhoto: [],
     productDescriptions: '',
-    tags: []
+    tags: [],
+    // Step 3 - Coupon data
+    couponType: '',
+    couponFile: null,
+    termsConditions: '',
+    expiredDate: ''
   });
   const [loading, setLoading] = useState('');
 
@@ -40,7 +46,7 @@ const LeafletCreation = () => {
   }, [location.state]);
 
   const handleNext = async () => {
-    if (currentStep < 2) {
+    if (currentStep === 1) {
       // Validate required fields before proceeding
       if (step1Ref.current && !step1Ref.current.validateRequiredFields()) {
         // Validation failed, errors will be shown in the component
@@ -66,7 +72,9 @@ const LeafletCreation = () => {
       } finally {
         setLoading('');
       }
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
     }
   };
 
@@ -80,15 +88,29 @@ const LeafletCreation = () => {
 
   const handleCreate = async () => {
     try {
-      const { referenceFlyer, productPhoto, backgroundPhoto, ...remainingData } = leafletData;
-
-      console.log('Creating flyer with leaflet data:', remainingData);
       setLoading('Creating flyer, please wait...');
+
+      // Upload coupon file if exists
+      const uploadedFileUrls = await ApiService.uploadFilesFromData({
+        couponFile: leafletData.couponFile
+      });
+
+      const { referenceFlyer, productPhoto, backgroundPhoto, couponFile, ...remainingData } = leafletData;
+
+      // Merge uploaded coupon URL
+      const finalData = {
+        ...remainingData,
+        ...uploadedFileUrls,
+        // Make sure we pass the generated coverPhoto if it exists
+        coverPhoto: leafletData.coverPhoto 
+      };
+
+      console.log('Creating flyer with leaflet data:', finalData);
       
       // Create the final flyer using the API
       const response = await ApiService.createFlyer({
         type: 'leaflet',
-        data: remainingData,
+        data: finalData,
       });
       
       if (response.success) {
@@ -133,6 +155,11 @@ const LeafletCreation = () => {
               <span className="step-number">2</span>
               <span className="step-label">Target & Budget</span>
             </div>
+            <div className={`step-connector ${currentStep >= 3 ? 'active' : ''}`}></div>
+            <div className={`step-indicator ${currentStep >= 3 ? 'active' : ''}`}>
+              <span className="step-number">3</span>
+              <span className="step-label">Create Coupon</span>
+            </div>
           </div>
         </div>
 
@@ -146,6 +173,12 @@ const LeafletCreation = () => {
           )}
           {currentStep === 2 && (
             <TargetBudget 
+              data={leafletData}
+              onUpdate={updateLeafletData}
+            />
+          )}
+          {currentStep === 3 && (
+            <CouponBuilder 
               data={leafletData}
               onUpdate={updateLeafletData}
             />
@@ -167,13 +200,13 @@ const LeafletCreation = () => {
             Back
           </button>
           
-          {currentStep === 1 && (
+          {currentStep < 3 && (
             <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
               {loading ? 'Generating...' : 'Next'}
             </button>
           )}
           
-          {currentStep === 2 && (
+          {currentStep === 3 && (
             <button className="nav-button generate-button" onClick={handleCreate} disabled={loading}>
               Create
             </button>

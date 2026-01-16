@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Step1Background from '../../../components/Flyer/Query/Step1Background';
 import Step2Survey from '../../../components/Flyer/Query/Step2Survey';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
+import CouponBuilder from '../../../components/Flyer/CouponBuilder';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import ApiService from '../../../services/ApiService';
@@ -24,12 +25,17 @@ const QueryCreation = () => {
         question: '',
         answers: ['']
       }
-    ]
+    ],
+    // Step 4 - Coupon data
+    couponType: '',
+    couponFile: null,
+    termsConditions: '',
+    expiredDate: ''
   });
   const navigate = useNavigate();
 
   const handleNext = () => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -108,6 +114,11 @@ const QueryCreation = () => {
               <span className="step-number">3</span>
               <span className="step-label">Target & Budget</span>
             </div>
+            <div className={`step-connector ${currentStep >= 4 ? 'active' : ''}`}></div>
+            <div className={`step-indicator ${currentStep >= 4 ? 'active' : ''}`}>
+              <span className="step-number">4</span>
+              <span className="step-label">Create Coupon</span>
+            </div>
           </div>
         </div>
 
@@ -130,6 +141,12 @@ const QueryCreation = () => {
               onUpdate={updateQueryData}
             />
           )}
+          {currentStep === 4 && (
+            <CouponBuilder 
+              data={queryData} 
+              onUpdate={updateQueryData}
+            />
+          )}
         </div>
 
         <div className="step-navigation">
@@ -138,13 +155,13 @@ const QueryCreation = () => {
             Back
           </button>
           
-          {currentStep < 3 && (
+          {currentStep < 4 && (
             <button className="nav-button next-button" onClick={handleNext}>
-              {currentStep === 1 ? 'Next: Survey Questions' : 'Next: Target & Budget'}
+              {currentStep === 1 ? 'Next: Survey Questions' : currentStep === 2 ? 'Next: Target & Budget' : 'Next: Create Coupon'}
             </button>
           )}
           
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <button className="nav-button complete-button" onClick={handleComplete}>
               Create
             </button>

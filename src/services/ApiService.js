@@ -125,7 +125,8 @@ class ApiService {
       referenceLayer: data.referenceLayer,
       productPhotos: data.productPhotos,
       productPhoto: data.productPhoto,
-      images: data.images
+      images: data.images,
+      couponFile: data.couponFile
     };
     
     // Remove undefined/null fields
