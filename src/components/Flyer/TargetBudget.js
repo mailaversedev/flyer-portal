@@ -150,7 +150,7 @@ const TargetBudget = ({ data, onUpdate }) => {
               <input
                 type="range"
                 min="5000"
-                max="100000"
+                max="1000000"
                 step="1000"
                 value={formData.budget}
                 onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
@@ -162,7 +162,7 @@ const TargetBudget = ({ data, onUpdate }) => {
             </div>
             <div className="audience-projection">
               <span className="projection-label">Projected Reached Audience</span>
-              <span className="projection-value">approximate {Math.floor(formData.budget * 0.794)} persons</span>
+              <span className="projection-value">approximate {Math.floor(formData.budget / 0.6 / 20)} persons</span>
             </div>
           </div>
 
