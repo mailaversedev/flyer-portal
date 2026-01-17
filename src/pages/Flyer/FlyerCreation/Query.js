@@ -32,6 +32,7 @@ const QueryCreation = () => {
     termsConditions: '',
     expiredDate: ''
   });
+  const [loading, setLoading] = useState("");
   const navigate = useNavigate();
 
   const handleNext = () => {
@@ -51,6 +52,7 @@ const QueryCreation = () => {
   const handleComplete = async () => {
     try {
       console.log('Creating query flyer...', queryData);
+      setLoading('Creating flyer, please wait...');
       
       // Upload only file fields and get their URLs
       const uploadedFileUrls = await ApiService.uploadFilesFromData(queryData);
@@ -85,6 +87,8 @@ const QueryCreation = () => {
     } catch (error) {
       console.error('Error creating flyer:', error);
       alert('An error occurred while creating the flyer. Please try again.');
+    } finally {
+      setLoading('');
     }
   };
 
@@ -149,20 +153,29 @@ const QueryCreation = () => {
           )}
         </div>
 
+        {loading && (
+          <div className="loading-indicator-overlay">
+            <div className="loading-indicator-content">
+              <div className="spinner" />
+              <span className="loading-indicator-text">{loading}</span>
+            </div>
+          </div>
+        )}
+
         <div className="step-navigation">
-          <button className="nav-button back-button" onClick={handleBack}>
+          <button className="nav-button back-button" onClick={handleBack} disabled={loading}>
             <ChevronLeft size={16} />
             Back
           </button>
           
           {currentStep < 4 && (
-            <button className="nav-button next-button" onClick={handleNext}>
+            <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
               {currentStep === 1 ? 'Next: Survey Questions' : currentStep === 2 ? 'Next: Target & Budget' : 'Next: Create Coupon'}
             </button>
           )}
           
           {currentStep === 4 && (
-            <button className="nav-button complete-button" onClick={handleComplete}>
+            <button className="nav-button complete-button" onClick={handleComplete} disabled={loading}>
               Create
             </button>
           )}

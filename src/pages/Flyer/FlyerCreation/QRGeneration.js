@@ -66,6 +66,7 @@ const QRGeneration = () => {
     termsConditions: '',
     expiredDate: ''
   });
+  const [loading, setLoading] = useState("");
 
   const navigate = useNavigate();
 
@@ -147,6 +148,7 @@ const QRGeneration = () => {
   const handleCreate = async () => {
     try {
       console.log('Creating QR flyer...', qrData);
+      setLoading('Creating QR flyer, please wait...');
       
       // Upload only file fields and get their URLs
       const uploadedFileUrls = await ApiService.uploadFilesFromData(qrData);
@@ -181,6 +183,8 @@ const QRGeneration = () => {
     } catch (error) {
       console.error('Error creating flyer:', error);
       alert('An error occurred while creating the flyer. Please try again.');
+    } finally {
+      setLoading('');
     }
   };
 
@@ -450,8 +454,17 @@ const QRGeneration = () => {
           )}
         </div>
 
+        {loading && (
+          <div className="loading-indicator-overlay">
+            <div className="loading-indicator-content">
+              <div className="spinner" />
+              <span className="loading-indicator-text">{loading}</span>
+            </div>
+          </div>
+        )}
+
         <div className="step-navigation">
-          <button className="nav-button back-button" onClick={handleBack}>
+          <button className="nav-button back-button" onClick={handleBack} disabled={loading}>
             <ChevronLeft size={16} />
             Back
           </button>
@@ -460,20 +473,20 @@ const QRGeneration = () => {
             <button 
               className={`nav-button next-button ${errors.website || !qrData.website || qrData.website.trim() === '' ? 'disabled' : ''}`}
               onClick={handleProceedToQRCode}
-              disabled={errors.website || !qrData.website || qrData.website.trim() === ''}
+              disabled={loading || errors.website || !qrData.website || qrData.website.trim() === ''}
             >
             Proceed to QR Code
             </button>
           )}
 
           {currentStep === 2 && (
-            <button className="nav-button next-button" onClick={handleNext}>
+            <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
               Next: Create Coupon
             </button>
           )}
           
           {currentStep === 3 && (
-            <button className="nav-button complete-button" onClick={handleCreate}>
+            <button className="nav-button complete-button" onClick={handleCreate} disabled={loading}>
               Create
             </button>
           )}
