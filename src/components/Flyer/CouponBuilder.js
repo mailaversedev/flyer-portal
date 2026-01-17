@@ -8,6 +8,8 @@ const CouponBuilder = ({ data, onUpdate }) => {
     couponFile: data?.couponFile || null,
     termsConditions: data?.termsConditions || '',
     expiredDate: data?.expiredDate || '',
+    discountValue: data?.discountValue || '',
+    itemDescription: data?.itemDescription || '',
   });
 
   const handleInputChange = (field, value) => {
@@ -50,8 +52,36 @@ const CouponBuilder = ({ data, onUpdate }) => {
                 <option value="percentage">Percentage Discount</option>
                 <option value="fixed">Fixed Amount Discount</option>
                 <option value="free">Free</option>
-                <option value="buy_one_get_one">Buy One Get One</option>
+                <option value="buy_one_get_one">Buy One Get One Free</option>
               </select>
+            </div>
+
+            {(formData.couponType === 'percentage' || formData.couponType === 'fixed') && (
+              <div className="form-group">
+                <label className="form-label">
+                  {formData.couponType === 'percentage' ? 'Discount Percentage (%)' : 'Discount Amount'}
+                </label>
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder={formData.couponType === 'percentage' ? "Enter percentage" : "Enter amount"}
+                  value={formData.discountValue || ''}
+                  onChange={(e) => handleInputChange('discountValue', e.target.value)}
+                  disabled={!!formData.couponFile}
+                />
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Item Description</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter item description"
+                value={formData.itemDescription || ''}
+                onChange={(e) => handleInputChange('itemDescription', e.target.value)}
+                disabled={!!formData.couponFile}
+              />
             </div>
 
             <div className="form-group">

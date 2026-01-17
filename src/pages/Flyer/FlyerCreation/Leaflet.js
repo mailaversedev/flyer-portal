@@ -29,7 +29,9 @@ const LeafletCreation = () => {
     couponType: '',
     couponFile: null,
     termsConditions: '',
-    expiredDate: ''
+    expiredDate: '',
+    discountValue: '',
+    itemDescription: ''
   });
   const [loading, setLoading] = useState("");
 
