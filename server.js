@@ -17,6 +17,7 @@ const userRoutes = require("./routes/user");
 const paymentRoutes = require("./routes/payment");
 const lotteryRoutes = require("./routes/lottery");
 const internalRoutes = require("./routes/internal");
+const couponRoutes = require("./routes/coupon");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +38,7 @@ app.use("/api/user", authenticateToken, userRoutes); // /api/user/profile, /api/
 app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-tokens, etc.
 app.use("/api/lottery", authenticateToken, lotteryRoutes); // /api/lottery
 app.use("/api/internal", authenticateToken, internalRoutes); // /api/internal
+app.use("/api/coupon", authenticateToken, couponRoutes); // /api/coupon/claim, /api/coupon/my-coupons
 
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, "build")));
