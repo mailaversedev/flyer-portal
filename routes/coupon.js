@@ -26,7 +26,7 @@ router.post("/claim", async (req, res) => {
     }
 
     const flyerData = flyerDoc.data();
-    if (!flyerData.data || !flyerData.data.couponType) {
+    if (!flyerData || !flyerData.couponType) {
       return res.status(400).json({
         success: false,
         message: "This flyer does not have a coupon",
@@ -51,15 +51,15 @@ router.post("/claim", async (req, res) => {
     const couponData = {
       userId,
       flyerId,
-      companyIcon: flyerData.data.companyIcon || "",
+      companyIcon: flyerData.companyIcon || "",
       
       // Coupon Details from Flyer Data
-      couponType: flyerData.data.couponType,
-      couponFile: flyerData.data.couponFile || null,
-      termsConditions: flyerData.data.termsConditions || "",
-      expiredDate: flyerData.data.expiredDate || "",
-      discountValue: flyerData.data.discountValue || "",
-      itemDescription: flyerData.data.itemDescription || "",
+      couponType: flyerData.couponType,
+      couponFile: flyerData.couponFile || null,
+      termsConditions: flyerData.termsConditions || "",
+      expiredDate: flyerData.expiredDate || "",
+      discountValue: flyerData.discountValue || "",
+      itemDescription: flyerData.itemDescription || "",
       
       status: "active", // active, used, expired
       claimedAt: new Date().toISOString(),
