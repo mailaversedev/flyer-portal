@@ -34,13 +34,14 @@ router.post("/claim", async (req, res) => {
     }
 
     // 2. Check if user already claimed this specific coupon
-    const existingClaimQuery = await db.collection("users")
+    const claimRef = db.collection("users")
       .doc(userId)
       .collection("coupons")
-      .where("flyerId", "==", flyerId)
-      .get();
+      .doc(flyerId);
 
-    if (!existingClaimQuery.empty) {
+    const existingClaim = await claimRef.get();
+
+    if (existingClaim.exists) {
       return res.status(400).json({
         success: false,
         message: "You have already claimed this coupon",
@@ -66,16 +67,13 @@ router.post("/claim", async (req, res) => {
       isUsed: false,
     };
 
-    const newClaimRef = await db.collection("users")
-      .doc(userId)
-      .collection("coupons")
-      .add(couponData);
+    await claimRef.set(couponData);
 
     res.status(201).json({
       success: true,
       message: "Coupon claimed successfully",
       data: {
-        id: newClaimRef.id,
+        id: flyerId,
         ...couponData
       },
     });
