@@ -105,10 +105,21 @@ const LeafletCreation = () => {
         ...remainingData
       } = leafletData;
 
+      let companyIcon = '';
+      try {
+        const companyStr = localStorage.getItem('company');
+        if (companyStr) {
+          companyIcon = JSON.parse(companyStr)?.icon || '';
+        }
+      } catch (e) {
+        console.warn('Failed to parse company info for icon', e);
+      }
+
       const finalData = {
         ...remainingData,
         ...uploadedFileUrls,
-        coverPhoto: leafletData.coverPhoto 
+        coverPhoto: leafletData.coverPhoto,
+        companyIcon
       };
 
       console.log("Creating flyer with leaflet data:", finalData);

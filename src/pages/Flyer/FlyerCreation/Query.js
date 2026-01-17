@@ -59,9 +59,20 @@ const QueryCreation = () => {
       console.log('Files uploaded, URLs:', uploadedFileUrls);
       
       // Merge uploaded URLs with original data
+      let companyIcon = '';
+      try {
+        const companyStr = localStorage.getItem('company');
+        if (companyStr) {
+          companyIcon = JSON.parse(companyStr)?.icon || '';
+        }
+      } catch (e) {
+        console.warn('Failed to parse company info for icon', e);
+      }
+
       const finalQueryData = {
         ...queryData, // All original data
-        ...uploadedFileUrls // Override with uploaded file URLs
+        ...uploadedFileUrls, // Override with uploaded file URLs
+        companyIcon
       };
       
       // Create the final flyer using the API
