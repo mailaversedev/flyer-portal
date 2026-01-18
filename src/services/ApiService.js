@@ -118,7 +118,17 @@ class ApiService {
       body: JSON.stringify(flyerData),
     });
   }
-
+  // GET /api/flyers - Get all flyers
+  static async getFlyers(limit = 100, after = null, sortBy = "createdAt", direction = "desc", companyId = null) {
+    let queryString = `limit=${limit}&sortBy=${sortBy}&direction=${direction}`;
+    if (after) {
+      queryString += `&after=${after}`;
+    }
+    if (companyId) {
+      queryString += `&companyId=${companyId}`;
+    }
+    return this.makeRequest(`/api/flyers?${queryString}`);
+  }
   // POST /api/file - Upload file/image
   static async uploadFile(file, category = "general") {
     const formData = new FormData();

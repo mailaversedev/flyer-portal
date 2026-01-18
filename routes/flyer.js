@@ -44,7 +44,6 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       lotteryMoney,
       claims: 0,
       remaining: lotteryMoney,
-      flyerId: flyerRef.id,
       createdAt: new Date().toISOString(),
       status: "active",
     };
@@ -179,6 +178,7 @@ router.get("/flyers", async (req, res) => {
       after,
       sortBy = "createdAt",
       direction = "desc",
+      companyId,
     } = req.query;
 
     // Convert limit to number and validate
@@ -210,6 +210,10 @@ router.get("/flyers", async (req, res) => {
     }
 
     let query = db.collection("flyers");
+
+    if (companyId) {
+      query = query.where("companyId", "==", companyId);
+    }
 
     // Apply sorting
     query = query.orderBy(sortBy, direction.toLowerCase());
@@ -246,6 +250,25 @@ router.get("/flyers", async (req, res) => {
         ...doc.data(),
       });
     });
+
+    // Fetch related lottery metadata
+    if (flyers.length > 0) {
+      try {
+        const lotteryRefs = flyers.map((flyer) =>
+          db.collection("lottery").doc(flyer.id)
+        );
+        const lotterySnapshots = await db.getAll(...lotteryRefs);
+
+        lotterySnapshots.forEach((lotteryDoc, index) => {
+          if (lotteryDoc.exists) {
+            flyers[index].lottery = lotteryDoc.data();
+          }
+        });
+      } catch (err) {
+        console.warn("Error fetching lottery metadata:", err);
+        // gracefully continue without lottery data
+      }
+    }
 
     // Get the last document for next cursor (if there are results)
     let nextCursor = null;
