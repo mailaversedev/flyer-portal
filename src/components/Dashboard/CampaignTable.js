@@ -105,10 +105,10 @@ const CampaignTable = () => {
                 <td>
                   <div className="campaign-thumbnail">
                     {/* <span className="thumbnail-id">{campaign.id.substr(0,4)}</span> */}
-                    {campaign.thumbnail.startsWith('http') ? (
-                      <img src={campaign.thumbnail} alt="thumb" className="thumbnail-img" style={{width: 32, height: 32, borderRadius: 4, objectFit: 'cover'}} />
+                    {campaign.coverPhoto.startsWith('http') ? (
+                      <img src={campaign.coverPhoto} alt="thumb" className="thumbnail-img" style={{width: 32, height: 32, borderRadius: 4, objectFit: 'cover'}} />
                     ) : (
-                      <span className="thumbnail-emoji">{campaign.thumbnail}</span>
+                      <span className="thumbnail-emoji">{campaign.coverPhoto}</span>
                     )}
                   </div>
                 </td>
