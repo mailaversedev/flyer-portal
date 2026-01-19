@@ -16,6 +16,7 @@ function generateOtp() {
 router.post("/send-otp-email", async (req, res) => {
   const { email } = req.body;
   if (!email) {
+    console.error("[send-otp-email] Missing email", req.body);
     return res.status(400).json({ success: false, message: "Missing email" });
   }
 
@@ -68,6 +69,7 @@ router.post("/send-otp-email", async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.json({ success: true, message: "OTP email sent" });
   } catch (error) {
+    console.error("[send-otp-email] Failed to send OTP email", error);
     res.status(500).json({ success: false, message: "Failed to send OTP email", error: error.message });
   }
 });
@@ -76,21 +78,26 @@ router.post("/send-otp-email", async (req, res) => {
 router.post("/validate-otp", async (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
+    console.error("[validate-otp] Missing email or otp", req.body);
     return res.status(400).json({ success: false, message: "Missing email or otp" });
   }
 
   const otpDoc = await db.collection("otps").doc(email).get();
   if (!otpDoc.exists) {
+    console.error("[validate-otp] OTP not found for email", email);
     return res.status(400).json({ success: false, message: "OTP not found" });
   }
   const data = otpDoc.data();
   if (data.used) {
+    console.error("[validate-otp] OTP already used for email", email);
     return res.status(400).json({ success: false, message: "OTP already used" });
   }
   if (Date.now() > data.expiresAt) {
+    console.error("[validate-otp] OTP expired for email", email);
     return res.status(400).json({ success: false, message: "OTP expired" });
   }
   if (data.otp !== otp) {
+    console.error("[validate-otp] Invalid OTP for email", email);
     return res.status(400).json({ success: false, message: "Invalid OTP" });
   }
 
