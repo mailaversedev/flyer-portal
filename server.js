@@ -31,13 +31,13 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/auth", authRoutes); // /api/auth/register, /api/auth/login
 app.use("/api/auth/staff", staffAuthRoutes); // /api/auth/staff/register, /api/auth/staff/login
 app.use("/api", flyerRoutes); // /api/flyer (protected), /api/flyers (public)
+app.use("/api/internal", internalRoutes); // /api/internal
 
 // Protected Routes
 app.use("/api", authenticateToken, fileRoutes); // /api/file
 app.use("/api/user", authenticateToken, userRoutes); // /api/user/profile, /api/user/delete
 app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-tokens, etc.
 app.use("/api/lottery", authenticateToken, lotteryRoutes); // /api/lottery
-app.use("/api/internal", authenticateToken, internalRoutes); // /api/internal
 app.use("/api/coupon", authenticateToken, couponRoutes); // /api/coupon/claim, /api/coupon/my-coupons
 
 // Serve static files from the React app build directory
