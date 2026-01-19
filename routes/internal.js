@@ -38,7 +38,7 @@ router.post("/send-otp-email", async (req, res) => {
     secure: true, // SSL
     auth: {
       user: "hi@mailaverse.io",
-      pass: process.env.MAILAVESE_SMTP_PASSWORD, // Set this in your environment
+      pass: process.env.MAILAVERSE_SMTP_PASSWORD, // Set this in your environment
     },
   });
 
