@@ -36,8 +36,8 @@ const CampaignTable = () => {
 
           return {
             id: flyer.id,
-            thumbnail: flyer.data?.coverPhoto || '📄',
-            adTitle: flyer.data?.header || `Promotion ${flyer.id.substr(0, 6)}`,
+            thumbnail: flyer?.coverPhoto || '📄',
+            adTitle: flyer.header || `Promotion ${flyer.id.substr(0, 6)}`,
             status: flyer.status === 'active' ? 'Live' : 'Completed', // Map specific statuses if needed
             adType: flyer.type.charAt(0).toUpperCase() + flyer.type.slice(1),
             totalReached: lottery.claims || 0,
