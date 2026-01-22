@@ -3,8 +3,9 @@ import { Recycle } from 'lucide-react';
 import './CarbonFootprint.css';
 import { useNavigate } from 'react-router';
 
-const CarbonFootprint = () => {
+const CarbonFootprint = ({ metrics }) => {
   const navigate = useNavigate();
+  const counts = metrics?.typeCounts || {};
 
   return (
     <div className="carbon-footprint">
@@ -51,15 +52,15 @@ const CarbonFootprint = () => {
       <div className="carbon-metrics">
         <div className="carbon-metric">
           <span className="metric-label">Read To Earn</span>
-          <span className="metric-value">10</span>
+          <span className="metric-value">{counts.leaflet || 0}</span>
         </div>
         <div className="carbon-metric">
           <span className="metric-label">Survey To Earn</span>
-          <span className="metric-value">2</span>
+          <span className="metric-value">{counts.survey || 0}</span>
         </div>
         <div className="carbon-metric">
           <span className="metric-label">Scan To Earn</span>
-          <span className="metric-value">1</span>
+          <span className="metric-value">{counts.coupon || 0}</span>
         </div>
       </div>
     </div>

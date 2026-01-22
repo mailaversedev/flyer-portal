@@ -40,6 +40,7 @@ const Dashboard = () => {
         let totalBudget = 0;
         let totalBrowseRate = 0;
         let totalInteracted = 0;
+        let typeCounts = {};
         let count = 0;
 
         const formattedData = response.data.map(flyer => {
@@ -52,6 +53,9 @@ const Dashboard = () => {
           if (lottery.claims) {
             totalInteracted += lottery.claims;
           }
+
+          const fType = flyer.type || 'unknown';
+          typeCounts[fType] = (typeCounts[fType] || 0) + 1;
 
           let browseRateVal = 0;
           if (lottery.maxUsers && lottery.maxUsers > 1) {
@@ -79,7 +83,8 @@ const Dashboard = () => {
         setMetrics({
           totalBudget,
           avgBrowseRate: count > 0 ? (totalBrowseRate / count).toFixed(2) : 0,
-          totalInteracted
+          totalInteracted,
+          typeCounts
         });
 
         setCampaignData(formattedData);
@@ -102,7 +107,7 @@ const Dashboard = () => {
         </div>
         
         <div className="middle-column">
-          <CarbonFootprint />
+          <CarbonFootprint metrics={metrics} />
         </div>
       </div>
       
