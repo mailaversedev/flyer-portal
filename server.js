@@ -32,9 +32,9 @@ app.use("/api/auth", authRoutes); // /api/auth/register, /api/auth/login
 app.use("/api/auth/staff", staffAuthRoutes); // /api/auth/staff/register, /api/auth/staff/login
 app.use("/api", flyerRoutes); // /api/flyer (protected), /api/flyers (public)
 app.use("/api/internal", internalRoutes); // /api/internal
+app.use("/api", fileRoutes); // /api/file
 
 // Protected Routes
-app.use("/api", authenticateToken, fileRoutes); // /api/file
 app.use("/api/user", authenticateToken, userRoutes); // /api/user/profile, /api/user/delete
 app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-tokens, etc.
 app.use("/api/lottery", authenticateToken, lotteryRoutes); // /api/lottery
