@@ -12,14 +12,31 @@ class ApiService {
   static async getCurrentCompanyIconFile() {
     console.log("Getting icon for company:", ApiService._currentCompany);
     if (ApiService._currentCompany && ApiService._currentCompany.id) {
-      const url = `/${ApiService._currentCompany.id}.png`;
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      const blob = await response.blob();
-      // Use the company id as the filename
-      return new File([blob], `${ApiService._currentCompany.id}.png`, {
-        type: blob.type,
-      });
+      const url = ApiService._currentCompany.icon;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        
+        // Check content type to avoid using index.html as image (SPA fallback)
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("text/html")) {
+          return null;
+        }
+
+        const blob = await response.blob();
+        // Ensure it's an image
+        if (!blob.type.startsWith('image/')) {
+          return null;
+        }
+
+        // Use the company id as the filename
+        return new File([blob], `${ApiService._currentCompany.id}.png`, {
+          type: blob.type,
+        });
+      } catch (error) {
+        console.warn("Failed to fetch company icon:", error);
+        return null;
+      }
     }
     return null;
   }

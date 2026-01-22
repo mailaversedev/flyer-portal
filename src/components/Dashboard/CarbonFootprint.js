@@ -56,7 +56,7 @@ const CarbonFootprint = ({ metrics }) => {
         </div>
         <div className="carbon-metric">
           <span className="metric-label">Survey To Earn</span>
-          <span className="metric-value">{counts.survey || 0}</span>
+          <span className="metric-value">{counts.query || 0}</span>
         </div>
         <div className="carbon-metric">
           <span className="metric-label">Scan To Earn</span>
