@@ -104,8 +104,8 @@ const CampaignTable = () => {
               <tr key={campaign.id}>
                 <td>
                   <div className="campaign-thumbnail">
-                    {campaign.coverPhoto && campaign.coverPhoto.startsWith('http') ? (
-                      <img src={campaign.coverPhoto} alt="thumb" className="thumbnail-img" style={{width: 32, height: 32, borderRadius: 4, objectFit: 'cover'}} />
+                    {campaign.thumbnail && campaign.thumbnail.startsWith('http') ? (
+                      <img src={campaign.thumbnail} alt="thumb" className="thumbnail-img" style={{width: 32, height: 32, borderRadius: 4, objectFit: 'cover'}} />
                     ) : (
                       <span className="thumbnail-placeholder">{'📄'}</span>
                     )}
