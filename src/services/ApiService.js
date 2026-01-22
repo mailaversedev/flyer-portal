@@ -142,27 +142,92 @@ class ApiService {
   }
 
   // POST /api/leaflet - Generate leaflet
-  static async generateLeaflet(leafletData) {
+  static async generateLeaflet(leafletData, isProMode = false) {
     const formData = new FormData();
-    formData.append("logo_image", await ApiService.getCurrentCompanyIconFile());
-    formData.append("template_image", leafletData.referenceFlyer.file);
-    formData.append("user_prompt", leafletData.promotionMessage);
-    formData.append("flyer_ratio", leafletData.aspectRatio);
-    formData.append(
-      "flyer_text",
-      JSON.stringify({
-        header: leafletData.header,
-        subheader: leafletData.subheader,
-        content: null,
-      })
-    );
-    formData.append("company_info", localStorage.getItem("company") || "{}");
-    formData.append("display_company_info", "false");
-    formData.append("generation_id", crypto.randomUUID());
-
+    
     // External endpoint (not using API_BASE_URL)
-    const endpoint =
-      "https://flyergenie-backend-91102396327.europe-west1.run.app/flyer/generate-multipart";
+    let endpoint = "https://flyergenie-backend-91102396327.europe-west1.run.app/flyer/generate-multipart";
+    if (isProMode) {
+      endpoint = "https://flyergenie-backend-pro-91102396327.europe-west1.run.app/api/generate-image";
+    }
+
+    if (isProMode) {
+      // Pro Mode Fields mapping
+      formData.append("Product_Name", leafletData.productName || "");
+      formData.append("Query_Context", leafletData.flyerPrompts || "");
+      formData.append("Aspect_Ratio", leafletData.aspectRatio || "1:1");
+      formData.append("Resolution", leafletData.resolution || "2K");
+      formData.append("Logo_Position", leafletData.logoPosition || "natural placement");
+
+      formData.append("Copy_Line", leafletData.header || "");
+      // Currently backend "Copy_Position" is optional, not added in input form yet
+      
+      formData.append("Body_Copy", leafletData.adContent || "");
+      // Currently backend "Body_Copy_Position" is optional, not added in input form yet
+
+      if (leafletData.primaryColor) {
+        formData.append("Primary_Color", leafletData.primaryColor);
+      }
+      if (leafletData.secondaryColor) {
+        formData.append("Secondary_Color", leafletData.secondaryColor);
+      }
+      if (leafletData.typography) {
+        formData.append("Typography", leafletData.typography);
+      }
+      if (leafletData.brandVoice) {
+        formData.append("Brand_Voice", leafletData.brandVoice);
+      }
+      if (leafletData.campaignMoodboard) {
+        formData.append("Campaign_Moodboard", leafletData.campaignMoodboard);
+      }
+
+      // Handle Files for Pro Mode
+      if (leafletData.logoImage && leafletData.logoImage.file) {
+        formData.append("logo_image", leafletData.logoImage.file);
+      } else {
+        // Fallback to company icon if user didn't upload specific logo
+        const companyIcon = await ApiService.getCurrentCompanyIconFile();
+        if (companyIcon) {
+          formData.append("logo_image", companyIcon);
+        }
+      }
+
+      if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
+        formData.append("reference_image_file", leafletData.referenceFlyer.file);
+      }
+
+      // Pro Mode seems to support only one product image per readme field "product_image"
+      // But standard leaflet supports multiple or 1. If multiple, maybe we just pick first?
+      // README says "product_image: image file", singular.
+      if (leafletData.productPhoto && leafletData.productPhoto.length > 0) {
+        // Use the first one
+        const photo = leafletData.productPhoto[0];
+        if (photo.file) {
+          formData.append("product_image", photo.file);
+        }
+      }
+
+    } else {
+      // Standard Mode Fields
+      formData.append("logo_image", await ApiService.getCurrentCompanyIconFile());
+      if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
+        formData.append("template_image", leafletData.referenceFlyer.file);
+      }
+      formData.append("user_prompt", leafletData.promotionMessage);
+      formData.append("flyer_ratio", leafletData.aspectRatio);
+      formData.append(
+        "flyer_text",
+        JSON.stringify({
+          header: leafletData.header,
+          subheader: leafletData.subheader,
+          content: null,
+        })
+      );
+      formData.append("company_info", localStorage.getItem("company") || "{}");
+      formData.append("display_company_info", "false");
+      formData.append("generation_id", crypto.randomUUID());
+    }
+
     try {
       const response = await fetch(endpoint, {
         method: "POST",
@@ -172,7 +237,22 @@ class ApiService {
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
-      return await response.json();
+      
+      const result = await response.json();
+      
+      if (isProMode) {
+        // Map Pro response to expected internal format
+        // Pro response: { "prompt": "...", "image_urls": ["data:image/...", ...] }
+        // Internal expected: { flyer_output_path: "url" }
+        if (result.image_urls && result.image_urls.length > 0) {
+          return {
+            flyer_output_path: result.image_urls[0], // Take first image
+            ...result
+          };
+        }
+      }
+      
+      return result;
     } catch (error) {
       console.error("FlyerGenie API Request failed:", error);
       throw error;

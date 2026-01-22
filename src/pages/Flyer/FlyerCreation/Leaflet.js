@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Step1Content from '../../../components/Flyer/Leaflet/Step1Content';
+import Step1ContentPro from '../../../components/Flyer/Leaflet/Step1ContentPro';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
 import CouponBuilder from '../../../components/Flyer/CouponBuilder';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Sparkles, Settings } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import ApiService from '../../../services/ApiService';
 import './Leaflet.css';
@@ -10,6 +11,7 @@ import './Leaflet.css';
 
 const LeafletCreation = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isProMode, setIsProMode] = useState(false);
   const [leafletData, setLeafletData] = useState({
     aspectRatio: "",
     adType: "",
@@ -25,6 +27,15 @@ const LeafletCreation = () => {
     productPhoto: [],
     productDescriptions: '',
     tags: [],
+    // Pro fields
+    productName: '',
+    resolution: '2K',
+    primaryColor: '',
+    secondaryColor: '',
+    typography: '',
+    brandVoice: '',
+    logoImage: null,
+    logoPosition: 'natural placement',
     // Step 3 - Coupon data
     couponType: '',
     couponFile: null,
@@ -60,7 +71,7 @@ const LeafletCreation = () => {
 
       try {
         // Make API call to generate leaflet image
-        const response = await ApiService.generateLeaflet(leafletData);
+        const response = await ApiService.generateLeaflet(leafletData, isProMode);
         if (response.flyer_output_path) {
           setLeafletData((prev) => ({
             ...prev,
@@ -188,11 +199,67 @@ const LeafletCreation = () => {
 
         <div className="step-content">
           {currentStep === 1 && (
-            <Step1Content
-              ref={step1Ref}
-              data={leafletData}
-              onUpdate={updateLeafletData}
-            />
+            <>
+              <div style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '20px'}}>
+                <div style={{
+                  display: 'inline-flex', 
+                  backgroundColor: '#1e2433', 
+                  borderRadius: '8px', 
+                  padding: '4px'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsProMode(false)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: !isProMode ? '#3b82f6' : 'transparent',
+                      color: !isProMode ? 'white' : '#94a3b8',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Settings size={16} /> Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsProMode(true)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: isProMode ? '#8b5cf6' : 'transparent',
+                      color: isProMode ? 'white' : '#94a3b8',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Sparkles size={16} /> Pro
+                  </button>
+                </div>
+              </div>
+              
+              {isProMode ? (
+                <Step1ContentPro
+                  ref={step1Ref}
+                  data={leafletData}
+                  onUpdate={updateLeafletData}
+                />
+              ) : (
+                <Step1Content
+                  ref={step1Ref}
+                  data={leafletData}
+                  onUpdate={updateLeafletData}
+                />
+              )}
+            </>
           )}
           {currentStep === 2 && (
             <TargetBudget data={leafletData} onUpdate={updateLeafletData} />
