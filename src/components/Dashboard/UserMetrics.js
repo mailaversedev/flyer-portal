@@ -1,7 +1,7 @@
 import React from 'react';
 import './UserMetrics.css';
 
-const UserMetrics = () => {
+const UserMetrics = ({ totalInteracted, avgBrowseRate }) => {
   return (
     <div className="user-metrics">
       <div className="metrics-header">
@@ -9,21 +9,21 @@ const UserMetrics = () => {
       </div>
       
       <div className="user-count">
-        <span className="count">29,322</span>
-        <span className="growth positive">+133.14%</span>
+        <span className="count">{totalInteracted ? totalInteracted.toLocaleString() : '0'}</span>
+        <span className="growth positive">-</span>
       </div>
       
       <div className="metrics-breakdown">
         <div className="metric-item">
-          <div className="metric-value">85.6%</div>
+          <div className="metric-value">{avgBrowseRate ? `${avgBrowseRate}%` : '-'}</div>
           <div className="metric-label">Browsed</div>
         </div>
         <div className="metric-item">
-          <div className="metric-value">30.3%</div>
+          <div className="metric-value">-</div>
           <div className="metric-label">Downloaded</div>
         </div>
         <div className="metric-item">
-          <div className="metric-value">15.9%</div>
+          <div className="metric-value">-</div>
           <div className="metric-label">Converted</div>
         </div>
       </div>

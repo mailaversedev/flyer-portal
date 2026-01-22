@@ -39,6 +39,7 @@ const Dashboard = () => {
         // Transform API data to table format
         let totalBudget = 0;
         let totalBrowseRate = 0;
+        let totalInteracted = 0;
         let count = 0;
 
         const formattedData = response.data.map(flyer => {
@@ -46,6 +47,10 @@ const Dashboard = () => {
           
           if (lottery.pool) {
             totalBudget += (lottery.pool - (lottery.remaining || 0));
+          }
+
+          if (lottery.claims) {
+            totalInteracted += lottery.claims;
           }
 
           let browseRateVal = 0;
@@ -73,7 +78,8 @@ const Dashboard = () => {
 
         setMetrics({
           totalBudget,
-          avgBrowseRate: count > 0 ? (totalBrowseRate / count).toFixed(2) : 0
+          avgBrowseRate: count > 0 ? (totalBrowseRate / count).toFixed(2) : 0,
+          totalInteracted
         });
 
         setCampaignData(formattedData);
@@ -91,7 +97,7 @@ const Dashboard = () => {
       
       <div className="dashboard-grid">
         <div className="left-column">
-          <BudgetCard totalBudget={metrics.totalBudget} />
+          <BudgetCard metrics={metrics} />
           <PerformanceStats statsData={metrics} />
         </div>
         

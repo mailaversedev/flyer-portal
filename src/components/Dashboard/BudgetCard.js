@@ -3,7 +3,8 @@ import { ChevronDown } from 'lucide-react';
 import UserMetrics from './UserMetrics'
 import './BudgetCard.css';
 
-const BudgetCard = ({ totalBudget }) => {
+const BudgetCard = ({ metrics }) => {
+  const totalBudget = metrics?.totalBudget || 0;
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const [selectedYear, setSelectedYear] = React.useState('2025');
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
@@ -34,7 +35,10 @@ const BudgetCard = ({ totalBudget }) => {
               </ul>
             )}
           </div>
-          <UserMetrics />
+          <UserMetrics 
+            totalInteracted={metrics?.totalInteracted || 0} 
+            avgBrowseRate={metrics?.avgBrowseRate || 0} 
+          />
         </div>
         <div className="budget-amount">
           <span className="currency">HK$</span>
