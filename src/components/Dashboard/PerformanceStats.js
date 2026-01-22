@@ -1,25 +1,25 @@
 import React from 'react';
 import './PerformanceStats.css';
 
-const PerformanceStats = () => {
+const PerformanceStats = ({ statsData }) => {
   const stats = [
     {
-      value: '93.25 %',
+      value: statsData ? `${statsData.avgBrowseRate}%` : '-',
       label: 'Avg Browse Rate',
       color: '#10b981'
     },
     {
-      value: '23.5 %',
+      value: '-', // Not available yet
       label: 'Avg Download',
       color: '#3b82f6'
     },
     {
-      value: '9.9 %',
+      value: '-', // Not available yet
       label: 'Avg Conversion',
       color: '#8b5cf6'
     },
     {
-      value: '$ 0.455',
+      value: '-', // Not available yet
       label: 'Cost per Browse (CPB)',
       color: '#f59e0b'
     }

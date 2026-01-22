@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import UserMetrics from './UserMetrics'
 import './BudgetCard.css';
 
-const BudgetCard = () => {
+const BudgetCard = ({ totalBudget }) => {
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const [selectedYear, setSelectedYear] = React.useState('2025');
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
@@ -38,7 +38,7 @@ const BudgetCard = () => {
         </div>
         <div className="budget-amount">
           <span className="currency">HK$</span>
-          <span className="amount">23,156.00</span>
+          <span className="amount">{totalBudget ? totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
         </div>
       </div>
     </div>

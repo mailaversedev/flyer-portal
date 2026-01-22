@@ -190,7 +190,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Fetch company information if available
+    // Fetch company information if available, and add statistics
     let companyInfo = null;
     if (staffData.companyId) {
       const companyDoc = await db
@@ -206,6 +206,61 @@ router.post("/login", async (req, res) => {
           address: companyData.address,
           contact: companyData.contact,
           isActive: companyData.isActive,
+        };
+
+        // --- Add statistics aggregation for current year ---
+        const now = new Date();
+        const year = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const statsDocId = `${year}-${String(currentMonth).padStart(2, "0")}`;
+        const statsRef = db
+          .collection("companies")
+          .doc(companyDoc.id)
+          .collection("statistics");
+
+        // Try to get all statistics for the current year
+        const statsQuery = await statsRef
+          .where("year", "==", year)
+          .get();
+
+        let statsList = [];
+        if (statsQuery.empty) {
+          // If not found, create one for current year/month
+          const newStats = {
+            year: year,
+            month: currentMonth,
+            claimCount: 0,
+            flyerCount: 0,
+            totalReward: 0,
+            totalEventMoney: 0,
+            totalMaxUsers: 0,
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
+          };
+          await statsRef.doc(statsDocId).set(newStats);
+          statsList = [newStats];
+        } else {
+          statsList = statsQuery.docs.map(doc => doc.data());
+        }
+
+        // Aggregate data for the year
+        const aggregated = statsList.reduce(
+          (acc, stat) => {
+            acc.claimCount += stat.claimCount || 0;
+            acc.totalReward += stat.totalReward || 0;
+            acc.totalEventMoney += stat.totalEventMoney || 0;
+            acc.totalMaxUsers += stat.totalMaxUsers || 0;
+            acc.flyerCount += stat.flyerCount || 0;
+            return acc;
+          },
+          { claimCount: 0, totalReward: 0, totalEventMoney: 0, totalMaxUsers: 0, flyerCount: 0 }
+        );
+        companyInfo.stats = {
+          year,
+          claimCount: aggregated.claimCount,
+          totalReward: aggregated.totalReward,
+          months: aggregated.months,
+          monthly: statsList,
         };
       }
     }
