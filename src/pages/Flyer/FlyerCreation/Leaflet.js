@@ -54,6 +54,10 @@ const LeafletCreation = () => {
   // Handle direct upload from flyer selection page
   useEffect(() => {
     if (location.state?.isDirectUpload && location.state?.uploadedImage) {
+      setLeafletData((prev) => ({
+        ...prev,
+        coverPhoto: location.state.uploadedImage,
+      }));
       setCurrentStep(2);
     }
   }, [location.state]);
