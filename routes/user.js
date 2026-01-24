@@ -27,6 +27,7 @@ router.get("/profile", async (req, res) => {
         createdAt: userData.createdAt,
         lastLoginAt: userData.lastLoginAt,
         isActive: userData.isActive,
+        location: userData.location,
       },
     });
   } catch (error) {
@@ -134,6 +135,57 @@ router.post("/device-token", async (req, res) => {
     });
   } catch (error) {
     console.error("Error registering device token:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// PUT /location - Update user location information
+router.put("/location", async (req, res) => {
+  try {
+    const {
+      addressType,
+      countryCity,
+      district,
+      buildingEstate,
+    } = req.body;
+    const { userId } = req.user;
+
+    // Validate inputs
+    if (
+      !addressType &&
+      !countryCity &&
+      !district &&
+      !buildingEstate
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one location field must be provided",
+      });
+    }
+
+    const updates = {
+      updatedAt: new Date().toISOString(),
+      location: {
+        addressType,
+        countryCity,
+        district,
+        buildingEstate,
+      },
+    };
+
+    // Update user document (merge true enables partial update of nested location object)
+    await db.collection("users").doc(userId).set(updates, { merge: true });
+
+    res.status(200).json({
+      success: true,
+      message: "User location updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating user location:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

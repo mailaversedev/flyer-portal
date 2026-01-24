@@ -30,7 +30,7 @@ const StaffLogin = () => {
           try {
             const uploadResponse = await ApiService.uploadFile(
               companyIconFile,
-              "company-icon"
+              "companyIcon"
             );
             if (uploadResponse.success) {
               companyIconUrl = uploadResponse.url;

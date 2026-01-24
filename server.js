@@ -8,6 +8,9 @@ admin.initializeApp({
   databaseURL: "https://flyer-genie.firebaseio.com",
 });
 
+// Configure Firestore to ignore undefined properties globally
+admin.firestore().settings({ ignoreUndefinedProperties: true });
+
 // Import Routes
 const flyerRoutes = require("./routes/flyer");
 const fileRoutes = require("./routes/file");
