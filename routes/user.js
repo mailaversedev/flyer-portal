@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
+const { authenticateToken } = require("./auth");
 
 // GET /profile - Get user profile
-router.get("/profile", async (req, res) => {
+router.get("/profile", authenticateToken, async (req, res) => {
   try {
     const userDoc = await db.collection("users").doc(req.user.userId).get();
 
@@ -41,7 +42,7 @@ router.get("/profile", async (req, res) => {
 });
 
 // DELETE /delete - Delete user account and all related data
-router.delete("/delete", async (req, res) => {
+router.delete("/delete", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     const batchSize = 500;
@@ -111,7 +112,7 @@ router.delete("/delete", async (req, res) => {
 });
 
 // POST /device-token - Register a device token for push notifications
-router.post("/device-token", async (req, res) => {
+router.post("/device-token", authenticateToken, async (req, res) => {
   try {
     const { token } = req.body;
     const { userId } = req.user;
@@ -147,12 +148,19 @@ router.post("/device-token", async (req, res) => {
 router.put("/location", async (req, res) => {
   try {
     const {
+      userId,
       addressType,
       countryCity,
       district,
       buildingEstate,
     } = req.body;
-    const { userId } = req.user;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required",
+      });
+    }
 
     // Validate inputs
     if (

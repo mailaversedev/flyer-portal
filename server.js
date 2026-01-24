@@ -38,7 +38,7 @@ app.use("/api/internal", internalRoutes); // /api/internal
 app.use("/api", fileRoutes); // /api/file
 
 // Protected Routes
-app.use("/api/user", authenticateToken, userRoutes); // /api/user/profile, /api/user/delete
+app.use("/api/user", userRoutes); // Authentication handled per route in user.js
 app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-tokens, etc.
 app.use("/api/lottery", authenticateToken, lotteryRoutes); // /api/lottery
 app.use("/api/coupon", authenticateToken, couponRoutes); // /api/coupon/claim, /api/coupon/my-coupons
