@@ -14,7 +14,9 @@ class ApiService {
     if (ApiService._currentCompany && ApiService._currentCompany.id) {
       const url = ApiService._currentCompany.icon;
       try {
-        const response = await fetch(url);
+        // Add cache busting to avoid cached CORS errors
+        const fetchUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
+        const response = await fetch(fetchUrl, { mode: 'cors' });
         if (!response.ok) return null;
         
         // Check content type to avoid using index.html as image (SPA fallback)
