@@ -155,20 +155,9 @@ const QRGeneration = () => {
       console.log('Files uploaded, URLs:', uploadedFileUrls);
       
       // Merge uploaded URLs with original data
-      let companyIcon = '';
-      try {
-        const companyStr = localStorage.getItem('company');
-        if (companyStr) {
-          companyIcon = JSON.parse(companyStr)?.icon || '';
-        }
-      } catch (e) {
-        console.warn('Failed to parse company info for icon', e);
-      }
-
       const finalQrData = {
         ...qrData, // All original data
-        ...uploadedFileUrls, // Override with uploaded file URLs
-        companyIcon
+        ...uploadedFileUrls // Override with uploaded file URLs
       };
       
       // Create the final flyer using the API
