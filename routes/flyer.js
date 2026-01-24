@@ -47,8 +47,11 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     const eventMoney = pool * (1 - eventCostPercent);
     const lotteryMoney = eventMoney * eventUsagePercent;
 
-    flyerData.lotteryMoney = lotteryMoney;
-    flyerData.maxUsers = maxUsers;
+    flyerData.lottery = {
+      lotteryMoney,
+      remaining: maxUsers - 1,
+      claims: 0
+    };
 
     const lotteryEvent = {
       pool,
