@@ -23,6 +23,21 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     };
     flyerData.companyId = req.user.companyId;
 
+    // Fetch company info to embed in flyer (denormalization)
+    try {
+      if (flyerData.companyId) {
+        const companyDoc = await db.collection("companies").doc(flyerData.companyId).get();
+        if (companyDoc.exists) {
+          const companyInfo = companyDoc.data();
+          flyerData.companyIcon = companyInfo.icon;
+          flyerData.companyName = companyInfo.name;
+        }
+      }
+    } catch (error) {
+       console.warn("Failed to fetch company info during flyer creation:", error);
+       // Continue without it, don't fail the whole creation
+    }
+
     // 2. Prepare Lottery Data
     const pool = data.targetBudget.budget;
     const eventCostPercent = 0.2;
@@ -31,6 +46,9 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     const maxUsers = Math.floor(finalPool / lotteryFactor);
     const eventMoney = pool * (1 - eventCostPercent);
     const lotteryMoney = eventMoney * eventUsagePercent;
+
+    flyerData.lotteryMoney = lotteryMoney;
+    flyerData.maxUsers = maxUsers;
 
     const lotteryEvent = {
       pool,

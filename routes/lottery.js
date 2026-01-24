@@ -3,6 +3,61 @@ const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
 
+// GET /api/lottery/stream - SSE endpoint for real-time lottery updates
+router.get("/stream", (req, res) => {
+  const flyerId = req.query.flyerId;
+  if (!flyerId) {
+    return res.status(400).send("flyerId is required");
+  }
+
+  // SSE Headers
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders(); // flush the headers to establish SSE with client
+
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({ type: "connected", flyerId })}\n\n`);
+
+  // Listen to Firestore changes in real-time
+  // We listen to the specific lottery document for this flyer
+  const unsubscribe = db
+    .collection("lottery")
+    .doc(flyerId)
+    .onSnapshot(
+      (doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          // Send update to client
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
+        } else {
+          // If doc doesn't exist yet (no claims), send empty state or specific message
+          res.write(
+            `data: ${JSON.stringify({
+              claims: 0,
+              remaining: null,
+              message: "No lottery state yet",
+            })}\n\n`
+          );
+        }
+      },
+      (error) => {
+        console.error(`Firestore stream error for flyer ${flyerId}:`, error);
+        res.write(
+          `event: error\ndata: ${JSON.stringify({
+            message: "Stream error",
+          })}\n\n`
+        );
+      }
+    );
+
+  // Cleanup on client disconnect
+  req.on("close", () => {
+    // console.log(`Client disconnected from stream for flyer ${flyerId}`);
+    unsubscribe();
+  });
+});
+
 // GET /api/lottery - Lottery endpoint (idempotent per user, fluctuating reward, pool depletion)
 // Requires ?flyerId=xxx as query params. userId is extracted from the token.
 router.get("/", async (req, res) => {
@@ -49,6 +104,8 @@ router.get("/", async (req, res) => {
       .doc(flyerId)
       .collection("claims")
       .doc(userId);
+
+    const flyerRef = db.collection("flyers").doc(flyerId);
 
     // Find user's wallet
     const walletQuery = await db
@@ -203,6 +260,15 @@ router.get("/", async (req, res) => {
           });
         }
       }
+
+      // 8c. Update Flyer Document to reflect latest lottery state (WRITE)
+      // This allows the main feed/dashboard to see updated numbers without querying the lottery collection
+      transaction.update(flyerRef, {
+        "lottery.claims": newClaims,
+        "lottery.remaining": newRemaining,
+        // Optional: you might want to update updatedAt or similar
+        updatedAt: new Date().toISOString() 
+      });
 
       // 9. Respond
       res.status(200).json({
