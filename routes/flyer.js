@@ -24,7 +24,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     flyerData.companyId = req.user.companyId;
 
     // 2. Prepare Lottery Data
-    const pool = 5000;
+    const pool = data.targetBudget.budget;
     const eventCostPercent = 0.2;
     const eventUsagePercent = 0.8;
     const finalPool = pool / spreadingCoefficient;
@@ -87,7 +87,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
           transaction.update(statsRef, {
             flyerCount: admin.firestore.FieldValue.increment(1),
             totalMaxUsers: admin.firestore.FieldValue.increment(maxUsers),
-            totalEventMoney: admin.firestore.FieldValue.increment(eventMoney),
+            totalEventMoney: admin.firestore.FieldValue.increment(finalPool),
             updatedAt: new Date().toISOString(),
           });
         } else {
@@ -96,7 +96,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
             month: statsMonth,
             flyerCount: 1,
             totalMaxUsers: maxUsers,
-            totalEventMoney: eventMoney,
+            totalEventMoney: finalPool,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
