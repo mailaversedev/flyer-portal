@@ -36,11 +36,11 @@ app.use("/api/auth/staff", staffAuthRoutes); // /api/auth/staff/register, /api/a
 app.use("/api", flyerRoutes); // /api/flyer (protected), /api/flyers (public)
 app.use("/api/internal", internalRoutes); // /api/internal
 app.use("/api", fileRoutes); // /api/file
+app.use("/api/lottery", lotteryRoutes); // /api/lottery
 
 // Protected Routes
-app.use("/api/user", userRoutes); // Authentication handled per route in user.js
+app.use("/api/user", authenticateToken, userRoutes);
 app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-tokens, etc.
-app.use("/api/lottery", authenticateToken, lotteryRoutes); // /api/lottery
 app.use("/api/coupon", authenticateToken, couponRoutes); // /api/coupon/claim, /api/coupon/my-coupons
 
 // Serve static files from the React app build directory

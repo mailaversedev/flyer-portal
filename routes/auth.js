@@ -42,13 +42,13 @@ const authenticateToken = (req, res, next) => {
 // POST /api/auth/register - Register a new user
 router.post("/register", async (req, res) => {
   try {
-    const { username, displayName, password } = req.body;
+    const { username, password } = req.body;
 
     // Validate required fields
-    if (!username || !displayName || !password) {
+    if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: "Username, display name, and password are required",
+        message: "Username and password are required",
       });
     }
 
@@ -81,7 +81,6 @@ router.post("/register", async (req, res) => {
     // Create user data
     const userData = {
       username: username,
-      displayName: displayName,
       password: hashedPassword,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -114,13 +113,18 @@ router.post("/register", async (req, res) => {
       return { userId: userRef.id, walletId: walletRef.id };
     });
 
+    // Generate JWT token
+    const tokenPayload = {
+      userId: result.userId,
+      username: userData.username,
+    };
+
+    const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
+
     // Return success response (without password)
     const responseData = {
-      id: result.userId,
-      username: userData.username,
-      displayName: userData.displayName,
-      createdAt: userData.createdAt,
-      isActive: userData.isActive,
+      token: token,
+      user: tokenPayload,
     };
 
     res.status(201).json({
@@ -190,7 +194,6 @@ router.post("/login", async (req, res) => {
     const tokenPayload = {
       userId: userDoc.id,
       username: userData.username,
-      displayName: userData.displayName,
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
@@ -249,7 +252,6 @@ router.post("/refresh-token", authenticateToken, async (req, res) => {
     const tokenPayload = {
       userId: userDoc.id,
       username: userData.username,
-      displayName: userData.displayName,
     };
 
     const newToken = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
+const { authenticateToken } = require("./auth");
 
 // GET /api/lottery/stream - SSE endpoint for real-time lottery updates
 router.get("/stream", (req, res) => {
@@ -60,7 +61,7 @@ router.get("/stream", (req, res) => {
 
 // GET /api/lottery - Lottery endpoint (idempotent per user, fluctuating reward, pool depletion)
 // Requires ?flyerId=xxx as query params. userId is extracted from the token.
-router.get("/", async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     const flyerId = req.query.flyerId;

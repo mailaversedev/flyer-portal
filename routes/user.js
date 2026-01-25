@@ -2,10 +2,9 @@ const express = require("express");
 const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
-const { authenticateToken } = require("./auth");
 
 // GET /profile - Get user profile
-router.get("/profile", authenticateToken, async (req, res) => {
+router.get("/profile", async (req, res) => {
   try {
     const userDoc = await db.collection("users").doc(req.user.userId).get();
 
@@ -29,6 +28,7 @@ router.get("/profile", authenticateToken, async (req, res) => {
         lastLoginAt: userData.lastLoginAt,
         isActive: userData.isActive,
         location: userData.location,
+        profile: userData.profile || {},
       },
     });
   } catch (error) {
@@ -41,8 +41,37 @@ router.get("/profile", authenticateToken, async (req, res) => {
   }
 });
 
+// PUT /profile - Update user profile
+router.put("/profile", async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { displayName, ...profileData } = req.body;
+
+    const updates = {
+      updatedAt: new Date().toISOString(),
+      profile: profileData,
+    };
+
+    if (displayName) updates.displayName = displayName;
+
+    await db.collection("users").doc(userId).set(updates, { merge: true });
+
+    res.status(200).json({
+      success: true,
+      message: "User profile updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
 // DELETE /delete - Delete user account and all related data
-router.delete("/delete", authenticateToken, async (req, res) => {
+router.delete("/delete", async (req, res) => {
   try {
     const userId = req.user.userId;
     const batchSize = 500;
@@ -112,7 +141,7 @@ router.delete("/delete", authenticateToken, async (req, res) => {
 });
 
 // POST /device-token - Register a device token for push notifications
-router.post("/device-token", authenticateToken, async (req, res) => {
+router.post("/device-token", async (req, res) => {
   try {
     const { token } = req.body;
     const { userId } = req.user;
@@ -147,20 +176,13 @@ router.post("/device-token", authenticateToken, async (req, res) => {
 // PUT /location - Update user location information
 router.put("/location", async (req, res) => {
   try {
+    const { userId } = req.user;
     const {
-      userId,
       addressType,
       countryCity,
       district,
       buildingEstate,
     } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "userId is required",
-      });
-    }
 
     // Validate inputs
     if (
