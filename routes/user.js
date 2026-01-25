@@ -224,4 +224,60 @@ router.put("/location", async (req, res) => {
   }
 });
 
+// GET /statistics - Get user statistics
+router.get("/statistics", async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { year } = req.query;
+
+    let query = db.collection("users").doc(userId).collection("statistics");
+
+    if (year) {
+      query = query.where("year", "==", parseInt(year));
+    }
+
+    const snapshot = await query.get();
+
+    let totalClaimCount = 0;
+    let totalReward = 0;
+    const flyerTypes = {};
+    const monthlyStats = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      totalClaimCount += data.claimCount || 0;
+      totalReward += data.totalReward || 0;
+
+      // Aggregate flyer types
+      if (data.flyerTypes) {
+        Object.entries(data.flyerTypes).forEach(([type, count]) => {
+          flyerTypes[type] = (flyerTypes[type] || 0) + count;
+        });
+      }
+
+      monthlyStats.push({
+        id: doc.id,
+        ...data,
+      });
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalClaimCount,
+        totalReward,
+        flyerTypes,
+        monthlyStats,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user statistics:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;

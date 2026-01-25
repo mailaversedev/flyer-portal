@@ -171,15 +171,15 @@ router.get("/", authenticateToken, async (req, res) => {
       // 7. Get user wallet (READ)
       const walletDoc = await transaction.get(walletRef);
 
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // 1-12
+      const statsDocId = `${year}-${String(month).padStart(2, "0")}`;
+
       // 8. Get Company Statistics (READ)
       let statsRef;
       let statsDoc;
       if (flyer.companyId) {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1; // 1-12
-        const statsDocId = `${year}-${String(month).padStart(2, "0")}`;
-
         statsRef = db
           .collection("companies")
           .doc(flyer.companyId)
@@ -188,6 +188,14 @@ router.get("/", authenticateToken, async (req, res) => {
 
         statsDoc = await transaction.get(statsRef);
       }
+
+      // 8.1 Get User Statistics (READ)
+      const userStatsRef = db
+        .collection("users")
+        .doc(userId)
+        .collection("statistics")
+        .doc(statsDocId);
+      const userStatsDoc = await transaction.get(userStatsRef);
 
       // --- ALL READS COMPLETE, START WRITES ---
 
@@ -250,10 +258,9 @@ router.get("/", authenticateToken, async (req, res) => {
             updatedAt: new Date().toISOString(),
           });
         } else {
-          const date = new Date();
           transaction.set(statsRef, {
-            year: date.getFullYear(),
-            month: date.getMonth() + 1,
+            year,
+            month,
             claimCount: 1,
             totalReward: reward,
             createdAt: new Date().toISOString(),
@@ -262,7 +269,30 @@ router.get("/", authenticateToken, async (req, res) => {
         }
       }
 
-      // 8c. Update Flyer Document to reflect latest lottery state (WRITE)
+      // 8c. Update User Statistics (WRITE)
+      const flyerType = flyer.type || "unknown";
+      if (userStatsDoc.exists) {
+        transaction.update(userStatsRef, {
+          claimCount: admin.firestore.FieldValue.increment(1),
+          totalReward: admin.firestore.FieldValue.increment(reward),
+          [`flyerTypes.${flyerType}`]: admin.firestore.FieldValue.increment(1),
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        transaction.set(userStatsRef, {
+          year,
+          month,
+          claimCount: 1,
+          totalReward: reward,
+          flyerTypes: {
+            [flyerType]: 1,
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      // 8d. Update Flyer Document to reflect latest lottery state (WRITE)
       // This allows the main feed/dashboard to see updated numbers without querying the lottery collection
       transaction.update(flyerRef, {
         "lottery.claims": newClaims,
