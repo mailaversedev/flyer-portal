@@ -128,7 +128,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     // 5. Distribute 20% of pool to all active users
     // Note: This is kept outside the transaction to avoid hitting Firestore operation limits (500 ops)
     // as the user base grows. It runs only if the transaction above succeeds.
-    const distributionAmount = pool * eventCostPercent;
+    const distributionAmount = pool * eventUsagePercent * eventCostPercent;
     const usersSnapshot = await db
       .collection("users")
       .where("isActive", "==", true)
