@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { v4: uuidv4 } = require("uuid");
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const { authenticateToken } = require("./auth");
@@ -243,10 +244,37 @@ router.get("/", authenticateToken, async (req, res) => {
       // 7b. Update user wallet (WRITE)
       if (walletDoc.exists) {
         const currentBalance = walletDoc.data().balance || 0;
+        const newBalance = currentBalance + reward;
+        const timestamp = new Date().toISOString();
+
         transaction.update(walletRef, {
-          balance: currentBalance + reward,
-          updatedAt: new Date().toISOString(),
+          balance: newBalance,
+          updatedAt: timestamp,
         });
+
+        // Create transaction record
+        const transactionId = uuidv4();
+        const transactionData = {
+          transactionId: transactionId,
+          userId: userId,
+          walletId: walletDoc.id,
+          type: "ADD",
+          amount: reward,
+          previousBalance: currentBalance,
+          newBalance: newBalance,
+          description: `Lottery reward for flyer - ${flyerId}`,
+          status: "COMPLETED",
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          metadata: {
+            source: "flyer_lottery",
+            type: flyer.type || "unknown",
+            id: flyerId,
+          },
+        };
+
+        const txRef = db.collection("transactions").doc();
+        transaction.set(txRef, transactionData);
       }
 
       // 8b. Update Company Statistics (WRITE)
