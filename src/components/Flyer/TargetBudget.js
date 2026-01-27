@@ -119,7 +119,7 @@ const TargetBudget = ({ data, onUpdate }) => {
             />
             
             <div className="checkbox-options">
-              <label className="checkbox-label">
+              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
                 <input
                   type="checkbox"
                   checked={formData.aiTargeted}
@@ -128,7 +128,7 @@ const TargetBudget = ({ data, onUpdate }) => {
                 <span className="checkbox-text">By AI Targeted Group</span>
               </label>
               
-              <label className="checkbox-label">
+              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
                 <input
                   type="checkbox"
                   checked={formData.noSpecific}
@@ -166,7 +166,7 @@ const TargetBudget = ({ data, onUpdate }) => {
           <div className="form-group">
             <label className="form-label">Payment</label>
             <div className="payment-options">
-              <label className="checkbox-label">
+              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
                 <input
                   type="radio"
                   name="payment"
@@ -177,7 +177,7 @@ const TargetBudget = ({ data, onUpdate }) => {
                 <span className="checkbox-text">Credit Card (VISA, Master)</span>
               </label>
               
-              <label className="checkbox-label">
+              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
                 <input
                   type="radio"
                   name="payment"
@@ -188,7 +188,7 @@ const TargetBudget = ({ data, onUpdate }) => {
                 <span className="checkbox-text">By Bank Transfer</span>
               </label>
               
-              <label className="checkbox-label">
+              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
                 <input
                   type="radio"
                   name="payment"
