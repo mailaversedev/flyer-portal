@@ -295,7 +295,7 @@ const LeafletCreation = () => {
           )}
 
           {currentStep === 2 && (
-            <>
+            <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 className="nav-button"
                 onClick={handleCreate}
@@ -304,7 +304,6 @@ const LeafletCreation = () => {
                   backgroundColor: "transparent",
                   border: "1px solid #3b82f6",
                   color: "#3b82f6",
-                  marginRight: "10px",
                 }}
               >
                 No Coupon this time
@@ -316,7 +315,7 @@ const LeafletCreation = () => {
               >
                 Proceed to Coupon Builder
               </button>
-            </>
+            </div>
           )}
 
           {currentStep === 3 && (
