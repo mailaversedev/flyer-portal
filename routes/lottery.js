@@ -262,7 +262,7 @@ router.get("/", authenticateToken, async (req, res) => {
           amount: reward,
           previousBalance: currentBalance,
           newBalance: newBalance,
-          description: `Lottery reward for flyer - ${flyerId}`,
+          description: flyer.header,
           status: "COMPLETED",
           createdAt: timestamp,
           updatedAt: timestamp,
