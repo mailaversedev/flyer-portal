@@ -284,7 +284,7 @@ const LeafletCreation = () => {
             Back
           </button>
 
-          {currentStep < 3 && (
+          {currentStep === 1 && (
             <button
               className="nav-button next-button"
               onClick={handleNext}
@@ -292,6 +292,31 @@ const LeafletCreation = () => {
             >
               {loading ? "Generating..." : "Next"}
             </button>
+          )}
+
+          {currentStep === 2 && (
+            <>
+              <button
+                className="nav-button"
+                onClick={handleCreate}
+                disabled={loading}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #3b82f6",
+                  color: "#3b82f6",
+                  marginRight: "10px",
+                }}
+              >
+                No Coupon this time
+              </button>
+              <button
+                className="nav-button next-button"
+                onClick={handleNext}
+                disabled={loading}
+              >
+                Proceed to Coupon Builder
+              </button>
+            </>
           )}
 
           {currentStep === 3 && (
