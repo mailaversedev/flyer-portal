@@ -119,20 +119,22 @@ const TargetBudget = ({ data, onUpdate }) => {
             />
             
             <div className="checkbox-options">
-              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
+              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
                 <input
                   type="checkbox"
                   checked={formData.aiTargeted}
                   onChange={(e) => handleCheckboxChange('aiTargeted', e.target.checked)}
+                  style={{ width: 'auto', marginRight: '8px' }}
                 />
                 <span className="checkbox-text">By AI Targeted Group</span>
               </label>
               
-              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
+              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
                 <input
                   type="checkbox"
                   checked={formData.noSpecific}
                   onChange={(e) => handleCheckboxChange('noSpecific', e.target.checked)}
+                  style={{ width: 'auto', marginRight: '8px' }}
                 />
                 <span className="checkbox-text">No Specific</span>
               </label>
@@ -166,35 +168,38 @@ const TargetBudget = ({ data, onUpdate }) => {
           <div className="form-group">
             <label className="form-label">Payment</label>
             <div className="payment-options">
-              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
+              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
                 <input
                   type="radio"
                   name="payment"
                   value="credit-card"
                   checked={formData.paymentMethod === 'credit-card'}
                   onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                  style={{ width: 'auto', marginRight: '8px' }}
                 />
                 <span className="checkbox-text">Credit Card (VISA, Master)</span>
               </label>
               
-              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
+              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
                 <input
                   type="radio"
                   name="payment"
                   value="bank-transfer"
                   checked={formData.paymentMethod === 'bank-transfer'}
                   onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                  style={{ width: 'auto', marginRight: '8px' }}
                 />
                 <span className="checkbox-text">By Bank Transfer</span>
               </label>
               
-              <label className="checkbox-label" style={{ justifyContent: 'space-between', flexDirection: 'row-reverse' }}>
+              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
                 <input
                   type="radio"
                   name="payment"
                   value="fps"
                   checked={formData.paymentMethod === 'fps'}
                   onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                  style={{ width: 'auto', marginRight: '8px' }}
                 />
                 <span className="checkbox-text">By FPS</span>
               </label>
