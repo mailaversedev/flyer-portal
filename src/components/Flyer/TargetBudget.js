@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, Minus, Plus } from 'lucide-react';
 import './TargetBudget.css';
 
-const TargetBudget = ({ data, onUpdate }) => {
+const TargetBudget = ({ data, onUpdate, history = [] }) => {
   const [formData, setFormData] = useState({
     district: data?.district || '',
     propertyEstate: data?.propertyEstate || '',
@@ -56,7 +56,14 @@ const TargetBudget = ({ data, onUpdate }) => {
       });
     }
   };
-
+  const handleHistorySelect = (url) => {
+    if (onUpdate) {
+      onUpdate({
+        ...data,
+        coverPhoto: url
+      });
+    }
+  };
   const handleZoomChange = (delta) => {
     setPreviewZoom(prev => Math.max(50, Math.min(200, prev + delta)));
   };
@@ -210,6 +217,35 @@ const TargetBudget = ({ data, onUpdate }) => {
         {/* Right Side - Flyer Preview */}
         <div className="flyer-preview">
           <div className="preview-container">
+            {history && history.length > 0 && (
+              <div className="history-thumbnails" style={{ display: 'flex', gap: '8px', marginBottom: '12px', justifyContent: 'center' }}>
+                {history.map((url, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleHistorySelect(url)}
+                    style={{
+                      width: '60px',
+                      height: '84px',
+                      cursor: 'pointer',
+                      border: data.coverPhoto === url ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      opacity: data.coverPhoto === url ? 1 : 0.6,
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                    title={`Version ${history.length - idx}`}
+                  >
+                    <img 
+                      src={url} 
+                      alt={`Generated Version ${idx+1}`} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="preview-image">
               {/* Show generated image if available, otherwise show placeholder */}
               {data?.coverPhoto ? (

@@ -45,6 +45,7 @@ const LeafletCreation = () => {
     itemDescription: ''
   });
   const [loading, setLoading] = useState("");
+  const [generatedHistory, setGeneratedHistory] = useState([]);
 
   const step1Ref = useRef();
 
@@ -81,6 +82,12 @@ const LeafletCreation = () => {
             ...prev,
             coverPhoto: response.flyer_output_path,
           }));
+          
+          setGeneratedHistory((prev) => {
+            const newHistory = [response.flyer_output_path, ...prev];
+             // Limit to 3 most recent
+            return newHistory.slice(0, 3);
+          });
         } else {
           console.error("Failed to generate leaflet:", response.message);
         }
@@ -255,7 +262,11 @@ const LeafletCreation = () => {
             </>
           )}
           {currentStep === 2 && (
-            <TargetBudget data={leafletData} onUpdate={updateLeafletData} />
+            <TargetBudget 
+              data={leafletData} 
+              onUpdate={updateLeafletData} 
+              history={generatedHistory}
+            />
           )}
           {currentStep === 3 && (
             <CouponBuilder 
