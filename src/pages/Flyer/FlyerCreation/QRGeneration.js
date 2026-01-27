@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Upload, Minus, Plus, X } from 'lucide-react';
+import { ChevronLeft, Upload, X } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import QRCode from 'qrcode';
 import TargetBudget from '../../../components/Flyer/TargetBudget';
@@ -52,14 +52,13 @@ const QRGeneration = () => {
   const [qrData, setQrData] = useState({
     // Step 1 - Background data
     coverPhoto: null,
-    adCategories: '',
+    adType: '',
     location: '',
     website: '',
     startingDate: '',
     header: '',
-    content: '',
-    zoom: 100,
-    selectedSize: '500*800', // Default to the second option
+    productDescriptions: '',
+    promotionMessage: '',
     // Step 3 - Coupon data
     couponType: '',
     couponFile: null,
@@ -230,11 +229,6 @@ const QRGeneration = () => {
     }
   };
 
-  const handleZoomChange = (delta) => {
-    const newZoom = Math.max(50, Math.min(200, qrData.zoom + delta));
-    handleInputChange('zoom', newZoom);
-  };
-
   return (
     <div className="qr-generation">
       {/* Hidden file input for cover photo upload */}
@@ -274,46 +268,19 @@ const QRGeneration = () => {
                 <div className="background-form">
                   <h3 className="section-title">Background Information</h3>
                   
-                  {/* Cover Photo Upload */}
+                  {/* Ad Type */}
                   <div className="form-group">
-                    <label className="form-label">Upload Cover Photo</label>
-                    <div className="upload-options">
-                      <div className="size-options">
-                        <div 
-                          className={`size-option ${qrData.selectedSize === '500*500' ? 'active' : ''}`}
-                          onClick={() => handleInputChange('selectedSize', '500*500')}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <div className="size-box"></div>
-                          <span className="size-label">500*500</span>
-                        </div>
-                        <div 
-                          className={`size-option ${qrData.selectedSize === '500*800' ? 'active' : ''}`}
-                          onClick={() => handleInputChange('selectedSize', '500*800')}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <div className="size-box"></div>
-                          <span className="size-label">500*800</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Ad Categories */}
-                  <div className="form-group">
-                    <label className="form-label">Ad Categories</label>
+                    <label className="form-label">Ad Type</label>
                     <div className="select-wrapper">
-                      <select
-                        value={qrData.adCategories}
-                        onChange={(e) => handleInputChange('adCategories', e.target.value)}
+                      <select 
                         className="form-select"
+                        value={qrData.adType}
+                        onChange={(e) => handleInputChange('adType', e.target.value)}
                       >
                         <option value="">Please select</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="fashion">Fashion</option>
-                        <option value="food">Food & Beverage</option>
-                        <option value="fitness">Health & Fitness</option>
-                        <option value="services">Services</option>
+                        <option value="promotional">Promotional</option>
+                        <option value="informational">Informational</option>
+                        <option value="event">Event</option>
                       </select>
                     </div>
                   </div>
@@ -368,15 +335,27 @@ const QRGeneration = () => {
                     />
                   </div>
 
-                  {/* Content */}
+                  {/* Ad Content */}
                   <div className="form-group">
-                    <label className="form-label">Content</label>
+                    <label className="form-label">Ad Content</label>
                     <textarea
                       className="form-textarea"
                       placeholder="Please enter"
-                      value={qrData.content}
-                      onChange={(e) => handleInputChange('content', e.target.value)}
+                      value={qrData.productDescriptions}
+                      onChange={(e) => handleInputChange('productDescriptions', e.target.value)}
                       rows={5}
+                    />
+                  </div>
+
+                  {/* Promotion Message */}
+                  <div className="form-group">
+                    <label className="form-label">Promotion Message/Slogan</label>
+                    <textarea
+                      className="form-textarea"
+                      placeholder="Please enter"
+                      value={qrData.promotionMessage}
+                      onChange={(e) => handleInputChange('promotionMessage', e.target.value)}
+                      rows={3}
                     />
                   </div>
                 </div>
@@ -412,19 +391,6 @@ const QRGeneration = () => {
                     </div>
                     
                     <div className="preview-controls">
-                      <button 
-                        className="zoom-button"
-                        onClick={() => handleZoomChange(-10)}
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="zoom-display">{qrData.zoom}%</span>
-                      <button 
-                        className="zoom-button"
-                        onClick={() => handleZoomChange(10)}
-                      >
-                        <Plus size={16} />
-                      </button>
                       <button 
                         className="upload-button"
                         onClick={handleUpload}
@@ -480,9 +446,23 @@ const QRGeneration = () => {
           )}
 
           {currentStep === 2 && (
-            <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
-              Next: Create Coupon
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="nav-button"
+                onClick={handleCreate}
+                disabled={loading}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #3b82f6",
+                  color: "#3b82f6",
+                }}
+              >
+                No Coupon this time
+              </button>
+              <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
+                Proceed to Coupon Builder
+              </button>
+            </div>
           )}
           
           {currentStep === 3 && (

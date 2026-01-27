@@ -168,10 +168,30 @@ const QueryCreation = () => {
             Back
           </button>
           
-          {currentStep < 4 && (
+          {currentStep < 3 && (
             <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
-              {currentStep === 1 ? 'Next: Survey Questions' : currentStep === 2 ? 'Next: Target & Budget' : 'Next: Create Coupon'}
+              {currentStep === 1 ? 'Next: Survey Questions' : 'Next: Target & Budget'}
             </button>
+          )}
+
+          {currentStep === 3 && (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="nav-button"
+                onClick={handleComplete}
+                disabled={loading}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #3b82f6",
+                  color: "#3b82f6",
+                }}
+              >
+                No Coupon this time
+              </button>
+              <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
+                Proceed to Coupon Builder
+              </button>
+            </div>
           )}
           
           {currentStep === 4 && (

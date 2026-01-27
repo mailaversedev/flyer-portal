@@ -32,6 +32,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
     if (!data.promotionMessage || data.promotionMessage.trim() === '') {
       newErrors.promotionMessage = 'Promotion Message/Slogan is required';
     }
+
+    if (!data.productDescriptions || data.productDescriptions.trim() === '') {
+      newErrors.productDescriptions = 'Product Descriptions is required';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -453,14 +457,15 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Product Descriptions */}
           <div className="form-group full-width">
-            <label className="form-label">Product Descriptions (optional)</label>
+            <label className="form-label">Product Descriptions*</label>
             <input
               type="text"
-              className="form-input"
+              className={`form-input ${errors.productDescriptions ? 'error' : ''}`}
               placeholder="Please enter"
               value={data.productDescriptions}
               onChange={(e) => handleInputChange('productDescriptions', e.target.value)}
             />
+            {errors.productDescriptions && <span className="error-message">{errors.productDescriptions}</span>}
           </div>
 
           {/* Tag */}
@@ -527,6 +532,10 @@ Step1Content.validateRequiredFields = (data, setErrorsCallback = null) => {
 
   if (!data.promotionMessage || data.promotionMessage.trim() === '') {
     errors.promotionMessage = 'Promotion Message/Slogan is required';
+  }
+
+  if (!data.productDescriptions || data.productDescriptions.trim() === '') {
+    errors.productDescriptions = 'Product Descriptions is required';
   }
   
   // Set errors in component state if callback provided
