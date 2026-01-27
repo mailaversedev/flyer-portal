@@ -28,6 +28,7 @@ router.post("/register", async (req, res) => {
       address,
       contact,
       role,
+      companyNature,
     } = req.body;
 
     // Validate required fields
@@ -77,6 +78,7 @@ router.post("/register", async (req, res) => {
           icon: companyIcon,
           address,
           contact,
+          nature: companyNature,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           isActive: true,

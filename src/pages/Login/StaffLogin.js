@@ -3,12 +3,29 @@ import { useNavigate } from "react-router";
 import ApiService from "../../services/ApiService";
 import "./StaffLogin.css";
 
+const COMPANY_INDUSTRIES = [
+  "F&B",
+  "Lifestyle",
+  "Entertainment",
+  "Banking & Finance",
+  "Household",
+  "Real Estate",
+  "Education",
+  "Government Bodies",
+  "Utilities",
+  "Donation",
+  "Travelling",
+  "Healthcare",
+  "Fitness & Sports",
+];
+
 const StaffLogin = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyNature, setCompanyNature] = useState("");
   const [companyIconFile, setCompanyIconFile] = useState(null);
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
@@ -49,6 +66,7 @@ const StaffLogin = () => {
           password,
           displayName,
           companyName,
+          companyNature,
           companyIcon: companyIconUrl,
           address,
           contact,
@@ -160,6 +178,26 @@ const StaffLogin = () => {
                   required
                 />
               </div>
+
+              <div className="form-group">
+                <label htmlFor="companyNature">Company Nature / Industry</label>
+                <select
+                  id="companyNature"
+                  value={companyNature}
+                  onChange={(e) => setCompanyNature(e.target.value)}
+                  required
+                  className="form-control"
+                  style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ddd' }}
+                >
+                  <option value="">Select Industry...</option>
+                  {COMPANY_INDUSTRIES.map((industry) => (
+                    <option key={industry} value={industry}>
+                      {industry}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="companyIcon">Company Icon</label>
                 <input
