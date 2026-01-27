@@ -28,6 +28,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
     if (!data.flyerPrompts || data.flyerPrompts.trim() === '') {
       newErrors.flyerPrompts = 'Flyer Prompts is required';
     }
+
+    if (!data.promotionMessage || data.promotionMessage.trim() === '') {
+      newErrors.promotionMessage = 'Promotion Message/Slogan is required';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -426,14 +430,15 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Promotion Message/Slogan */}
           <div className="form-group full-width">
-            <label className="form-label">Promotion Message/Slogan (optional)</label>
+            <label className="form-label">Promotion Message/Slogan*</label>
             <textarea
-              className="form-textarea"
+              className={`form-textarea ${errors.promotionMessage ? 'error' : ''}`}
               placeholder="Please enter"
               rows={3}
               value={data.promotionMessage}
               onChange={(e) => handleInputChange('promotionMessage', e.target.value)}
             />
+            {errors.promotionMessage && <span className="error-message">{errors.promotionMessage}</span>}
           </div>
 
           {/* Upload Product Photo */}
@@ -518,6 +523,10 @@ Step1Content.validateRequiredFields = (data, setErrorsCallback = null) => {
   
   if (!data.flyerPrompts || data.flyerPrompts.trim() === '') {
     errors.flyerPrompts = 'Flyer Prompts is required';
+  }
+
+  if (!data.promotionMessage || data.promotionMessage.trim() === '') {
+    errors.promotionMessage = 'Promotion Message/Slogan is required';
   }
   
   // Set errors in component state if callback provided
