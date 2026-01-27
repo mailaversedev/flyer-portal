@@ -122,22 +122,18 @@ const TargetBudget = ({ data, onUpdate }) => {
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  className="checkbox-input"
                   checked={formData.aiTargeted}
                   onChange={(e) => handleCheckboxChange('aiTargeted', e.target.checked)}
                 />
-                <span className="checkbox-custom"></span>
                 <span className="checkbox-text">By AI Targeted Group</span>
               </label>
               
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  className="checkbox-input"
                   checked={formData.noSpecific}
                   onChange={(e) => handleCheckboxChange('noSpecific', e.target.checked)}
                 />
-                <span className="checkbox-custom"></span>
                 <span className="checkbox-text">No Specific</span>
               </label>
             </div>
