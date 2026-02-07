@@ -333,12 +333,12 @@ router.post("/flyer/:flyerId/answers", authenticateToken, async (req, res) => {
       .collection("flyers")
       .doc(flyerId)
       .collection("answers")
-      .doc(req.user.uid);
+      .doc(req.user.userId);
 
     const timestamp = new Date().toISOString();
     const answerData = {
       flyerId,
-      userId: req.user.uid,
+      userId: req.user.userId,
       answers,
       updatedAt: timestamp,
     };
@@ -370,7 +370,7 @@ router.post("/flyer/:flyerId/answers", authenticateToken, async (req, res) => {
 router.get("/flyer/:flyerId/answer-status", authenticateToken, async (req, res) => {
   try {
     const { flyerId } = req.params;
-    const userId = req.user.uid;
+    const userId = req.user.userId;
 
     if (!flyerId) {
       return res.status(400).json({
