@@ -316,4 +316,45 @@ router.get("/flyers", async (req, res) => {
   }
 });
 
+// POST /api/flyer/:flyerId/answers - Submit survey answers
+router.post("/flyer/:flyerId/answers", authenticateToken, async (req, res) => {
+  try {
+    const { flyerId } = req.params;
+    const { answers } = req.body;
+
+    if (!flyerId || !answers) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing flyerId or answers",
+      });
+    }
+
+    const answerData = {
+      flyerId,
+      userId: req.user.uid,
+      answers,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Save answers to a subcollection of the flyer
+    await db
+      .collection("flyers")
+      .doc(flyerId)
+      .collection("answers")
+      .add(answerData);
+
+    res.status(201).json({
+      success: true,
+      message: "Survey answers submitted successfully",
+    });
+  } catch (error) {
+    console.error("Error submitting survey answers:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to submit survey answers",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;
