@@ -329,21 +329,30 @@ router.post("/flyer/:flyerId/answers", authenticateToken, async (req, res) => {
       });
     }
 
+    const answerRef = db
+      .collection("flyers")
+      .doc(flyerId)
+      .collection("answers")
+      .doc(req.user.uid);
+
+    const timestamp = new Date().toISOString();
     const answerData = {
       flyerId,
       userId: req.user.uid,
       answers,
-      createdAt: new Date().toISOString(),
+      updatedAt: timestamp,
     };
 
-    // Save answers to a subcollection of the flyer
-    await db
-      .collection("flyers")
-      .doc(flyerId)
-      .collection("answers")
-      .add(answerData);
+    const doc = await answerRef.get();
 
-    res.status(201).json({
+    if (doc.exists) {
+      await answerRef.update(answerData);
+    } else {
+      answerData.createdAt = timestamp;
+      await answerRef.set(answerData);
+    }
+
+    res.status(200).json({
       success: true,
       message: "Survey answers submitted successfully",
     });
@@ -352,6 +361,48 @@ router.post("/flyer/:flyerId/answers", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to submit survey answers",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/flyer/:flyerId/answer-status - Check if user submitted answer
+router.get("/flyer/:flyerId/answer-status", authenticateToken, async (req, res) => {
+  try {
+    const { flyerId } = req.params;
+    const userId = req.user.uid;
+
+    if (!flyerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing flyerId",
+      });
+    }
+
+    const answerDoc = await db
+      .collection("flyers")
+      .doc(flyerId)
+      .collection("answers")
+      .doc(userId)
+      .get();
+
+    if (answerDoc.exists) {
+      res.status(200).json({
+        success: true,
+        submitted: true,
+        data: answerDoc.data(),
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        submitted: false,
+      });
+    }
+  } catch (error) {
+    console.error("Error checking answer status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to check answer status",
       error: error.message,
     });
   }
