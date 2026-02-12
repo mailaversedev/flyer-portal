@@ -79,7 +79,12 @@ class ApiService {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         localStorage.removeItem("company");
-        window.location.href = "/staff/login";
+        
+        // Don't reload if we're already on the login page
+        if (!window.location.pathname.includes("/staff/login")) {
+          window.location.href = "/staff/login";
+        }
+        
         throw new Error("Session expired. Please login again.");
       }
 

@@ -12,7 +12,7 @@ const isTokenExpired = (token) => {
     // Decode Base64
     const jsonPayload = window.atob(base64);
     const payload = JSON.parse(jsonPayload);
-    
+
     // exp is in seconds, Date.now() is in milliseconds
     return payload.exp * 1000 < Date.now();
   } catch (e) {
@@ -51,7 +51,11 @@ const ProtectedRoute = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("company");
-    
+
+    if (location.pathname === "/staff/login") {
+      return children;
+    }
+
     // Redirect to login page but save the attempted location
     return <Navigate to="/staff/login" state={{ from: location }} replace />;
   }
