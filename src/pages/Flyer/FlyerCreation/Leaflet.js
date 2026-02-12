@@ -266,6 +266,7 @@ const LeafletCreation = () => {
               data={leafletData} 
               onUpdate={updateLeafletData} 
               history={generatedHistory}
+              isDirectUpload={location.state?.isDirectUpload}
             />
           )}
           {currentStep === 3 && (

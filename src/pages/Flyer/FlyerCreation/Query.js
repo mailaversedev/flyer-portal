@@ -15,7 +15,7 @@ const QueryCreation = () => {
     coverPhoto: null,
     adCategory: '',
     header: '',
-    content: '',
+    adContent: '',
     tags: [],
     // Step 2 - Questions data
     questions: [

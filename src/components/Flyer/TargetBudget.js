@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, Minus, Plus } from 'lucide-react';
 import './TargetBudget.css';
 
-const TargetBudget = ({ data, onUpdate, history = [] }) => {
+const TargetBudget = ({ data, onUpdate, history = [], isDirectUpload = false }) => {
   const [formData, setFormData] = useState({
     district: data?.district || '',
     propertyEstate: data?.propertyEstate || '',
@@ -25,6 +25,15 @@ const TargetBudget = ({ data, onUpdate, history = [] }) => {
       onUpdate({
         ...data,
         targetBudget: updatedData
+      });
+    }
+  };
+
+  const handleContentChange = (field, value) => {
+    if (onUpdate) {
+      onUpdate({
+        ...data,
+        [field]: value
       });
     }
   };
@@ -83,6 +92,32 @@ const TargetBudget = ({ data, onUpdate, history = [] }) => {
         <div className="budget-form">
           <h3 className="section-title">Budget the Leaflet/Flyer</h3>
           
+          {isDirectUpload && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Header</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Summer Sale"
+                  value={data.header || ''}
+                  onChange={(e) => handleContentChange('header', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Product Description</label>
+                <textarea
+                  className="form-input"
+                  placeholder="Description..."
+                  rows={3}
+                  value={data.productDescriptions || ''}
+                  onChange={(e) => handleContentChange('productDescriptions', e.target.value)}
+                  style={{ height: 'auto', paddingTop: '8px', paddingBottom: '8px', resize: 'vertical' }}
+                />
+              </div>
+            </>
+          )}
+
           {/* District */}
           <div className="form-group">
             <label className="form-label">District</label>

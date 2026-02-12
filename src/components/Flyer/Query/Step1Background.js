@@ -7,7 +7,7 @@ const Step1Background = ({ data, onUpdate }) => {
     coverPhoto: data.coverPhoto || null,
     adCategory: data.adCategory || '',
     header: data.header || '',
-    content: data.content || '',
+    adContent: data.adContent || '',
     tags: data.tags || [],
     ...data
   });
@@ -133,8 +133,8 @@ const Step1Background = ({ data, onUpdate }) => {
             <div className="form-group">
               <label className="form-label">Content</label>
               <textarea
-                value={formData.content}
-                onChange={(e) => handleInputChange('content', e.target.value)}
+                value={formData.adContent}
+                onChange={(e) => handleInputChange('adContent', e.target.value)}
                 placeholder="Enter your ad content..."
                 className="form-textarea content-input"
                 rows={6}
@@ -222,9 +222,9 @@ const Step1Background = ({ data, onUpdate }) => {
                 )}
 
                 {/* Content Preview */}
-                {formData.content && (
+                {formData.adContent && (
                   <p className="preview-text">
-                    {formData.content}
+                    {formData.adContent}
                   </p>
                 )}
 
