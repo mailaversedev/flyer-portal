@@ -114,7 +114,7 @@ router.post("/add-tokens", authenticateToken, async (req, res) => {
         updatedAt: timestamp,
         metadata: {
           source: "manual_topup",
-        }
+        },
       };
 
       const txRef = db.collection("transactions").doc();
@@ -406,7 +406,7 @@ router.get(
         error: error.message,
       });
     }
-  }
+  },
 );
 
 module.exports = router;

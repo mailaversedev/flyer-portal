@@ -15,10 +15,12 @@ class ApiService {
       const url = ApiService._currentCompany.icon;
       try {
         // Add cache busting to avoid cached CORS errors
-        const fetchUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
-        const response = await fetch(fetchUrl, { mode: 'cors' });
+        const fetchUrl = url.includes("?")
+          ? `${url}&t=${Date.now()}`
+          : `${url}?t=${Date.now()}`;
+        const response = await fetch(fetchUrl, { mode: "cors" });
         if (!response.ok) return null;
-        
+
         // Check content type to avoid using index.html as image (SPA fallback)
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("text/html")) {
@@ -27,7 +29,7 @@ class ApiService {
 
         const blob = await response.blob();
         // Ensure it's an image
-        if (!blob.type.startsWith('image/')) {
+        if (!blob.type.startsWith("image/")) {
           return null;
         }
 
@@ -79,12 +81,12 @@ class ApiService {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         localStorage.removeItem("company");
-        
+
         // Don't reload if we're already on the login page
         if (!window.location.pathname.includes("/staff/login")) {
           window.location.href = "/staff/login";
         }
-        
+
         throw new Error("Session expired. Please login again.");
       }
 
@@ -119,13 +121,16 @@ class ApiService {
   static async refreshStaffToken(token) {
     // We use fetch directly here to avoid circular dependency with makeRequest's error handling
     // and because we need specific handling for this endpoint
-    const response = await fetch(`${API_BASE_URL}/api/auth/staff/refresh-token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const response = await fetch(
+      `${API_BASE_URL}/api/auth/staff/refresh-token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       // If refresh fails (401/404), the caller should handle logout
@@ -143,7 +148,13 @@ class ApiService {
     });
   }
   // GET /api/flyers - Get all flyers
-  static async getFlyers(limit = 100, after = null, sortBy = "createdAt", direction = "desc", companyId = null) {
+  static async getFlyers(
+    limit = 100,
+    after = null,
+    sortBy = "createdAt",
+    direction = "desc",
+    companyId = null,
+  ) {
     let queryString = `limit=${limit}&sortBy=${sortBy}&direction=${direction}`;
     if (after) {
       queryString += `&after=${after}`;
@@ -168,11 +179,13 @@ class ApiService {
   // POST /api/leaflet - Generate leaflet
   static async generateLeaflet(leafletData, isProMode = false) {
     const formData = new FormData();
-    
+
     // External endpoint (not using API_BASE_URL)
-    let endpoint = "https://flyergenie-backend-91102396327.europe-west1.run.app/flyer/generate-multipart";
+    let endpoint =
+      "https://flyergenie-backend-91102396327.europe-west1.run.app/flyer/generate-multipart";
     if (isProMode) {
-      endpoint = "https://flyergenie-backend-pro-91102396327.europe-west1.run.app/api/generate-image";
+      endpoint =
+        "https://flyergenie-backend-pro-91102396327.europe-west1.run.app/api/generate-image";
     }
 
     if (isProMode) {
@@ -181,11 +194,14 @@ class ApiService {
       formData.append("Query_Context", leafletData.flyerPrompts || "");
       formData.append("Aspect_Ratio", leafletData.aspectRatio || "1:1");
       formData.append("Resolution", leafletData.resolution || "2K");
-      formData.append("Logo_Position", leafletData.logoPosition || "natural placement");
+      formData.append(
+        "Logo_Position",
+        leafletData.logoPosition || "natural placement",
+      );
 
       formData.append("Copy_Line", leafletData.header || "");
       // Currently backend "Copy_Position" is optional, not added in input form yet
-      
+
       formData.append("Body_Copy", leafletData.adContent || "");
       // Currently backend "Body_Copy_Position" is optional, not added in input form yet
 
@@ -217,7 +233,10 @@ class ApiService {
       }
 
       if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
-        formData.append("reference_image_file", leafletData.referenceFlyer.file);
+        formData.append(
+          "reference_image_file",
+          leafletData.referenceFlyer.file,
+        );
       }
 
       // Pro Mode seems to support only one product image per readme field "product_image"
@@ -230,10 +249,12 @@ class ApiService {
           formData.append("product_image", photo.file);
         }
       }
-
     } else {
       // Standard Mode Fields
-      formData.append("logo_image", await ApiService.getCurrentCompanyIconFile());
+      formData.append(
+        "logo_image",
+        await ApiService.getCurrentCompanyIconFile(),
+      );
       if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
         formData.append("template_image", leafletData.referenceFlyer.file);
       }
@@ -245,7 +266,7 @@ class ApiService {
           header: leafletData.header,
           subheader: leafletData.subheader,
           content: null,
-        })
+        }),
       );
       formData.append("company_info", localStorage.getItem("company") || "{}");
       formData.append("display_company_info", "false");
@@ -261,9 +282,9 @@ class ApiService {
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (isProMode) {
         // Map Pro response to expected internal format
         // Pro response: { "prompt": "...", "image_urls": ["data:image/...", ...] }
@@ -271,11 +292,11 @@ class ApiService {
         if (result.image_urls && result.image_urls.length > 0) {
           return {
             flyer_output_path: result.image_urls[0], // Take first image
-            ...result
+            ...result,
           };
         }
       }
-      
+
       return result;
     } catch (error) {
       console.error("FlyerGenie API Request failed:", error);
@@ -295,12 +316,12 @@ class ApiService {
       images: data.images,
       couponFile: data.couponFile,
       qrCodeImage: data.qrCodeImage,
-      barcodeImage: data.barcodeImage
+      barcodeImage: data.barcodeImage,
     };
 
     // Remove undefined/null fields
     const filesToUpload = Object.fromEntries(
-      Object.entries(fileFields).filter(([_, value]) => value != null)
+      Object.entries(fileFields).filter(([_, value]) => value != null),
     );
 
     if (Object.keys(filesToUpload).length === 0) {
@@ -368,12 +389,12 @@ class ApiService {
         } else if (isDataUrl(value.preview)) {
           fileToUpload = dataUrlToFile(
             value.preview,
-            value.name || `${key}_${Date.now()}.png`
+            value.name || `${key}_${Date.now()}.png`,
           );
         } else if (isBlobUrl(value.preview)) {
           fileToUpload = await blobUrlToFile(
             value.preview,
-            value.name || `${key}_${Date.now()}`
+            value.name || `${key}_${Date.now()}`,
           );
         }
       }

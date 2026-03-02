@@ -36,7 +36,8 @@ router.post("/claim", async (req, res) => {
     }
 
     // 2. Check if user already claimed this specific coupon
-    const claimRef = db.collection("users")
+    const claimRef = db
+      .collection("users")
       .doc(userId)
       .collection("coupons")
       .doc(flyerId);
@@ -76,7 +77,7 @@ router.post("/claim", async (req, res) => {
       userId,
       flyerId,
       companyIcon: flyerData.companyIcon || "",
-      
+
       // Coupon Details from Flyer Data
       couponType: coupon.couponType,
       couponFile: coupon.couponFile || null,
@@ -86,7 +87,7 @@ router.post("/claim", async (req, res) => {
       expiredDate: coupon.expiredDate || "",
       discountValue: coupon.discountValue || "",
       itemDescription: coupon.itemDescription || "",
-      
+
       status: "active", // active, used, expired
       claimedAt: new Date().toISOString(),
       isUsed: false,
@@ -152,7 +153,7 @@ router.post("/claim", async (req, res) => {
           "coupon.downloadCount": admin.firestore.FieldValue.increment(1),
           updatedAt: new Date().toISOString(),
         },
-        { merge: true }
+        { merge: true },
       );
     });
 
@@ -161,7 +162,7 @@ router.post("/claim", async (req, res) => {
       message: "Coupon claimed successfully",
       data: {
         id: flyerId,
-        ...couponData
+        ...couponData,
       },
     });
   } catch (error) {
@@ -187,7 +188,8 @@ router.get("/my-coupons", async (req, res) => {
     const userId = req.user.userId;
     const { status } = req.query; // Optional filter by status
 
-    let query = db.collection("users")
+    let query = db
+      .collection("users")
       .doc(userId)
       .collection("coupons")
       .orderBy("claimedAt", "desc");

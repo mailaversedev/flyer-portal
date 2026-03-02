@@ -1,25 +1,27 @@
-import React, { useState } from 'react';
-import { Plus, ChevronDown, X } from 'lucide-react';
-import './Step2Survey.css';
+import React, { useState } from "react";
+import { Plus, ChevronDown, X } from "lucide-react";
+import "./Step2Survey.css";
 
 const Step2Survey = ({ data, onUpdate }) => {
-  const [questions, setQuestions] = useState(data.questions || [
-    {
-      id: 1,
-      type: '',
-      question: '',
-      answers: ['']
-    }
-  ]);
+  const [questions, setQuestions] = useState(
+    data.questions || [
+      {
+        id: 1,
+        type: "",
+        question: "",
+        answers: [""],
+      },
+    ],
+  );
 
   const [selectedQuestion, setSelectedQuestion] = useState(1);
 
   const addNewQuestion = () => {
     const newQuestion = {
       id: questions.length + 1,
-      type: '',
-      question: '',
-      answers: ['']
+      type: "",
+      question: "",
+      answers: [""],
     };
     const updatedQuestions = [...questions, newQuestion];
     setQuestions(updatedQuestions);
@@ -28,15 +30,15 @@ const Step2Survey = ({ data, onUpdate }) => {
   };
 
   const updateQuestion = (questionId, field, value) => {
-    const updatedQuestions = questions.map(q => 
-      q.id === questionId ? { ...q, [field]: value } : q
+    const updatedQuestions = questions.map((q) =>
+      q.id === questionId ? { ...q, [field]: value } : q,
     );
     setQuestions(updatedQuestions);
     onUpdate({ questions: updatedQuestions });
   };
 
   const updateAnswer = (questionId, answerIndex, value) => {
-    const updatedQuestions = questions.map(q => {
+    const updatedQuestions = questions.map((q) => {
       if (q.id === questionId) {
         const newAnswers = [...q.answers];
         newAnswers[answerIndex] = value;
@@ -49,9 +51,9 @@ const Step2Survey = ({ data, onUpdate }) => {
   };
 
   const addNewAnswer = (questionId) => {
-    const updatedQuestions = questions.map(q => {
+    const updatedQuestions = questions.map((q) => {
       if (q.id === questionId) {
-        return { ...q, answers: [...q.answers, ''] };
+        return { ...q, answers: [...q.answers, ""] };
       }
       return q;
     });
@@ -64,17 +66,17 @@ const Step2Survey = ({ data, onUpdate }) => {
       // Don't allow removing the last question
       return;
     }
-    
-    const updatedQuestions = questions.filter(q => q.id !== questionId);
+
+    const updatedQuestions = questions.filter((q) => q.id !== questionId);
     // Reassign IDs to maintain sequential numbering
     const reindexedQuestions = updatedQuestions.map((q, index) => ({
       ...q,
-      id: index + 1
+      id: index + 1,
     }));
-    
+
     setQuestions(reindexedQuestions);
     onUpdate({ questions: reindexedQuestions });
-    
+
     // If the removed question was selected, select the first question
     if (selectedQuestion === questionId) {
       setSelectedQuestion(1);
@@ -85,17 +87,17 @@ const Step2Survey = ({ data, onUpdate }) => {
   };
 
   const removeAnswer = (questionId, answerIndex) => {
-    const question = questions.find(q => q.id === questionId);
+    const question = questions.find((q) => q.id === questionId);
     if (question && question.answers.length <= 1) {
       // Don't allow removing the last answer for choice questions
       return;
     }
-    
-    const updatedQuestions = questions.map(q => {
+
+    const updatedQuestions = questions.map((q) => {
       if (q.id === questionId) {
-        return { 
-          ...q, 
-          answers: q.answers.filter((_, index) => index !== answerIndex)
+        return {
+          ...q,
+          answers: q.answers.filter((_, index) => index !== answerIndex),
         };
       }
       return q;
@@ -107,20 +109,25 @@ const Step2Survey = ({ data, onUpdate }) => {
   // Validation functions
   const validateQuestion = (question) => {
     const errors = [];
-    
+
     // Question text is mandatory
-    if (!question.question || question.question.trim() === '') {
-      errors.push('Question text is mandatory');
+    if (!question.question || question.question.trim() === "") {
+      errors.push("Question text is mandatory");
     }
-    
+
     // At least one answer is required for multiple choice and single choice
-    if ((question.type === 'multiple-choice' || question.type === 'single-choice')) {
-      const validAnswers = question.answers.filter(answer => answer && answer.trim() !== '');
+    if (
+      question.type === "multiple-choice" ||
+      question.type === "single-choice"
+    ) {
+      const validAnswers = question.answers.filter(
+        (answer) => answer && answer.trim() !== "",
+      );
       if (validAnswers.length === 0) {
-        errors.push('At least one answer is required for choice questions');
+        errors.push("At least one answer is required for choice questions");
       }
     }
-    
+
     return errors;
   };
 
@@ -128,11 +135,12 @@ const Step2Survey = ({ data, onUpdate }) => {
     const errors = validateQuestion(question);
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   };
 
-  const currentQuestion = questions.find(q => q.id === selectedQuestion) || questions[0];
+  const currentQuestion =
+    questions.find((q) => q.id === selectedQuestion) || questions[0];
   const currentValidation = getQuestionValidationStatus(currentQuestion);
 
   return (
@@ -148,11 +156,13 @@ const Step2Survey = ({ data, onUpdate }) => {
                 return (
                   <div key={question.id} className="question-item-container">
                     <button
-                      className={`question-item ${selectedQuestion === question.id ? 'active' : ''} ${!validation.isValid ? 'invalid' : ''}`}
+                      className={`question-item ${selectedQuestion === question.id ? "active" : ""} ${!validation.isValid ? "invalid" : ""}`}
                       onClick={() => setSelectedQuestion(question.id)}
                     >
                       Question {question.id}
-                      {!validation.isValid && <span className="validation-indicator">!</span>}
+                      {!validation.isValid && (
+                        <span className="validation-indicator">!</span>
+                      )}
                     </button>
                     {questions.length > 1 && (
                       <button
@@ -177,10 +187,12 @@ const Step2Survey = ({ data, onUpdate }) => {
               <div className="form-group">
                 <label className="form-label">Type of Question</label>
                 <div className="select-wrapper">
-                  <select 
+                  <select
                     className="form-select"
                     value={currentQuestion.type}
-                    onChange={(e) => updateQuestion(currentQuestion.id, 'type', e.target.value)}
+                    onChange={(e) =>
+                      updateQuestion(currentQuestion.id, "type", e.target.value)
+                    }
                   >
                     <option value="">Please select</option>
                     <option value="multiple-choice">Multiple Choice</option>
@@ -199,36 +211,59 @@ const Step2Survey = ({ data, onUpdate }) => {
                   placeholder="Please enter"
                   rows={3}
                   value={currentQuestion.question}
-                  onChange={(e) => updateQuestion(currentQuestion.id, 'question', e.target.value)}
+                  onChange={(e) =>
+                    updateQuestion(
+                      currentQuestion.id,
+                      "question",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
 
               <div className="form-group">
                 <label className="form-label">
-                  {currentQuestion.type === 'rating' ? 'Rating Scale' : 'Answer'}
+                  {currentQuestion.type === "rating"
+                    ? "Rating Scale"
+                    : "Answer"}
                 </label>
-                {currentQuestion.type === 'rating' ? (
+                {currentQuestion.type === "rating" ? (
                   <div className="rating-config">
                     <div className="rating-option">
                       <label className="radio-label">
-                        <input 
-                          type="radio" 
+                        <input
+                          type="radio"
                           name={`rating-${currentQuestion.id}`}
                           value="5"
-                          checked={currentQuestion.ratingScale === '5' || !currentQuestion.ratingScale}
-                          onChange={(e) => updateQuestion(currentQuestion.id, 'ratingScale', e.target.value)}
+                          checked={
+                            currentQuestion.ratingScale === "5" ||
+                            !currentQuestion.ratingScale
+                          }
+                          onChange={(e) =>
+                            updateQuestion(
+                              currentQuestion.id,
+                              "ratingScale",
+                              e.target.value,
+                            )
+                          }
                         />
                         <span>1-5 Stars</span>
                       </label>
                     </div>
                     <div className="rating-option">
                       <label className="radio-label">
-                        <input 
-                          type="radio" 
+                        <input
+                          type="radio"
                           name={`rating-${currentQuestion.id}`}
                           value="10"
-                          checked={currentQuestion.ratingScale === '10'}
-                          onChange={(e) => updateQuestion(currentQuestion.id, 'ratingScale', e.target.value)}
+                          checked={currentQuestion.ratingScale === "10"}
+                          onChange={(e) =>
+                            updateQuestion(
+                              currentQuestion.id,
+                              "ratingScale",
+                              e.target.value,
+                            )
+                          }
                         />
                         <span>1-10 Scale</span>
                       </label>
@@ -236,16 +271,20 @@ const Step2Survey = ({ data, onUpdate }) => {
                   </div>
                 ) : (
                   <div className="answers-list">
-                    {currentQuestion.type === 'text-input' ? (
+                    {currentQuestion.type === "text-input" ? (
                       <div className="text-input-config">
                         <textarea
                           className="form-textarea answer-input"
                           placeholder="Placeholder text for the answer (optional)"
                           rows={2}
-                          value={currentQuestion.answers[0] || ''}
-                          onChange={(e) => updateAnswer(currentQuestion.id, 0, e.target.value)}
+                          value={currentQuestion.answers[0] || ""}
+                          onChange={(e) =>
+                            updateAnswer(currentQuestion.id, 0, e.target.value)
+                          }
                         />
-                        <small className="input-hint">This will be shown as placeholder text to users</small>
+                        <small className="input-hint">
+                          This will be shown as placeholder text to users
+                        </small>
                       </div>
                     ) : (
                       <>
@@ -256,12 +295,20 @@ const Step2Survey = ({ data, onUpdate }) => {
                               placeholder="Please enter"
                               rows={2}
                               value={answer}
-                              onChange={(e) => updateAnswer(currentQuestion.id, index, e.target.value)}
+                              onChange={(e) =>
+                                updateAnswer(
+                                  currentQuestion.id,
+                                  index,
+                                  e.target.value,
+                                )
+                              }
                             />
                             {currentQuestion.answers.length > 1 && (
                               <button
                                 className="remove-answer-btn"
-                                onClick={() => removeAnswer(currentQuestion.id, index)}
+                                onClick={() =>
+                                  removeAnswer(currentQuestion.id, index)
+                                }
                                 title="Remove answer"
                               >
                                 <X size={14} />
@@ -269,7 +316,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                             )}
                           </div>
                         ))}
-                        <button 
+                        <button
                           className="add-answer-btn"
                           onClick={() => addNewAnswer(currentQuestion.id)}
                         >
@@ -280,7 +327,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                   </div>
                 )}
               </div>
-              
+
               {/* Validation Messages */}
               {!currentValidation.isValid && (
                 <div className="validation-messages">
@@ -302,12 +349,13 @@ const Step2Survey = ({ data, onUpdate }) => {
             <div className="preview-content">
               <div className="preview-question">
                 <div className="question-number">
-                  {selectedQuestion}. {currentQuestion.question || 'Where are you from?'}
+                  {selectedQuestion}.{" "}
+                  {currentQuestion.question || "Where are you from?"}
                 </div>
                 <div className="preview-answers">
-                  {currentQuestion.type === 'rating' ? (
+                  {currentQuestion.type === "rating" ? (
                     <div className="rating-preview">
-                      {currentQuestion.ratingScale === '10' ? (
+                      {currentQuestion.ratingScale === "10" ? (
                         <div className="number-rating">
                           {Array.from({ length: 10 }, (_, i) => (
                             <button key={i + 1} className="rating-number">
@@ -318,25 +366,31 @@ const Step2Survey = ({ data, onUpdate }) => {
                       ) : (
                         <div className="star-rating">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <span key={i} className="star">★</span>
+                            <span key={i} className="star">
+                              ★
+                            </span>
                           ))}
                         </div>
                       )}
                     </div>
-                  ) : currentQuestion.type === 'text-input' ? (
-                    <input 
-                      type="text" 
-                      className="form-input preview-input" 
-                      placeholder={currentQuestion.answers[0] || "Enter your answer..."}
+                  ) : currentQuestion.type === "text-input" ? (
+                    <input
+                      type="text"
+                      className="form-input preview-input"
+                      placeholder={
+                        currentQuestion.answers[0] || "Enter your answer..."
+                      }
                       readOnly
                     />
                   ) : (
                     <div className="select-wrapper preview-select">
                       <select className="form-select">
                         <option>Select</option>
-                        {currentQuestion.answers.filter(answer => answer.trim()).map((answer, index) => (
-                          <option key={index}>{answer}</option>
-                        ))}
+                        {currentQuestion.answers
+                          .filter((answer) => answer.trim())
+                          .map((answer, index) => (
+                            <option key={index}>{answer}</option>
+                          ))}
                       </select>
                       <ChevronDown className="select-icon" size={16} />
                     </div>

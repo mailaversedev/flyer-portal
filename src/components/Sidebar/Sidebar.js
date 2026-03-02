@@ -1,31 +1,31 @@
-import React from 'react';
-import { NavLink } from 'react-router';
-import { LayoutDashboard, ShoppingBag, FileText, Wallet } from 'lucide-react';
-import './Sidebar.css';
+import React from "react";
+import { NavLink } from "react-router";
+import { LayoutDashboard, ShoppingBag, FileText, Wallet } from "lucide-react";
+import "./Sidebar.css";
 
 const Sidebar = () => {
   const navigationItems = [
     {
-      name: 'Dashboard',
-      path: '/dashboard',
+      name: "Dashboard",
+      path: "/dashboard",
       icon: LayoutDashboard,
-      active: true
+      active: true,
     },
     {
-      name: 'Marketplace',
-      path: '/marketplace',
-      icon: ShoppingBag
+      name: "Marketplace",
+      path: "/marketplace",
+      icon: ShoppingBag,
     },
     {
-      name: 'Flyer',
-      path: '/flyer',
-      icon: FileText
+      name: "Flyer",
+      path: "/flyer",
+      icon: FileText,
     },
     {
-      name: 'Wallet',
-      path: '/wallet',
-      icon: Wallet
-    }
+      name: "Wallet",
+      path: "/wallet",
+      icon: Wallet,
+    },
   ];
 
   return (
@@ -36,15 +36,13 @@ const Sidebar = () => {
           <h2 className="logo-text">MAILAVERSE</h2>
         </div>
       </div>
-      
+
       <nav className="sidebar-nav">
         {navigationItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
-            className={({ isActive }) => 
-              `nav-item ${isActive ? 'active' : ''}`
-            }
+            className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
           >
             <item.icon className="nav-icon" size={20} />
             <span className="nav-text">{item.name}</span>

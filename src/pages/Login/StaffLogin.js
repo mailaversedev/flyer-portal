@@ -47,7 +47,7 @@ const StaffLogin = () => {
           try {
             const uploadResponse = await ApiService.uploadFile(
               companyIconFile,
-              "companyIcon"
+              "companyIcon",
             );
             if (uploadResponse.success) {
               companyIconUrl = uploadResponse.url;
@@ -89,7 +89,7 @@ const StaffLogin = () => {
           if (response.data.company) {
             localStorage.setItem(
               "company",
-              JSON.stringify(response.data.company)
+              JSON.stringify(response.data.company),
             );
             ApiService.setCurrentCompany(response.data.company);
           }
@@ -99,7 +99,7 @@ const StaffLogin = () => {
       } else {
         setError(
           response.message ||
-            (isRegistering ? "Registration failed" : "Login failed")
+            (isRegistering ? "Registration failed" : "Login failed"),
         );
       }
     } catch (err) {
@@ -187,7 +187,13 @@ const StaffLogin = () => {
                   onChange={(e) => setCompanyNature(e.target.value)}
                   required
                   className="form-control"
-                  style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    marginTop: "5px",
+                    borderRadius: "4px",
+                    border: "1px solid #ddd",
+                  }}
                 >
                   <option value="">Select Industry...</option>
                   {COMPANY_INDUSTRIES.map((industry) => (
@@ -236,8 +242,8 @@ const StaffLogin = () => {
                 ? "Registering..."
                 : "Logging in..."
               : isRegistering
-              ? "Register Company"
-              : "Login"}
+                ? "Register Company"
+                : "Login"}
           </button>
 
           <div className="toggle-container">

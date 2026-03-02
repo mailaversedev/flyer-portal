@@ -221,9 +221,7 @@ router.post("/login", async (req, res) => {
           .collection("statistics");
 
         // Try to get all statistics for the current year
-        const statsQuery = await statsRef
-          .where("year", "==", year)
-          .get();
+        const statsQuery = await statsRef.where("year", "==", year).get();
 
         let statsList = [];
         if (statsQuery.empty) {
@@ -242,7 +240,7 @@ router.post("/login", async (req, res) => {
           await statsRef.doc(statsDocId).set(newStats);
           statsList = [newStats];
         } else {
-          statsList = statsQuery.docs.map(doc => doc.data());
+          statsList = statsQuery.docs.map((doc) => doc.data());
         }
 
         // Aggregate data for the year
@@ -255,7 +253,13 @@ router.post("/login", async (req, res) => {
             acc.flyerCount += stat.flyerCount || 0;
             return acc;
           },
-          { claimCount: 0, totalReward: 0, totalEventMoney: 0, totalMaxUsers: 0, flyerCount: 0 }
+          {
+            claimCount: 0,
+            totalReward: 0,
+            totalEventMoney: 0,
+            totalMaxUsers: 0,
+            flyerCount: 0,
+          },
         );
         companyInfo.stats = {
           year,

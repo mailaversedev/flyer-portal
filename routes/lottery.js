@@ -4,9 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const { authenticateToken } = require("./auth");
-const {
-  calculateLotteryMetricsFromHkd,
-} = require("../config/lotteryConfig");
+const { calculateLotteryMetricsFromHkd } = require("../config/lotteryConfig");
 
 // GET /api/lottery/stream - SSE endpoint for real-time lottery updates
 router.get("/stream", (req, res) => {
@@ -42,7 +40,7 @@ router.get("/stream", (req, res) => {
               claims: 0,
               remaining: null,
               message: "No lottery state yet",
-            })}\n\n`
+            })}\n\n`,
           );
         }
       },
@@ -51,9 +49,9 @@ router.get("/stream", (req, res) => {
         res.write(
           `event: error\ndata: ${JSON.stringify({
             message: "Stream error",
-          })}\n\n`
+          })}\n\n`,
         );
-      }
+      },
     );
 
   // Cleanup on client disconnect
@@ -86,13 +84,8 @@ router.get("/", authenticateToken, async (req, res) => {
     const flyer = flyerDoc.data();
     // Use flyer fields or fallback to defaults
     const poolHkd = flyer?.targetBudget?.budget || 5000;
-    const {
-      pool,
-      lotteryMoney,
-      maxUsers,
-      avgMoneyPerUser,
-      mailcoinHkdRate,
-    } = calculateLotteryMetricsFromHkd(poolHkd);
+    const { pool, lotteryMoney, maxUsers, avgMoneyPerUser, mailcoinHkdRate } =
+      calculateLotteryMetricsFromHkd(poolHkd);
 
     // --- Firestore collections ---
     const lotteryStateRef = db.collection("lottery").doc(flyerId);
@@ -126,10 +119,13 @@ router.get("/", authenticateToken, async (req, res) => {
       if (userClaimDoc.exists) {
         // Already claimed, return previous result
         const data = userClaimDoc.data();
-        const effectiveMaxUsers = Math.max(1, Math.floor(data.maxUsers || maxUsers));
+        const effectiveMaxUsers = Math.max(
+          1,
+          Math.floor(data.maxUsers || maxUsers),
+        );
         const effectiveAvgMoneyPerUser = Math.max(
           0,
-          Math.floor(data.avgMoneyPerUser || avgMoneyPerUser)
+          Math.floor(data.avgMoneyPerUser || avgMoneyPerUser),
         );
         res.status(200).json({
           success: true,
@@ -166,13 +162,13 @@ router.get("/", authenticateToken, async (req, res) => {
       state.maxUsers = Math.max(1, Math.floor(state.maxUsers || maxUsers));
       state.lotteryMoney = Math.max(
         0,
-        Math.floor(state.lotteryMoney || lotteryMoney)
+        Math.floor(state.lotteryMoney || lotteryMoney),
       );
       state.remaining = Math.max(0, Math.floor(state.remaining || 0));
 
       const effectiveAvgMoneyPerUser = Math.max(
         0,
-        Math.floor(state.lotteryMoney / state.maxUsers)
+        Math.floor(state.lotteryMoney / state.maxUsers),
       );
 
       // 3. Check if pool is depleted or max users reached
@@ -234,7 +230,7 @@ router.get("/", authenticateToken, async (req, res) => {
         const min = Math.max(0, Math.floor(effectiveAvgMoneyPerUser * 0.5));
         const max = Math.min(
           state.remaining,
-          Math.floor(effectiveAvgMoneyPerUser * 1.5)
+          Math.floor(effectiveAvgMoneyPerUser * 1.5),
         );
         if (max <= min) {
           reward = min;
@@ -351,7 +347,7 @@ router.get("/", authenticateToken, async (req, res) => {
         "lottery.claims": newClaims,
         "lottery.remaining": newRemaining,
         // Optional: you might want to update updatedAt or similar
-        updatedAt: new Date().toISOString() 
+        updatedAt: new Date().toISOString(),
       });
 
       // 9. Respond

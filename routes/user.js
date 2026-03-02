@@ -108,7 +108,9 @@ router.delete("/delete", async (req, res) => {
     });
 
     // 3. Delete Transactions
-    const transactionsQuery = db.collection("transactions").where("userId", "==", userId);
+    const transactionsQuery = db
+      .collection("transactions")
+      .where("userId", "==", userId);
     await new Promise((resolve, reject) => {
       deleteQueryBatch(transactionsQuery, resolve).catch(reject);
     });
@@ -121,7 +123,9 @@ router.delete("/delete", async (req, res) => {
 
     // 5. Delete Claims (Collection Group)
     // Note: This requires a composite index on claims collection for userId
-    const claimsQuery = db.collectionGroup("claims").where("userId", "==", userId);
+    const claimsQuery = db
+      .collectionGroup("claims")
+      .where("userId", "==", userId);
     await new Promise((resolve, reject) => {
       deleteQueryBatch(claimsQuery, resolve).catch(reject);
     });
@@ -154,10 +158,13 @@ router.post("/device-token", async (req, res) => {
     }
 
     // Add token to user's fcmTokens array
-    await db.collection("users").doc(userId).update({
-      fcmTokens: admin.firestore.FieldValue.arrayUnion(token),
-      updatedAt: new Date().toISOString(),
-    });
+    await db
+      .collection("users")
+      .doc(userId)
+      .update({
+        fcmTokens: admin.firestore.FieldValue.arrayUnion(token),
+        updatedAt: new Date().toISOString(),
+      });
 
     res.status(200).json({
       success: true,
@@ -177,20 +184,10 @@ router.post("/device-token", async (req, res) => {
 router.put("/location", async (req, res) => {
   try {
     const { userId } = req.user;
-    const {
-      addressType,
-      countryCity,
-      district,
-      buildingEstate,
-    } = req.body;
+    const { addressType, countryCity, district, buildingEstate } = req.body;
 
     // Validate inputs
-    if (
-      !addressType &&
-      !countryCity &&
-      !district &&
-      !buildingEstate
-    ) {
+    if (!addressType && !countryCity && !district && !buildingEstate) {
       return res.status(400).json({
         success: false,
         message: "At least one location field must be provided",

@@ -43,9 +43,9 @@ router.post("/send-otp-email", async (req, res) => {
   });
 
   const mailOptions = {
-    from: 'hi@mailaverse.io',
+    from: "hi@mailaverse.io",
     to: email,
-    subject: '[Mailaverse] Your OTP Verification Code',
+    subject: "[Mailaverse] Your OTP Verification Code",
     text: `Your OTP code is: ${otp}`,
     html: `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; padding: 32px 0;">
@@ -62,7 +62,7 @@ router.post("/send-otp-email", async (req, res) => {
           <div style="margin-top: 32px; text-align: center; color: #b0b0b0; font-size: 0.92rem;">&copy; ${new Date().getFullYear()} Mailaverse</div>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -70,7 +70,13 @@ router.post("/send-otp-email", async (req, res) => {
     res.json({ success: true, message: "OTP email sent" });
   } catch (error) {
     console.error("[send-otp-email] Failed to send OTP email", error);
-    res.status(500).json({ success: false, message: "Failed to send OTP email", error: error.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to send OTP email",
+        error: error.message,
+      });
   }
 });
 
@@ -79,7 +85,9 @@ router.post("/validate-otp", async (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
     console.error("[validate-otp] Missing email or otp", req.body);
-    return res.status(400).json({ success: false, message: "Missing email or otp" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing email or otp" });
   }
 
   const otpDoc = await db.collection("otps").doc(email).get();
@@ -90,7 +98,9 @@ router.post("/validate-otp", async (req, res) => {
   const data = otpDoc.data();
   if (data.used) {
     console.error("[validate-otp] OTP already used for email", email);
-    return res.status(400).json({ success: false, message: "OTP already used" });
+    return res
+      .status(400)
+      .json({ success: false, message: "OTP already used" });
   }
   if (Date.now() > data.expiresAt) {
     console.error("[validate-otp] OTP expired for email", email);
@@ -102,7 +112,10 @@ router.post("/validate-otp", async (req, res) => {
   }
 
   // Mark OTP as used
-  await db.collection("otps").doc(email).update({ used: true, usedAt: new Date().toISOString() });
+  await db
+    .collection("otps")
+    .doc(email)
+    .update({ used: true, usedAt: new Date().toISOString() });
 
   res.json({ success: true, message: "OTP validated" });
 });

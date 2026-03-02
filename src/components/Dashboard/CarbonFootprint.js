@@ -1,13 +1,12 @@
-import React from 'react';
-import { Recycle } from 'lucide-react';
-import './CarbonFootprint.css';
-import { useNavigate } from 'react-router';
+import React from "react";
+import { Recycle } from "lucide-react";
+import "./CarbonFootprint.css";
+import { useNavigate } from "react-router";
 
 const CarbonFootprint = ({ metrics }) => {
   const navigate = useNavigate();
   const counts = metrics?.typeCounts || {};
-  const totalInteracted =
-    metrics?.totalInteracted || 0;
+  const totalInteracted = metrics?.totalInteracted || 0;
   const carbonKg = (totalInteracted * 3.32) / 1000;
   const carbonKgDisplay = carbonKg.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -21,13 +20,13 @@ const CarbonFootprint = ({ metrics }) => {
         <div className="contribution-tabs">
           <button
             className="active tab"
-            onClick={() => navigate('/marketplace')}
+            onClick={() => navigate("/marketplace")}
           >
             Marketplace
           </button>
         </div>
       </div>
-      
+
       <div className="carbon-visual">
         <div className="carbon-circle">
           <div className="carbon-icon">
@@ -55,7 +54,7 @@ const CarbonFootprint = ({ metrics }) => {
           </svg>
         </div>
       </div>
-      
+
       <div className="carbon-metrics">
         <div className="carbon-metric">
           <span className="metric-label">Read To Earn</span>

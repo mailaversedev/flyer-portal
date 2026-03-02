@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Upload, X } from 'lucide-react';
-import { useNavigate } from 'react-router';
-import QRCode from 'qrcode';
-import TargetBudget from '../../../components/Flyer/TargetBudget';
-import CouponBuilder from '../../../components/Flyer/CouponBuilder';
-import ApiService from '../../../services/ApiService';
-import './QRGeneration.css';
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronLeft, Upload, X } from "lucide-react";
+import { useNavigate } from "react-router";
+import QRCode from "qrcode";
+import TargetBudget from "../../../components/Flyer/TargetBudget";
+import CouponBuilder from "../../../components/Flyer/CouponBuilder";
+import ApiService from "../../../services/ApiService";
+import "./QRGeneration.css";
 
 // Simple QR Code component
 const QRCodeComponent = ({ website }) => {
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -18,13 +18,13 @@ const QRCodeComponent = ({ website }) => {
           width: 200,
           margin: 2,
           color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
         });
         setQrCodeDataUrl(qrCodeUrl);
       } catch (error) {
-        console.error('Error generating QR code:', error);
+        console.error("Error generating QR code:", error);
       }
     };
 
@@ -34,11 +34,11 @@ const QRCodeComponent = ({ website }) => {
   }, [website]);
 
   return qrCodeDataUrl ? (
-    <img 
-      src={qrCodeDataUrl} 
-      alt="Generated QR Code" 
+    <img
+      src={qrCodeDataUrl}
+      alt="Generated QR Code"
       className="generated-qr-code"
-      style={{ width: '200px', height: '200px' }}
+      style={{ width: "200px", height: "200px" }}
     />
   ) : (
     <div>Generating QR Code...</div>
@@ -52,18 +52,18 @@ const QRGeneration = () => {
   const [qrData, setQrData] = useState({
     // Step 1 - Background data
     coverPhoto: null,
-    adType: '',
-    location: '',
-    website: '',
-    startingDate: '',
-    header: '',
-    productDescriptions: '',
-    promotionMessage: '',
+    adType: "",
+    location: "",
+    website: "",
+    startingDate: "",
+    header: "",
+    productDescriptions: "",
+    promotionMessage: "",
     // Step 3 - Coupon data
-    couponType: '',
+    couponType: "",
     couponFile: null,
-    termsConditions: '',
-    expiredDate: ''
+    termsConditions: "",
+    expiredDate: "",
   });
   const [loading, setLoading] = useState("");
 
@@ -75,7 +75,7 @@ const QRGeneration = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
-      navigate('/flyer');
+      navigate("/flyer");
     }
   };
 
@@ -87,11 +87,11 @@ const QRGeneration = () => {
     }
 
     setShowQRModal(true);
-    console.log('Opening QR Code modal...', qrData);
+    console.log("Opening QR Code modal...", qrData);
   };
 
   const handleSaveAndProceed = () => {
-    console.log('Saving QR Code and proceeding...', qrData);
+    console.log("Saving QR Code and proceeding...", qrData);
     setShowQRModal(false);
     setCurrentStep(2); // Proceed to next step
   };
@@ -118,26 +118,26 @@ const QRGeneration = () => {
     if (file) {
       try {
         // Upload the file using the API
-        const uploadResponse = await ApiService.uploadFile(file, 'cover-photo');
-        
+        const uploadResponse = await ApiService.uploadFile(file, "cover-photo");
+
         if (uploadResponse.success) {
           // Use the returned URL from the upload
-          handleInputChange('coverPhoto', uploadResponse.url);
+          handleInputChange("coverPhoto", uploadResponse.url);
         } else {
-          console.error('Failed to upload file:', uploadResponse.message);
+          console.error("Failed to upload file:", uploadResponse.message);
           // Fallback to local preview if upload fails
           const reader = new FileReader();
           reader.onload = (e) => {
-            handleInputChange('coverPhoto', e.target.result);
+            handleInputChange("coverPhoto", e.target.result);
           };
           reader.readAsDataURL(file);
         }
       } catch (error) {
-        console.error('Error uploading file:', error);
+        console.error("Error uploading file:", error);
         // Fallback to local preview if upload fails
         const reader = new FileReader();
         reader.onload = (e) => {
-          handleInputChange('coverPhoto', e.target.result);
+          handleInputChange("coverPhoto", e.target.result);
         };
         reader.readAsDataURL(file);
       }
@@ -146,61 +146,61 @@ const QRGeneration = () => {
 
   const handleCreate = async () => {
     try {
-      console.log('Creating QR flyer...', qrData);
-      setLoading('Creating QR flyer, please wait...');
-      
+      console.log("Creating QR flyer...", qrData);
+      setLoading("Creating QR flyer, please wait...");
+
       // Upload only file fields and get their URLs
       const uploadedFileUrls = await ApiService.uploadFilesFromData(qrData);
-      console.log('Files uploaded, URLs:', uploadedFileUrls);
-      
+      console.log("Files uploaded, URLs:", uploadedFileUrls);
+
       // Merge uploaded URLs with original data
       const finalQrData = {
         ...qrData, // All original data
-        ...uploadedFileUrls // Override with uploaded file URLs
+        ...uploadedFileUrls, // Override with uploaded file URLs
       };
-      
+
       // Create the final flyer using the API
       const response = await ApiService.createFlyer({
-        type: 'qr',
+        type: "qr",
         data: finalQrData,
-        targetBudget: finalQrData.targetBudget || {}
+        targetBudget: finalQrData.targetBudget || {},
       });
-      
+
       if (response.success) {
-        console.log('QR flyer created successfully:', response);
+        console.log("QR flyer created successfully:", response);
         // Navigate to a success page or back to flyer list
-        navigate('/flyer', { 
-          state: { 
-            success: true, 
-            message: 'QR Code flyer created successfully!',
-          } 
+        navigate("/flyer", {
+          state: {
+            success: true,
+            message: "QR Code flyer created successfully!",
+          },
         });
       } else {
-        console.error('Failed to create flyer:', response.message);
-        alert('Failed to create flyer. Please try again.');
+        console.error("Failed to create flyer:", response.message);
+        alert("Failed to create flyer. Please try again.");
       }
     } catch (error) {
-      console.error('Error creating flyer:', error);
-      alert('An error occurred while creating the flyer. Please try again.');
+      console.error("Error creating flyer:", error);
+      alert("An error occurred while creating the flyer. Please try again.");
     } finally {
-      setLoading('');
+      setLoading("");
     }
   };
 
   const updateQrData = (data) => {
-    setQrData(prev => ({
+    setQrData((prev) => ({
       ...prev,
-      ...data
+      ...data,
     }));
   };
 
   const validateRequiredFields = () => {
     const newErrors = {};
-    
-    if (!qrData.website || qrData.website.trim() === '') {
-      newErrors.website = 'Website is required';
+
+    if (!qrData.website || qrData.website.trim() === "") {
+      newErrors.website = "Website is required";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -208,13 +208,13 @@ const QRGeneration = () => {
   const handleInputChange = (field, value) => {
     // Clear error for this field when user starts typing
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
     }
-    
+
     updateQrData({ [field]: value });
   };
 
@@ -223,7 +223,7 @@ const QRGeneration = () => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        handleInputChange('coverPhoto', e.target.result);
+        handleInputChange("coverPhoto", e.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -237,23 +237,33 @@ const QRGeneration = () => {
         ref={fileInputRef}
         onChange={handleFileSelect}
         accept="image/*"
-        style={{ display: 'none' }}
+        style={{ display: "none" }}
       />
-      
+
       <div className="qr-container">
         <div className="step-header">
           <div className="step-indicators">
-            <div className={`step-indicator ${currentStep >= 1 ? 'active' : ''}`}>
+            <div
+              className={`step-indicator ${currentStep >= 1 ? "active" : ""}`}
+            >
               <span className="step-number">1</span>
               <span className="step-label">Background</span>
             </div>
-            <div className={`step-connector ${currentStep >= 2 ? 'active' : ''}`}></div>
-            <div className={`step-indicator ${currentStep >= 2 ? 'active' : ''}`}>
+            <div
+              className={`step-connector ${currentStep >= 2 ? "active" : ""}`}
+            ></div>
+            <div
+              className={`step-indicator ${currentStep >= 2 ? "active" : ""}`}
+            >
               <span className="step-number">2</span>
               <span className="step-label">Target & Budget</span>
             </div>
-            <div className={`step-connector ${currentStep >= 3 ? 'active' : ''}`}></div>
-            <div className={`step-indicator ${currentStep >= 3 ? 'active' : ''}`}>
+            <div
+              className={`step-connector ${currentStep >= 3 ? "active" : ""}`}
+            ></div>
+            <div
+              className={`step-indicator ${currentStep >= 3 ? "active" : ""}`}
+            >
               <span className="step-number">3</span>
               <span className="step-label">Create Coupon</span>
             </div>
@@ -267,15 +277,17 @@ const QRGeneration = () => {
                 {/* Left Side - Form */}
                 <div className="background-form">
                   <h3 className="section-title">Background Information</h3>
-                  
+
                   {/* Ad Type */}
                   <div className="form-group">
                     <label className="form-label">Ad Type</label>
                     <div className="select-wrapper">
-                      <select 
+                      <select
                         className="form-select"
                         value={qrData.adType}
-                        onChange={(e) => handleInputChange('adType', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("adType", e.target.value)
+                        }
                       >
                         <option value="">Please select</option>
                         <option value="promotional">Promotional</option>
@@ -293,22 +305,30 @@ const QRGeneration = () => {
                       className="form-input"
                       placeholder="Please enter location address"
                       value={qrData.location}
-                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("location", e.target.value)
+                      }
                     />
                   </div>
 
                   {/* Website */}
                   <div className="form-group">
-                    <label className="form-label">Website <span style={{color: '#ff4444'}}>*</span></label>
+                    <label className="form-label">
+                      Website <span style={{ color: "#ff4444" }}>*</span>
+                    </label>
                     <input
                       type="url"
-                      className={`form-input ${errors.website ? 'error' : ''}`}
+                      className={`form-input ${errors.website ? "error" : ""}`}
                       placeholder="Please enter url (required)"
                       value={qrData.website}
-                      onChange={(e) => handleInputChange('website', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("website", e.target.value)
+                      }
                       required
                     />
-                    {errors.website && <span className="error-message">{errors.website}</span>}
+                    {errors.website && (
+                      <span className="error-message">{errors.website}</span>
+                    )}
                   </div>
 
                   {/* Starting Date */}
@@ -319,7 +339,9 @@ const QRGeneration = () => {
                       className="form-input"
                       placeholder="DDMMYYYY"
                       value={qrData.startingDate}
-                      onChange={(e) => handleInputChange('startingDate', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("startingDate", e.target.value)
+                      }
                     />
                   </div>
 
@@ -330,7 +352,9 @@ const QRGeneration = () => {
                       className="form-textarea"
                       placeholder="Please enter"
                       value={qrData.header}
-                      onChange={(e) => handleInputChange('header', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("header", e.target.value)
+                      }
                       rows={3}
                     />
                   </div>
@@ -342,19 +366,25 @@ const QRGeneration = () => {
                       className="form-textarea"
                       placeholder="Please enter"
                       value={qrData.productDescriptions}
-                      onChange={(e) => handleInputChange('productDescriptions', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("productDescriptions", e.target.value)
+                      }
                       rows={5}
                     />
                   </div>
 
                   {/* Promotion Message */}
                   <div className="form-group">
-                    <label className="form-label">Promotion Message/Slogan</label>
+                    <label className="form-label">
+                      Promotion Message/Slogan
+                    </label>
                     <textarea
                       className="form-textarea"
                       placeholder="Please enter"
                       value={qrData.promotionMessage}
-                      onChange={(e) => handleInputChange('promotionMessage', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("promotionMessage", e.target.value)
+                      }
                       rows={3}
                     />
                   </div>
@@ -365,9 +395,9 @@ const QRGeneration = () => {
                   <div className="preview-container">
                     <div className="preview-upload-area">
                       {qrData.coverPhoto ? (
-                        <img 
-                          src={qrData.coverPhoto} 
-                          alt="Cover preview" 
+                        <img
+                          src={qrData.coverPhoto}
+                          alt="Cover preview"
                           className="preview-image"
                         />
                       ) : (
@@ -376,7 +406,10 @@ const QRGeneration = () => {
                             <Upload size={48} />
                           </div>
                           <div className="upload-text">
-                            <p>Place the image here or <span className="upload-link">Upload a file</span></p>
+                            <p>
+                              Place the image here or{" "}
+                              <span className="upload-link">Upload a file</span>
+                            </p>
                           </div>
                           <input
                             type="file"
@@ -385,16 +418,16 @@ const QRGeneration = () => {
                             className="file-input"
                             id="cover-upload-qr"
                           />
-                          <label htmlFor="cover-upload-qr" className="file-input-label"></label>
+                          <label
+                            htmlFor="cover-upload-qr"
+                            className="file-input-label"
+                          ></label>
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="preview-controls">
-                      <button 
-                        className="upload-button"
-                        onClick={handleUpload}
-                      >
+                      <button className="upload-button" onClick={handleUpload}>
                         <Upload size={16} />
                         Upload
                       </button>
@@ -406,17 +439,11 @@ const QRGeneration = () => {
           )}
 
           {currentStep === 2 && (
-            <TargetBudget 
-              data={qrData} 
-              onUpdate={updateQrData}
-            />
+            <TargetBudget data={qrData} onUpdate={updateQrData} />
           )}
 
           {currentStep === 3 && (
-            <CouponBuilder 
-              data={qrData} 
-              onUpdate={updateQrData}
-            />
+            <CouponBuilder data={qrData} onUpdate={updateQrData} />
           )}
         </div>
 
@@ -430,23 +457,32 @@ const QRGeneration = () => {
         )}
 
         <div className="step-navigation">
-          <button className="nav-button back-button" onClick={handleBack} disabled={loading}>
+          <button
+            className="nav-button back-button"
+            onClick={handleBack}
+            disabled={loading}
+          >
             <ChevronLeft size={16} />
             Back
           </button>
-          
+
           {currentStep === 1 && (
-            <button 
-              className={`nav-button next-button ${errors.website || !qrData.website || qrData.website.trim() === '' ? 'disabled' : ''}`}
+            <button
+              className={`nav-button next-button ${errors.website || !qrData.website || qrData.website.trim() === "" ? "disabled" : ""}`}
               onClick={handleProceedToQRCode}
-              disabled={loading || errors.website || !qrData.website || qrData.website.trim() === ''}
+              disabled={
+                loading ||
+                errors.website ||
+                !qrData.website ||
+                qrData.website.trim() === ""
+              }
             >
-            Proceed to QR Code
+              Proceed to QR Code
             </button>
           )}
 
           {currentStep === 2 && (
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: "flex", gap: "10px" }}>
               <button
                 className="nav-button"
                 onClick={handleCreate}
@@ -459,14 +495,22 @@ const QRGeneration = () => {
               >
                 No Coupon this time
               </button>
-              <button className="nav-button next-button" onClick={handleNext} disabled={loading}>
+              <button
+                className="nav-button next-button"
+                onClick={handleNext}
+                disabled={loading}
+              >
                 Proceed to Coupon Builder
               </button>
             </div>
           )}
-          
+
           {currentStep === 3 && (
-            <button className="nav-button complete-button" onClick={handleCreate} disabled={loading}>
+            <button
+              className="nav-button complete-button"
+              onClick={handleCreate}
+              disabled={loading}
+            >
               Create
             </button>
           )}
@@ -483,7 +527,7 @@ const QRGeneration = () => {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="modal-content">
               <div className="qr-code-container">
                 <div className="qr-code-placeholder">
@@ -497,9 +541,9 @@ const QRGeneration = () => {
                         {Array.from({ length: 13 }, (_, i) => (
                           <div key={i} className="qr-row">
                             {Array.from({ length: 13 }, (_, j) => (
-                              <div 
-                                key={j} 
-                                className={`qr-cell ${(i + j) % 3 === 0 ? 'filled' : ''}`}
+                              <div
+                                key={j}
+                                className={`qr-cell ${(i + j) % 3 === 0 ? "filled" : ""}`}
                               />
                             ))}
                           </div>
@@ -509,17 +553,20 @@ const QRGeneration = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="modal-description">
                 <p>Print And Paste In A Prominent Position On Your Own</p>
               </div>
             </div>
-            
+
             <div className="modal-actions">
               <button className="cancel-button" onClick={handleCloseModal}>
                 Cancel
               </button>
-              <button className="save-proceed-button" onClick={handleSaveAndProceed}>
+              <button
+                className="save-proceed-button"
+                onClick={handleSaveAndProceed}
+              >
                 Save & Proceed
               </button>
             </div>

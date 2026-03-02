@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Step1Content from '../../../components/Flyer/Leaflet/Step1Content';
-import Step1ContentPro from '../../../components/Flyer/Leaflet/Step1ContentPro';
-import TargetBudget from '../../../components/Flyer/TargetBudget';
-import CouponBuilder from '../../../components/Flyer/CouponBuilder';
-import { ChevronLeft, Sparkles, Settings } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router';
-import ApiService from '../../../services/ApiService';
-import './Leaflet.css';
-
+import React, { useState, useEffect, useRef } from "react";
+import Step1Content from "../../../components/Flyer/Leaflet/Step1Content";
+import Step1ContentPro from "../../../components/Flyer/Leaflet/Step1ContentPro";
+import TargetBudget from "../../../components/Flyer/TargetBudget";
+import CouponBuilder from "../../../components/Flyer/CouponBuilder";
+import { ChevronLeft, Sparkles, Settings } from "lucide-react";
+import { useNavigate, useLocation } from "react-router";
+import ApiService from "../../../services/ApiService";
+import "./Leaflet.css";
 
 const LeafletCreation = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -25,17 +24,17 @@ const LeafletCreation = () => {
     flyerPrompts: "",
     promotionMessage: "",
     productPhoto: [],
-    productDescriptions: '',
+    productDescriptions: "",
     tags: [],
     // Pro fields
-    productName: '',
-    resolution: '2K',
-    primaryColor: '',
-    secondaryColor: '',
-    typography: '',
-    brandVoice: '',
+    productName: "",
+    resolution: "2K",
+    primaryColor: "",
+    secondaryColor: "",
+    typography: "",
+    brandVoice: "",
     logoImage: null,
-    logoPosition: 'natural placement',
+    logoPosition: "natural placement",
   });
   const [loading, setLoading] = useState("");
   const [generatedHistory, setGeneratedHistory] = useState([]);
@@ -69,16 +68,19 @@ const LeafletCreation = () => {
 
       try {
         // Make API call to generate leaflet image
-        const response = await ApiService.generateLeaflet(leafletData, isProMode);
+        const response = await ApiService.generateLeaflet(
+          leafletData,
+          isProMode,
+        );
         if (response.flyer_output_path) {
           setLeafletData((prev) => ({
             ...prev,
             coverPhoto: response.flyer_output_path,
           }));
-          
+
           setGeneratedHistory((prev) => {
             const newHistory = [response.flyer_output_path, ...prev];
-             // Limit to 3 most recent
+            // Limit to 3 most recent
             return newHistory.slice(0, 3);
           });
         } else {
@@ -127,14 +129,13 @@ const LeafletCreation = () => {
         ...remainingData,
         coupon: {
           ...(coupon || {}),
-          couponFile:
-            uploadedFileUrls.couponFile || coupon?.couponFile || null,
+          couponFile: uploadedFileUrls.couponFile || coupon?.couponFile || null,
           qrCodeImage:
             uploadedFileUrls.qrCodeImage || coupon?.qrCodeImage || null,
           barcodeImage:
             uploadedFileUrls.barcodeImage || coupon?.barcodeImage || null,
         },
-        coverPhoto: uploadedFileUrls.coverPhoto || leafletData.coverPhoto 
+        coverPhoto: uploadedFileUrls.coverPhoto || leafletData.coverPhoto,
       };
 
       console.log("Creating flyer with leaflet data:", finalData);
@@ -193,8 +194,12 @@ const LeafletCreation = () => {
               <span className="step-number">2</span>
               <span className="step-label">Target & Budget</span>
             </div>
-            <div className={`step-connector ${currentStep >= 3 ? 'active' : ''}`}></div>
-            <div className={`step-indicator ${currentStep >= 3 ? 'active' : ''}`}>
+            <div
+              className={`step-connector ${currentStep >= 3 ? "active" : ""}`}
+            ></div>
+            <div
+              className={`step-indicator ${currentStep >= 3 ? "active" : ""}`}
+            >
               <span className="step-number">3</span>
               <span className="step-label">Create Coupon</span>
             </div>
@@ -204,27 +209,35 @@ const LeafletCreation = () => {
         <div className="step-content">
           {currentStep === 1 && (
             <>
-              <div style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '20px'}}>
-                <div style={{
-                  display: 'inline-flex', 
-                  backgroundColor: '#1e2433', 
-                  borderRadius: '8px', 
-                  padding: '4px'
-                }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    backgroundColor: "#1e2433",
+                    borderRadius: "8px",
+                    padding: "4px",
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setIsProMode(false)}
                     style={{
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      backgroundColor: !isProMode ? '#3b82f6' : 'transparent',
-                      color: !isProMode ? 'white' : '#94a3b8',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      border: "none",
+                      backgroundColor: !isProMode ? "#3b82f6" : "transparent",
+                      color: !isProMode ? "white" : "#94a3b8",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
                     }}
                   >
                     <Settings size={16} /> Standard
@@ -233,23 +246,23 @@ const LeafletCreation = () => {
                     type="button"
                     onClick={() => setIsProMode(true)}
                     style={{
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      backgroundColor: isProMode ? '#8b5cf6' : 'transparent',
-                      color: isProMode ? 'white' : '#94a3b8',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      border: "none",
+                      backgroundColor: isProMode ? "#8b5cf6" : "transparent",
+                      color: isProMode ? "white" : "#94a3b8",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
                     }}
                   >
                     <Sparkles size={16} /> Pro
                   </button>
                 </div>
               </div>
-              
+
               {isProMode ? (
                 <Step1ContentPro
                   ref={step1Ref}
@@ -266,18 +279,15 @@ const LeafletCreation = () => {
             </>
           )}
           {currentStep === 2 && (
-            <TargetBudget 
-              data={leafletData} 
-              onUpdate={updateLeafletData} 
+            <TargetBudget
+              data={leafletData}
+              onUpdate={updateLeafletData}
               history={generatedHistory}
               isDirectUpload={location.state?.isDirectUpload}
             />
           )}
           {currentStep === 3 && (
-            <CouponBuilder 
-              data={leafletData}
-              onUpdate={updateLeafletData}
-            />
+            <CouponBuilder data={leafletData} onUpdate={updateLeafletData} />
           )}
         </div>
 
@@ -311,7 +321,7 @@ const LeafletCreation = () => {
           )}
 
           {currentStep === 2 && (
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: "flex", gap: "10px" }}>
               <button
                 className="nav-button"
                 onClick={handleCreate}

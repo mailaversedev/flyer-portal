@@ -3,9 +3,7 @@ const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const { authenticateToken } = require("./auth");
-const {
-  calculateLotteryMetricsFromHkd,
-} = require("../config/lotteryConfig");
+const { calculateLotteryMetricsFromHkd } = require("../config/lotteryConfig");
 
 // POST /api/flyer - Create flyer (leaflet, query, or qr code)
 router.post("/flyer", authenticateToken, async (req, res) => {
@@ -26,7 +24,10 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     // Fetch company info to embed in flyer (denormalization)
     try {
       if (flyerData.companyId) {
-        const companyDoc = await db.collection("companies").doc(flyerData.companyId).get();
+        const companyDoc = await db
+          .collection("companies")
+          .doc(flyerData.companyId)
+          .get();
         if (companyDoc.exists) {
           const companyInfo = companyDoc.data();
           flyerData.companyIcon = companyInfo.icon;
@@ -34,8 +35,11 @@ router.post("/flyer", authenticateToken, async (req, res) => {
         }
       }
     } catch (error) {
-       console.warn("Failed to fetch company info during flyer creation:", error);
-       // Continue without it, don't fail the whole creation
+      console.warn(
+        "Failed to fetch company info during flyer creation:",
+        error,
+      );
+      // Continue without it, don't fail the whole creation
     }
 
     // 2. Prepare Lottery Data
@@ -141,7 +145,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     // as the user base grows. It runs only if the transaction above succeeds.
     const distributionAmount = Math.max(
       0,
-      Math.floor(pool * eventUsagePercent * eventCostPercent)
+      Math.floor(pool * eventUsagePercent * eventCostPercent),
     );
     const usersSnapshot = await db
       .collection("users")
@@ -239,7 +243,7 @@ router.get("/flyers", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: `Invalid sortBy field. Must be one of: ${validSortFields.join(
-          ", "
+          ", ",
         )}.`,
       });
     }
@@ -290,7 +294,7 @@ router.get("/flyers", async (req, res) => {
     if (flyers.length > 0) {
       try {
         const lotteryRefs = flyers.map((flyer) =>
-          db.collection("lottery").doc(flyer.id)
+          db.collection("lottery").doc(flyer.id),
         );
         const lotterySnapshots = await db.getAll(...lotteryRefs);
 
@@ -381,45 +385,49 @@ router.post("/flyer/:flyerId/answers", authenticateToken, async (req, res) => {
 });
 
 // GET /api/flyer/:flyerId/answer-status - Check if user submitted answer
-router.get("/flyer/:flyerId/answer-status", authenticateToken, async (req, res) => {
-  try {
-    const { flyerId } = req.params;
-    const userId = req.user.userId;
+router.get(
+  "/flyer/:flyerId/answer-status",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { flyerId } = req.params;
+      const userId = req.user.userId;
 
-    if (!flyerId) {
-      return res.status(400).json({
+      if (!flyerId) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing flyerId",
+        });
+      }
+
+      const answerDoc = await db
+        .collection("flyers")
+        .doc(flyerId)
+        .collection("answers")
+        .doc(userId)
+        .get();
+
+      if (answerDoc.exists) {
+        res.status(200).json({
+          success: true,
+          submitted: true,
+          data: answerDoc.data(),
+        });
+      } else {
+        res.status(200).json({
+          success: true,
+          submitted: false,
+        });
+      }
+    } catch (error) {
+      console.error("Error checking answer status:", error);
+      res.status(500).json({
         success: false,
-        message: "Missing flyerId",
+        message: "Failed to check answer status",
+        error: error.message,
       });
     }
-
-    const answerDoc = await db
-      .collection("flyers")
-      .doc(flyerId)
-      .collection("answers")
-      .doc(userId)
-      .get();
-
-    if (answerDoc.exists) {
-      res.status(200).json({
-        success: true,
-        submitted: true,
-        data: answerDoc.data(),
-      });
-    } else {
-      res.status(200).json({
-        success: true,
-        submitted: false,
-      });
-    }
-  } catch (error) {
-    console.error("Error checking answer status:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to check answer status",
-      error: error.message,
-    });
-  }
-});
+  },
+);
 
 module.exports = router;

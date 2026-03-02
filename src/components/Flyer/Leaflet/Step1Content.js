@@ -1,64 +1,64 @@
-import React, { useState, useImperativeHandle, forwardRef } from 'react';
-import { Plus, ChevronRight } from 'lucide-react';
-import './Step1Content.css';
+import React, { useState, useImperativeHandle, forwardRef } from "react";
+import { Plus, ChevronRight } from "lucide-react";
+import "./Step1Content.css";
 
 const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
-  const [newTag, setNewTag] = useState('');
+  const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState({});
 
   const validateRequiredFields = () => {
     const newErrors = {};
-    
-    if (!data.aspectRatio || data.aspectRatio.trim() === '') {
-      newErrors.aspectRatio = 'Aspect Ratio is required';
-    }
-    
-    if (!data.adType || data.adType.trim() === '') {
-      newErrors.adType = 'Ad Type is required';
-    }
-    
-    if (!data.header || data.header.trim() === '') {
-      newErrors.header = 'Header is required';
-    }
-    
-    if (!data.adContent || data.adContent.trim() === '') {
-      newErrors.adContent = 'Ad Content is required';
-    }
-    
-    if (!data.flyerPrompts || data.flyerPrompts.trim() === '') {
-      newErrors.flyerPrompts = 'Flyer Prompts is required';
+
+    if (!data.aspectRatio || data.aspectRatio.trim() === "") {
+      newErrors.aspectRatio = "Aspect Ratio is required";
     }
 
-    if (!data.promotionMessage || data.promotionMessage.trim() === '') {
-      newErrors.promotionMessage = 'Promotion Message/Slogan is required';
+    if (!data.adType || data.adType.trim() === "") {
+      newErrors.adType = "Ad Type is required";
     }
 
-    if (!data.productDescriptions || data.productDescriptions.trim() === '') {
-      newErrors.productDescriptions = 'Product Descriptions is required';
+    if (!data.header || data.header.trim() === "") {
+      newErrors.header = "Header is required";
     }
-    
+
+    if (!data.adContent || data.adContent.trim() === "") {
+      newErrors.adContent = "Ad Content is required";
+    }
+
+    if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
+      newErrors.flyerPrompts = "Flyer Prompts is required";
+    }
+
+    if (!data.promotionMessage || data.promotionMessage.trim() === "") {
+      newErrors.promotionMessage = "Promotion Message/Slogan is required";
+    }
+
+    if (!data.productDescriptions || data.productDescriptions.trim() === "") {
+      newErrors.productDescriptions = "Product Descriptions is required";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Expose validation function to parent via ref
   useImperativeHandle(ref, () => ({
-    validateRequiredFields
+    validateRequiredFields,
   }));
 
   const handleInputChange = (field, value) => {
     // Clear error for this field when user starts typing
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
     }
-    
+
     const updatedData = {
       ...data,
-      [field]: value
+      [field]: value,
     };
     onUpdate(updatedData);
   };
@@ -67,53 +67,54 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
     if (newTag.trim() && !data.tags.includes(newTag.trim())) {
       const updatedData = {
         ...data,
-        tags: [...data.tags, newTag.trim()]
+        tags: [...data.tags, newTag.trim()],
       };
       onUpdate(updatedData);
-      setNewTag('');
+      setNewTag("");
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
     const updatedData = {
       ...data,
-      tags: data.tags.filter(tag => tag !== tagToRemove)
+      tags: data.tags.filter((tag) => tag !== tagToRemove),
     };
     onUpdate(updatedData);
   };
 
   const handleFileUpload = (field) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
     // Only product photos support multiple selection
-    if (field === 'productPhoto') {
+    if (field === "productPhoto") {
       input.multiple = true;
     }
-    
+
     input.onchange = (event) => {
       const files = Array.from(event.target.files);
-      
-      if (field === 'productPhoto') {
+
+      if (field === "productPhoto") {
         // Handle multiple files for product photos
-        const filePromises = files.map(file => {
+        const filePromises = files.map((file) => {
           return new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onload = (e) => resolve({
-              file,
-              name: file.name,
-              size: file.size,
-              preview: e.target.result
-            });
+            reader.onload = (e) =>
+              resolve({
+                file,
+                name: file.name,
+                size: file.size,
+                preview: e.target.result,
+              });
             reader.readAsDataURL(file);
           });
         });
-        
-        Promise.all(filePromises).then(fileObjects => {
+
+        Promise.all(filePromises).then((fileObjects) => {
           const updatedData = {
             ...data,
-            [field]: [...data[field], ...fileObjects]
+            [field]: [...data[field], ...fileObjects],
           };
           onUpdate(updatedData);
         });
@@ -129,8 +130,8 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
                 file,
                 name: file.name,
                 size: file.size,
-                preview: e.target.result
-              }
+                preview: e.target.result,
+              },
             };
             onUpdate(updatedData);
           };
@@ -142,18 +143,18 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
   };
 
   const handleRemoveImage = (field, index = null) => {
-    if (field === 'productPhoto' && index !== null) {
+    if (field === "productPhoto" && index !== null) {
       // Remove specific product photo
       const updatedData = {
         ...data,
-        [field]: data[field].filter((_, i) => i !== index)
+        [field]: data[field].filter((_, i) => i !== index),
       };
       onUpdate(updatedData);
     } else {
       // Remove single image (reference flyer or background photo)
       const updatedData = {
         ...data,
-        [field]: null
+        [field]: null,
       };
       onUpdate(updatedData);
     }
@@ -161,17 +162,17 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
   const ThumbnailRow = ({ images, field }) => {
     if (!images || images.length === 0) return null;
-    
+
     return (
       <div className="thumbnail-row">
         {images.map((imageObj, index) => (
           <div key={index} className="thumbnail-item">
-            <img 
-              src={imageObj.preview} 
-              alt={imageObj.name} 
+            <img
+              src={imageObj.preview}
+              alt={imageObj.name}
               className="thumbnail-image"
             />
-            <button 
+            <button
               type="button"
               className="thumbnail-remove"
               onClick={() => handleRemoveImage(field, index)}
@@ -187,15 +188,15 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
   const SingleImageDisplay = ({ imageObj, field, onRemove }) => {
     if (!imageObj) return null;
-    
+
     return (
       <div className="single-image-display">
-        <img 
-          src={imageObj.preview} 
-          alt={imageObj.name} 
+        <img
+          src={imageObj.preview}
+          alt={imageObj.name}
           className="single-image"
         />
-        <button 
+        <button
           type="button"
           className="single-image-remove"
           onClick={() => onRemove(field)}
@@ -213,14 +214,14 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         {/* Aspect Ratio */}
         <div className="form-group">
           <label className="form-label">
-            Aspect Ratio* 
+            Aspect Ratio*
             <span className="ratio-options">1:1 3:4 9:16</span>
           </label>
           <div className="select-wrapper">
-            <select 
-              className={`form-select ${errors.aspectRatio ? 'error' : ''}`}
+            <select
+              className={`form-select ${errors.aspectRatio ? "error" : ""}`}
               value={data.aspectRatio}
-              onChange={(e) => handleInputChange('aspectRatio', e.target.value)}
+              onChange={(e) => handleInputChange("aspectRatio", e.target.value)}
             >
               <option value="">Please select</option>
               <option value="1:1">1:1</option>
@@ -229,17 +230,19 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
-          {errors.aspectRatio && <span className="error-message">{errors.aspectRatio}</span>}
+          {errors.aspectRatio && (
+            <span className="error-message">{errors.aspectRatio}</span>
+          )}
         </div>
 
         {/* Select Ad Type */}
         <div className="form-group">
           <label className="form-label">Select Ad Type*</label>
           <div className="select-wrapper">
-            <select 
-              className={`form-select ${errors.adType ? 'error' : ''}`}
+            <select
+              className={`form-select ${errors.adType ? "error" : ""}`}
               value={data.adType}
-              onChange={(e) => handleInputChange('adType', e.target.value)}
+              onChange={(e) => handleInputChange("adType", e.target.value)}
             >
               <option value="">Please select</option>
               <option value="promotional">Promotional</option>
@@ -248,23 +251,27 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
-          {errors.adType && <span className="error-message">{errors.adType}</span>}
+          {errors.adType && (
+            <span className="error-message">{errors.adType}</span>
+          )}
         </div>
 
         {/* Upload Reference Flyer Photo */}
         <div className="form-group full-width">
-          <label className="form-label">Upload Reference Flyer Photo (optional)</label>
+          <label className="form-label">
+            Upload Reference Flyer Photo (optional)
+          </label>
           {data.referenceFlyer ? (
-            <SingleImageDisplay 
-              imageObj={data.referenceFlyer} 
-              field="referenceFlyer" 
+            <SingleImageDisplay
+              imageObj={data.referenceFlyer}
+              field="referenceFlyer"
               onRemove={handleRemoveImage}
             />
           ) : (
             <>
               <input
                 type="file"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 id="referenceFlyerInput"
                 accept="image/*"
                 onChange={(e) => {
@@ -272,11 +279,11 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
                   if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                      handleInputChange('referenceFlyer', {
+                      handleInputChange("referenceFlyer", {
                         file,
                         name: file.name,
                         size: file.size,
-                        preview: event.target.result
+                        preview: event.target.result,
                       });
                     };
                     reader.readAsDataURL(file);
@@ -285,7 +292,9 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               />
               <div
                 className="upload-area"
-                onClick={() => document.getElementById('referenceFlyerInput').click()}
+                onClick={() =>
+                  document.getElementById("referenceFlyerInput").click()
+                }
                 tabIndex={0}
                 role="button"
               >
@@ -299,10 +308,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         <div className="form-group">
           <label className="form-label">Select Design Style (optional)</label>
           <div className="select-wrapper">
-            <select 
+            <select
               className="form-select"
               value={data.designStyle}
-              onChange={(e) => handleInputChange('designStyle', e.target.value)}
+              onChange={(e) => handleInputChange("designStyle", e.target.value)}
             >
               <option value="">Please select</option>
               <option value="modern">Modern</option>
@@ -317,10 +326,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         <div className="form-group">
           <label className="form-label">Select Theme Colour (optional)</label>
           <div className="select-wrapper">
-            <select 
+            <select
               className="form-select"
               value={data.themeColor}
-              onChange={(e) => handleInputChange('themeColor', e.target.value)}
+              onChange={(e) => handleInputChange("themeColor", e.target.value)}
             >
               <option value="">Please select</option>
               <option value="blue">Blue</option>
@@ -333,18 +342,20 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Upload Background Photo */}
         <div className="form-group full-width">
-          <label className="form-label">Upload Background Photo (optional)</label>
+          <label className="form-label">
+            Upload Background Photo (optional)
+          </label>
           {data.backgroundPhoto ? (
-            <SingleImageDisplay 
-              imageObj={data.backgroundPhoto} 
-              field="backgroundPhoto" 
+            <SingleImageDisplay
+              imageObj={data.backgroundPhoto}
+              field="backgroundPhoto"
               onRemove={handleRemoveImage}
             />
           ) : (
             <>
               <input
                 type="file"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 id="backgroundPhotoInput"
                 accept="image/*"
                 onChange={(e) => {
@@ -352,11 +363,11 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
                   if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                      handleInputChange('backgroundPhoto', {
+                      handleInputChange("backgroundPhoto", {
                         file,
                         name: file.name,
                         size: file.size,
-                        preview: event.target.result
+                        preview: event.target.result,
                       });
                     };
                     reader.readAsDataURL(file);
@@ -365,7 +376,9 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               />
               <div
                 className="upload-area"
-                onClick={() => document.getElementById('backgroundPhotoInput').click()}
+                onClick={() =>
+                  document.getElementById("backgroundPhotoInput").click()
+                }
                 tabIndex={0}
                 role="button"
               >
@@ -379,19 +392,21 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
       {/* Input Your Customised Content */}
       <div className="content-section">
         <h3 className="section-title">Input Your Customised Content</h3>
-        
+
         <div className="form-grid">
           {/* Header */}
           <div className="form-group">
             <label className="form-label">Header*</label>
             <input
               type="text"
-              className={`form-input ${errors.header ? 'error' : ''}`}
+              className={`form-input ${errors.header ? "error" : ""}`}
               placeholder="Please enter"
               value={data.header}
-              onChange={(e) => handleInputChange('header', e.target.value)}
+              onChange={(e) => handleInputChange("header", e.target.value)}
             />
-            {errors.header && <span className="error-message">{errors.header}</span>}
+            {errors.header && (
+              <span className="error-message">{errors.header}</span>
+            )}
           </div>
 
           {/* Subheader */}
@@ -402,7 +417,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               className="form-input"
               placeholder="Please enter"
               value={data.subheader}
-              onChange={(e) => handleInputChange('subheader', e.target.value)}
+              onChange={(e) => handleInputChange("subheader", e.target.value)}
             />
           </div>
 
@@ -410,45 +425,61 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
           <div className="form-group full-width">
             <label className="form-label">Ad Content*</label>
             <textarea
-              className={`form-textarea ${errors.adContent ? 'error' : ''}`}
+              className={`form-textarea ${errors.adContent ? "error" : ""}`}
               placeholder="Please enter the promotional content/message"
               rows={4}
               value={data.adContent}
-              onChange={(e) => handleInputChange('adContent', e.target.value)}
+              onChange={(e) => handleInputChange("adContent", e.target.value)}
             />
-            {errors.adContent && <span className="error-message">{errors.adContent}</span>}
+            {errors.adContent && (
+              <span className="error-message">{errors.adContent}</span>
+            )}
           </div>
 
           {/* Prompts of Your Flyer */}
           <div className="form-group full-width">
             <label className="form-label">Prompts of Your Flyer*</label>
             <textarea
-              className={`form-textarea ${errors.flyerPrompts ? 'error' : ''}`}
+              className={`form-textarea ${errors.flyerPrompts ? "error" : ""}`}
               placeholder="Please describe the design, content & message of the flyer"
               rows={6}
               value={data.flyerPrompts}
-              onChange={(e) => handleInputChange('flyerPrompts', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("flyerPrompts", e.target.value)
+              }
             />
-            {errors.flyerPrompts && <span className="error-message">{errors.flyerPrompts}</span>}
+            {errors.flyerPrompts && (
+              <span className="error-message">{errors.flyerPrompts}</span>
+            )}
           </div>
 
           {/* Promotion Message/Slogan */}
           <div className="form-group full-width">
             <label className="form-label">Promotion Message/Slogan*</label>
             <textarea
-              className={`form-textarea ${errors.promotionMessage ? 'error' : ''}`}
+              className={`form-textarea ${errors.promotionMessage ? "error" : ""}`}
               placeholder="Please enter"
               rows={3}
               value={data.promotionMessage}
-              onChange={(e) => handleInputChange('promotionMessage', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("promotionMessage", e.target.value)
+              }
             />
-            {errors.promotionMessage && <span className="error-message">{errors.promotionMessage}</span>}
+            {errors.promotionMessage && (
+              <span className="error-message">{errors.promotionMessage}</span>
+            )}
           </div>
 
           {/* Upload Product Photo */}
           <div className="form-group full-width">
-            <label className="form-label">Upload Product Photo (optional) <span className="counter">{data.productPhoto.length}/5</span></label>
-            <div className="file-select" onClick={() => handleFileUpload('productPhoto')}>
+            <label className="form-label">
+              Upload Product Photo (optional){" "}
+              <span className="counter">{data.productPhoto.length}/5</span>
+            </label>
+            <div
+              className="file-select"
+              onClick={() => handleFileUpload("productPhoto")}
+            >
               <span>Select file</span>
               <ChevronRight size={16} />
             </div>
@@ -460,12 +491,18 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
             <label className="form-label">Product Descriptions*</label>
             <input
               type="text"
-              className={`form-input ${errors.productDescriptions ? 'error' : ''}`}
+              className={`form-input ${errors.productDescriptions ? "error" : ""}`}
               placeholder="Please enter"
               value={data.productDescriptions}
-              onChange={(e) => handleInputChange('productDescriptions', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("productDescriptions", e.target.value)
+              }
             />
-            {errors.productDescriptions && <span className="error-message">{errors.productDescriptions}</span>}
+            {errors.productDescriptions && (
+              <span className="error-message">
+                {errors.productDescriptions}
+              </span>
+            )}
           </div>
 
           {/* Tag */}
@@ -479,7 +516,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
                   placeholder="Please enter"
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                 />
               </div>
               {data.tags.length > 0 && (
@@ -487,8 +524,8 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
                   {data.tags.map((tag, index) => (
                     <span key={index} className="tag">
                       #{tag}
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="tag-remove"
                         onClick={() => handleRemoveTag(tag)}
                       >
@@ -509,43 +546,43 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 // Export validation function for parent component to use (keeping for backward compatibility)
 Step1Content.validateRequiredFields = (data, setErrorsCallback = null) => {
   const errors = {};
-  
-  if (!data.aspectRatio || data.aspectRatio.trim() === '') {
-    errors.aspectRatio = 'Aspect Ratio is required';
-  }
-  
-  if (!data.adType || data.adType.trim() === '') {
-    errors.adType = 'Ad Type is required';
-  }
-  
-  if (!data.header || data.header.trim() === '') {
-    errors.header = 'Header is required';
-  }
-  
-  if (!data.adContent || data.adContent.trim() === '') {
-    errors.adContent = 'Ad Content is required';
-  }
-  
-  if (!data.flyerPrompts || data.flyerPrompts.trim() === '') {
-    errors.flyerPrompts = 'Flyer Prompts is required';
+
+  if (!data.aspectRatio || data.aspectRatio.trim() === "") {
+    errors.aspectRatio = "Aspect Ratio is required";
   }
 
-  if (!data.promotionMessage || data.promotionMessage.trim() === '') {
-    errors.promotionMessage = 'Promotion Message/Slogan is required';
+  if (!data.adType || data.adType.trim() === "") {
+    errors.adType = "Ad Type is required";
   }
 
-  if (!data.productDescriptions || data.productDescriptions.trim() === '') {
-    errors.productDescriptions = 'Product Descriptions is required';
+  if (!data.header || data.header.trim() === "") {
+    errors.header = "Header is required";
   }
-  
+
+  if (!data.adContent || data.adContent.trim() === "") {
+    errors.adContent = "Ad Content is required";
+  }
+
+  if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
+    errors.flyerPrompts = "Flyer Prompts is required";
+  }
+
+  if (!data.promotionMessage || data.promotionMessage.trim() === "") {
+    errors.promotionMessage = "Promotion Message/Slogan is required";
+  }
+
+  if (!data.productDescriptions || data.productDescriptions.trim() === "") {
+    errors.productDescriptions = "Product Descriptions is required";
+  }
+
   // Set errors in component state if callback provided
   if (setErrorsCallback) {
     setErrorsCallback(errors);
   }
-  
+
   return {
     isValid: Object.keys(errors).length === 0,
-    errors
+    errors,
   };
 };
 

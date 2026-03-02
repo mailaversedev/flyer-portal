@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router';
-import { Search, Bell, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router";
+import { Search, Bell, LogOut } from "lucide-react";
 
-import ApiService from '../../services/ApiService';
+import ApiService from "../../services/ApiService";
 
-import './Header.css';
+import "./Header.css";
 
 const Header = () => {
   const location = useLocation();
@@ -12,7 +12,7 @@ const Header = () => {
   const [company, setCompany] = useState(null);
 
   useEffect(() => {
-    const storedCompany = localStorage.getItem('company');
+    const storedCompany = localStorage.getItem("company");
     if (storedCompany) {
       try {
         const parsedCompany = JSON.parse(storedCompany);
@@ -26,27 +26,27 @@ const Header = () => {
 
   const getPageTitle = () => {
     switch (location.pathname) {
-      case '/':
-      case '/dashboard':
-        return 'Dashboard';
-      case '/marketplace':
-        return 'Marketplace';
-      case '/flyer':
-        return 'Types of Flyer Distribution';
-      case '/flyer/create':
-        return 'Create Your Flyer';
-      case '/wallet':
-        return 'Wallet';
+      case "/":
+      case "/dashboard":
+        return "Dashboard";
+      case "/marketplace":
+        return "Marketplace";
+      case "/flyer":
+        return "Types of Flyer Distribution";
+      case "/flyer/create":
+        return "Create Your Flyer";
+      case "/wallet":
+        return "Wallet";
       default:
-        return 'Dashboard';
+        return "Dashboard";
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('company');
-    navigate('/staff/login');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("company");
+    navigate("/staff/login");
   };
 
   return (
@@ -57,18 +57,14 @@ const Header = () => {
       <div className="header-center">
         <div className="search-container">
           <Search className="search-icon" size={20} />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="search-input"
-          />
+          <input type="text" placeholder="Search..." className="search-input" />
         </div>
       </div>
       <div className="header-right">
         <button className="notification-btn">
           <Bell size={20} />
         </button>
-        
+
         {company && (
           <div className="user-info">
             <div className="user-avatar">
@@ -76,11 +72,25 @@ const Header = () => {
                 <img
                   src={company.icon}
                   alt={company.name}
-                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
-                  onError={e => { e.target.style.display = 'none'; }}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
                 />
               ) : (
-                <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: '#ccc' }}></div>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: "#ccc",
+                  }}
+                ></div>
               )}
             </div>
             <span className="user-name">{company.name}</span>
