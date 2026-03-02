@@ -51,6 +51,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       lotteryFactor,
       eventCostPercent,
       eventUsagePercent,
+      userReached,
       finalPool,
       maxUsers,
       eventMoney,
@@ -60,6 +61,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     flyerData.lottery = {
       lotteryMoney,
       maxUsers,
+      userReached,
       remaining: lotteryMoney,
       claims: 0,
       unit: "mailcoin",
@@ -72,6 +74,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       lotteryFactor,
       eventCostPercent,
       eventUsagePercent,
+      userReached,
       finalPool,
       maxUsers,
       eventMoney,
@@ -122,7 +125,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
         if (statsDoc && statsDoc.exists) {
           transaction.update(statsRef, {
             flyerCount: admin.firestore.FieldValue.increment(1),
-            totalMaxUsers: admin.firestore.FieldValue.increment(maxUsers),
+            totalClaimCount: admin.firestore.FieldValue.increment(maxUsers),
             totalEventMoney: admin.firestore.FieldValue.increment(finalPool),
             updatedAt: new Date().toISOString(),
           });
@@ -131,7 +134,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
             year: statsYear,
             month: statsMonth,
             flyerCount: 1,
-            totalMaxUsers: maxUsers,
+            totalClaimCount: maxUsers,
             totalEventMoney: finalPool,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

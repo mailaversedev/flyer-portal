@@ -56,7 +56,7 @@ const Dashboard = () => {
             totalBudget += lottery.pool;
           }
 
-          totalInteracted += lottery.finalPool;
+          totalInteracted += lottery.userReached || 0;
 
           const fType = flyer.type || "unknown";
           typeCounts[fType] = (typeCounts[fType] || 0) + 1;

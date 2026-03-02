@@ -139,7 +139,7 @@ router.post("/claim", async (req, res) => {
             flyerCount: 0,
             totalReward: 0,
             totalEventMoney: 0,
-            totalMaxUsers: 0,
+            totalClaimCount: 0,
             couponDownloadCount: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

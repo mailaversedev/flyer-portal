@@ -233,7 +233,7 @@ router.post("/login", async (req, res) => {
             flyerCount: 0,
             totalReward: 0,
             totalEventMoney: 0,
-            totalMaxUsers: 0,
+            totalClaimCount: 0,
             createdAt: now.toISOString(),
             updatedAt: now.toISOString(),
           };
@@ -249,7 +249,7 @@ router.post("/login", async (req, res) => {
             acc.claimCount += stat.claimCount || 0;
             acc.totalReward += stat.totalReward || 0;
             acc.totalEventMoney += stat.totalEventMoney || 0;
-            acc.totalMaxUsers += stat.totalMaxUsers || 0;
+            acc.totalClaimCount += stat.totalClaimCount || 0;
             acc.flyerCount += stat.flyerCount || 0;
             return acc;
           },
@@ -257,7 +257,7 @@ router.post("/login", async (req, res) => {
             claimCount: 0,
             totalReward: 0,
             totalEventMoney: 0,
-            totalMaxUsers: 0,
+            totalClaimCount: 0,
             flyerCount: 0,
           },
         );

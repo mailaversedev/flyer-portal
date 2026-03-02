@@ -37,10 +37,11 @@ function calculateLotteryMetricsFromHkd(poolHkd) {
   const mailcoinHkdRate = getMailcoinHkdRate();
   const pool = hkdToMailcoin(poolHkd);
 
+  const userReached = Math.max(0, Math.floor(poolHkd / spreadingCoefficient));
   const finalPool = Math.max(0, Math.floor(pool / spreadingCoefficient));
   const maxUsers = Math.max(
     1,
-    Math.floor(finalPool / DEFAULT_LOTTERY_FACTOR)
+    Math.floor(userReached / DEFAULT_LOTTERY_FACTOR)
   );
   const eventMoney = Math.max(
     0,
@@ -59,6 +60,7 @@ function calculateLotteryMetricsFromHkd(poolHkd) {
     lotteryFactor: DEFAULT_LOTTERY_FACTOR,
     eventCostPercent: DEFAULT_EVENT_COST_PERCENT,
     eventUsagePercent: DEFAULT_EVENT_USAGE_PERCENT,
+    userReached,
     finalPool,
     maxUsers,
     eventMoney,
