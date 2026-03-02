@@ -6,6 +6,13 @@ import { useNavigate } from 'react-router';
 const CarbonFootprint = ({ metrics }) => {
   const navigate = useNavigate();
   const counts = metrics?.typeCounts || {};
+  const totalInteracted =
+    metrics?.totalInteracted || 0;
+  const carbonKg = (totalInteracted * 3.32) / 1000;
+  const carbonKgDisplay = carbonKg.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   return (
     <div className="carbon-footprint">
@@ -26,7 +33,7 @@ const CarbonFootprint = ({ metrics }) => {
           <div className="carbon-icon">
             <Recycle size={32} />
           </div>
-          <div className="carbon-value">-111,042.16</div>
+          <div className="carbon-value">{carbonKgDisplay}</div>
           <div className="carbon-unit">KgCO2</div>
         </div>
         <div className="carbon-arc">
