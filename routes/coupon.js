@@ -57,6 +57,8 @@ router.post("/claim", async (req, res) => {
       // Coupon Details from Flyer Data
       couponType: flyerData.couponType,
       couponFile: flyerData.couponFile || null,
+      qrCodeImage: flyerData.qrCodeImage || null,
+      barcodeImage: flyerData.barcodeImage || null,
       termsConditions: flyerData.termsConditions || "",
       expiredDate: flyerData.expiredDate || "",
       discountValue: flyerData.discountValue || "",

@@ -106,6 +106,8 @@ const CouponBuilder = ({ data, onUpdate }) => {
   const [formData, setFormData] = useState({
     couponType: data?.couponType || '',
     couponFile: data?.couponFile || null,
+    qrCodeImage: data?.qrCodeImage || null,
+    barcodeImage: data?.barcodeImage || null,
     termsConditions: data?.termsConditions || '',
     expiredDate: data?.expiredDate || '',
     discountValue: data?.discountValue || '',
@@ -129,6 +131,17 @@ const CouponBuilder = ({ data, onUpdate }) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         handleInputChange('couponFile', e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageUpload = (field) => (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        handleInputChange(field, e.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -207,6 +220,72 @@ const CouponBuilder = ({ data, onUpdate }) => {
                     <button 
                       className="remove-file"
                       onClick={() => handleInputChange('couponFile', null)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Upload QR Code (Optional)</label>
+              <div className="upload-container">
+                <input
+                  type="file"
+                  id="qr-upload"
+                  accept="image/*"
+                  onChange={handleImageUpload('qrCodeImage')}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  className="upload-button"
+                  onClick={() => document.getElementById('qr-upload').click()}
+                  type="button"
+                >
+                  <span>{formData.qrCodeImage ? 'QR Image Selected' : 'Select QR image'}</span>
+                  <Upload size={16} />
+                </button>
+                {formData.qrCodeImage && (
+                  <div className="preview-container">
+                    <img src={formData.qrCodeImage} alt="QR Preview" className="file-preview" />
+                    <button
+                      className="remove-file"
+                      type="button"
+                      onClick={() => handleInputChange('qrCodeImage', null)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Upload Barcode (Optional)</label>
+              <div className="upload-container">
+                <input
+                  type="file"
+                  id="barcode-upload"
+                  accept="image/*"
+                  onChange={handleImageUpload('barcodeImage')}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  className="upload-button"
+                  onClick={() => document.getElementById('barcode-upload').click()}
+                  type="button"
+                >
+                  <span>{formData.barcodeImage ? 'Barcode Image Selected' : 'Select barcode image'}</span>
+                  <Upload size={16} />
+                </button>
+                {formData.barcodeImage && (
+                  <div className="preview-container">
+                    <img src={formData.barcodeImage} alt="Barcode Preview" className="file-preview" />
+                    <button
+                      className="remove-file"
+                      type="button"
+                      onClick={() => handleInputChange('barcodeImage', null)}
                     >
                       <X size={14} />
                     </button>

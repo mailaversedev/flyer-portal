@@ -293,7 +293,9 @@ class ApiService {
       productPhotos: data.productPhotos,
       productPhoto: data.productPhoto,
       images: data.images,
-      couponFile: data.couponFile
+      couponFile: data.couponFile,
+      qrCodeImage: data.qrCodeImage,
+      barcodeImage: data.barcodeImage
     };
 
     // Remove undefined/null fields

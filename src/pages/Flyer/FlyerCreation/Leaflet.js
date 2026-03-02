@@ -39,6 +39,8 @@ const LeafletCreation = () => {
     // Step 3 - Coupon data
     couponType: '',
     couponFile: null,
+    qrCodeImage: null,
+    barcodeImage: null,
     termsConditions: '',
     expiredDate: '',
     discountValue: '',
@@ -117,7 +119,9 @@ const LeafletCreation = () => {
       // Upload file fields (including direct-upload cover photo blob URL)
       const uploadedFileUrls = await ApiService.uploadFilesFromData({
         coverPhoto: leafletData.coverPhoto,
-        couponFile: leafletData.couponFile
+        couponFile: leafletData.couponFile,
+        qrCodeImage: leafletData.qrCodeImage,
+        barcodeImage: leafletData.barcodeImage,
       });
 
       const {
@@ -125,6 +129,8 @@ const LeafletCreation = () => {
         productPhoto,
         backgroundPhoto,
         couponFile,
+        qrCodeImage,
+        barcodeImage,
         ...remainingData
       } = leafletData;
 
