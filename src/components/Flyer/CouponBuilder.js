@@ -103,15 +103,16 @@ const DigitalCoupon = ({ companyIcon, value, description, expire, couponType }) 
 };
 
 const CouponBuilder = ({ data, onUpdate }) => {
+  const couponData = data?.coupon || {};
   const [formData, setFormData] = useState({
-    couponType: data?.couponType || '',
-    couponFile: data?.couponFile || null,
-    qrCodeImage: data?.qrCodeImage || null,
-    barcodeImage: data?.barcodeImage || null,
-    termsConditions: data?.termsConditions || '',
-    expiredDate: data?.expiredDate || '',
-    discountValue: data?.discountValue || '',
-    itemDescription: data?.itemDescription || '',
+    couponType: couponData.couponType || '',
+    couponFile: couponData.couponFile || null,
+    qrCodeImage: couponData.qrCodeImage || null,
+    barcodeImage: couponData.barcodeImage || null,
+    termsConditions: couponData.termsConditions || '',
+    expiredDate: couponData.expiredDate || '',
+    discountValue: couponData.discountValue || '',
+    itemDescription: couponData.itemDescription || '',
   });
 
   const handleInputChange = (field, value) => {
@@ -121,7 +122,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
     };
     setFormData(updatedData);
     if (onUpdate) {
-      onUpdate(updatedData);
+      onUpdate({ coupon: updatedData });
     }
   };
 

@@ -36,15 +36,6 @@ const LeafletCreation = () => {
     brandVoice: '',
     logoImage: null,
     logoPosition: 'natural placement',
-    // Step 3 - Coupon data
-    couponType: '',
-    couponFile: null,
-    qrCodeImage: null,
-    barcodeImage: null,
-    termsConditions: '',
-    expiredDate: '',
-    discountValue: '',
-    itemDescription: ''
   });
   const [loading, setLoading] = useState("");
   const [generatedHistory, setGeneratedHistory] = useState([]);
@@ -115,28 +106,34 @@ const LeafletCreation = () => {
   const handleCreate = async () => {
     try {
       setLoading("Creating flyer, please wait...");
-      
+
       // Upload file fields (including direct-upload cover photo blob URL)
       const uploadedFileUrls = await ApiService.uploadFilesFromData({
         coverPhoto: leafletData.coverPhoto,
-        couponFile: leafletData.couponFile,
-        qrCodeImage: leafletData.qrCodeImage,
-        barcodeImage: leafletData.barcodeImage,
+        couponFile: leafletData.coupon?.couponFile,
+        qrCodeImage: leafletData.coupon?.qrCodeImage,
+        barcodeImage: leafletData.coupon?.barcodeImage,
       });
 
       const {
         referenceFlyer,
         productPhoto,
         backgroundPhoto,
-        couponFile,
-        qrCodeImage,
-        barcodeImage,
+        coupon,
         ...remainingData
       } = leafletData;
 
       const finalData = {
         ...remainingData,
-        ...uploadedFileUrls,
+        coupon: {
+          ...(coupon || {}),
+          couponFile:
+            uploadedFileUrls.couponFile || coupon?.couponFile || null,
+          qrCodeImage:
+            uploadedFileUrls.qrCodeImage || coupon?.qrCodeImage || null,
+          barcodeImage:
+            uploadedFileUrls.barcodeImage || coupon?.barcodeImage || null,
+        },
         coverPhoto: uploadedFileUrls.coverPhoto || leafletData.coverPhoto 
       };
 

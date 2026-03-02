@@ -4,12 +4,12 @@ import './PerformanceStats.css';
 const PerformanceStats = ({ statsData }) => {
   const stats = [
     {
-      value: statsData ? `${statsData.avgBrowseRate}%` : '-',
+      value: '100%',
       label: 'Avg Distributed Rate',
       color: '#10b981'
     },
     {
-      value: '-', // Not available yet
+      value: statsData ? `${statsData.avgBrowseRate}%` : '-',
       label: 'Avg Browse Rate',
       color: '#3b82f6'
     },
