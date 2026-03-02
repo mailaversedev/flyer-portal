@@ -312,6 +312,10 @@ class ApiService {
     const isDataUrl = (value) =>
       typeof value === "string" && value.startsWith("data:");
 
+    // Helper function to check if a value is a blob URL
+    const isBlobUrl = (value) =>
+      typeof value === "string" && value.startsWith("blob:");
+
     // Convert data URL to File object
     const dataUrlToFile = (dataUrl, filename = "image.png") => {
       const arr = dataUrl.split(",");
@@ -325,6 +329,24 @@ class ApiService {
       return new File([u8arr], filename, { type: mime });
     };
 
+    // Convert blob URL to File object
+    const blobUrlToFile = async (blobUrl, filename = "image.png") => {
+      const response = await fetch(blobUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to read blob URL: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const extension = blob.type?.split("/")[1] || "png";
+      const resolvedName = filename.includes(".")
+        ? filename
+        : `${filename}.${extension}`;
+
+      return new File([blob], resolvedName, {
+        type: blob.type || "image/png",
+      });
+    };
+
     // Process single file field
     const processFileField = async (key, value) => {
       if (!value) return null;
@@ -335,6 +357,8 @@ class ApiService {
         fileToUpload = value;
       } else if (isDataUrl(value)) {
         fileToUpload = dataUrlToFile(value, `${key}_${Date.now()}.png`);
+      } else if (isBlobUrl(value)) {
+        fileToUpload = await blobUrlToFile(value, `${key}_${Date.now()}`);
       } else if (typeof value === "object" && value.file) {
         // Handle objects with file property (like from Step1Content)
         if (isFile(value.file)) {
@@ -343,6 +367,11 @@ class ApiService {
           fileToUpload = dataUrlToFile(
             value.preview,
             value.name || `${key}_${Date.now()}.png`
+          );
+        } else if (isBlobUrl(value.preview)) {
+          fileToUpload = await blobUrlToFile(
+            value.preview,
+            value.name || `${key}_${Date.now()}`
           );
         }
       }

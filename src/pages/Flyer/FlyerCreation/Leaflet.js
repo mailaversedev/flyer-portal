@@ -114,8 +114,9 @@ const LeafletCreation = () => {
     try {
       setLoading("Creating flyer, please wait...");
       
-      // Upload coupon file if exists
+      // Upload file fields (including direct-upload cover photo blob URL)
       const uploadedFileUrls = await ApiService.uploadFilesFromData({
+        coverPhoto: leafletData.coverPhoto,
         couponFile: leafletData.couponFile
       });
 
@@ -130,7 +131,7 @@ const LeafletCreation = () => {
       const finalData = {
         ...remainingData,
         ...uploadedFileUrls,
-        coverPhoto: leafletData.coverPhoto 
+        coverPhoto: uploadedFileUrls.coverPhoto || leafletData.coverPhoto 
       };
 
       console.log("Creating flyer with leaflet data:", finalData);
