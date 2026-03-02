@@ -74,12 +74,14 @@ const Dashboard = () => {
             adTitle: flyer.header || `Promotion ${flyer.id.substr(0, 6)}`,
             status: flyer.status === "active" ? "Live" : "Completed",
             adType: flyer.type.charAt(0).toUpperCase() + flyer.type.slice(1),
-            totalReached: lottery.claims || 0,
+            totalReached: lottery.userReached || 0,
             browseRate:
               browseRateVal > 0 ? browseRateVal.toFixed(2) + "%" : "-",
-            totalBudget: lottery.pool ? `HK$${lottery.pool.toFixed(2)}` : "-",
+            totalBudget: lottery.pool
+              ? `HK$${(lottery.pool * 0.02).toFixed(2)}`
+              : "-",
             remainingPool: lottery.remaining
-              ? `HK$${lottery.remaining.toFixed(2)}`
+              ? `HK$${(lottery.remaining * 0.02).toFixed(2)}`
               : "-",
             costPerBrowse: "-",
             downloadRate: "-",

@@ -50,7 +50,7 @@ const BudgetCard = ({ metrics }) => {
           <span className="currency">HK$</span>
           <span className="amount">
             {totalBudget
-              ? totalBudget.toLocaleString(undefined, {
+              ? (totalBudget * 0.02).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })
