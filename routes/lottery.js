@@ -84,7 +84,7 @@ router.get("/", authenticateToken, async (req, res) => {
     // Use flyer fields or fallback to defaults
     const pool = flyer.targetBudget.budget || 5000;
     const lotteryFactor = 20;
-    const spreadingCoefficient = 0.6;
+    const spreadingCoefficient = 0.845;
     const eventCostPercent = 0.2;
     const eventUsagePercent = 0.8;
 

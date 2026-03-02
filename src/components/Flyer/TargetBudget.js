@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { Download, Minus, Plus } from 'lucide-react';
 import './TargetBudget.css';
 
+const MIN_BUDGET = 1000;
+const MAX_BUDGET = 50000;
+const DEFAULT_BUDGET = 5000;
+
 const TargetBudget = ({ data, onUpdate, history = [], isDirectUpload = false }) => {
   const [formData, setFormData] = useState({
     district: data?.district || '',
@@ -9,7 +13,7 @@ const TargetBudget = ({ data, onUpdate, history = [], isDirectUpload = false }) 
     targetedGroup: data?.targetedGroup || '',
     aiTargeted: data?.aiTargeted || false,
     noSpecific: data?.noSpecific || false,
-    budget: data?.budget || 25000,
+    budget: data?.budget || DEFAULT_BUDGET,
     paymentMethod: data?.paymentMethod || '',
   });
 
@@ -55,7 +59,7 @@ const TargetBudget = ({ data, onUpdate, history = [], isDirectUpload = false }) 
   const handleBudgetChange = (value) => {
     const updatedData = {
       ...formData,
-      budget: Math.max(0, value)
+      budget: Math.max(MIN_BUDGET, Math.min(MAX_BUDGET, value))
     };
     setFormData(updatedData);
     if (onUpdate) {
@@ -189,8 +193,8 @@ const TargetBudget = ({ data, onUpdate, history = [], isDirectUpload = false }) 
             <div className="budget-slider-container">
               <input
                 type="range"
-                min="5000"
-                max="1000000"
+                min={MIN_BUDGET}
+                max={MAX_BUDGET}
                 step="1000"
                 value={formData.budget}
                 onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
@@ -202,7 +206,7 @@ const TargetBudget = ({ data, onUpdate, history = [], isDirectUpload = false }) 
             </div>
             <div className="audience-projection">
               <span className="projection-label">Projected Reached Audience</span>
-              <span className="projection-value">approximate {Math.floor(formData.budget / 0.6 / 20)} persons</span>
+              <span className="projection-value">approximate {Math.floor(formData.budget / 0.845)} persons</span>
             </div>
           </div>
 
