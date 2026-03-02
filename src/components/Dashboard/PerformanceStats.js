@@ -5,17 +5,17 @@ const PerformanceStats = ({ statsData }) => {
   const stats = [
     {
       value: statsData ? `${statsData.avgBrowseRate}%` : '-',
-      label: 'Avg Browse Rate',
+      label: 'Avg Distributed Rate',
       color: '#10b981'
     },
     {
       value: '-', // Not available yet
-      label: 'Avg Download',
+      label: 'Avg Browse Rate',
       color: '#3b82f6'
     },
     {
       value: '-', // Not available yet
-      label: 'Avg Conversion',
+      label: 'Total Coupon Downloaded',
       color: '#8b5cf6'
     },
     {

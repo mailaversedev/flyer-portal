@@ -47,12 +47,10 @@ const Dashboard = () => {
           const lottery = flyer.lottery || {};
           
           if (lottery.pool) {
-            totalBudget += (lottery.pool - (lottery.remaining || 0));
+            totalBudget += lottery.pool;
           }
 
-          if (lottery.claims) {
-            totalInteracted += lottery.claims;
-          }
+          totalInteracted += lottery.finalPool;
 
           const fType = flyer.type || 'unknown';
           typeCounts[fType] = (typeCounts[fType] || 0) + 1;

@@ -3,9 +3,9 @@ const router = express.Router();
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const { authenticateToken } = require("./auth");
-
-const spreadingCoefficient = 0.6;
-const lotteryFactor = 20;
+const {
+  calculateLotteryMetricsFromHkd,
+} = require("../config/lotteryConfig");
 
 // POST /api/flyer - Create flyer (leaflet, query, or qr code)
 router.post("/flyer", authenticateToken, async (req, res) => {
@@ -39,18 +39,27 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     }
 
     // 2. Prepare Lottery Data
-    const pool = data.targetBudget.budget;
-    const eventCostPercent = 0.2;
-    const eventUsagePercent = 0.8;
-    const finalPool = pool / spreadingCoefficient;
-    const maxUsers = Math.floor(finalPool / lotteryFactor);
-    const eventMoney = pool * (1 - eventCostPercent);
-    const lotteryMoney = eventMoney * eventUsagePercent;
+    const poolHkd = data?.targetBudget?.budget || 5000;
+    const {
+      pool,
+      spreadingCoefficient,
+      mailcoinHkdRate,
+      lotteryFactor,
+      eventCostPercent,
+      eventUsagePercent,
+      finalPool,
+      maxUsers,
+      eventMoney,
+      lotteryMoney,
+    } = calculateLotteryMetricsFromHkd(poolHkd);
 
     flyerData.lottery = {
       lotteryMoney,
-      remaining: maxUsers - 1,
-      claims: 0
+      maxUsers,
+      remaining: lotteryMoney,
+      claims: 0,
+      unit: "mailcoin",
+      mailcoinHkdRate,
     };
 
     const lotteryEvent = {
@@ -65,6 +74,8 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       lotteryMoney,
       claims: 0,
       remaining: lotteryMoney,
+      unit: "mailcoin",
+      mailcoinHkdRate,
       createdAt: new Date().toISOString(),
       status: "active",
     };
@@ -128,7 +139,10 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     // 5. Distribute 20% of pool to all active users
     // Note: This is kept outside the transaction to avoid hitting Firestore operation limits (500 ops)
     // as the user base grows. It runs only if the transaction above succeeds.
-    const distributionAmount = pool * eventUsagePercent * eventCostPercent;
+    const distributionAmount = Math.max(
+      0,
+      Math.floor(pool * eventUsagePercent * eventCostPercent)
+    );
     const usersSnapshot = await db
       .collection("users")
       .where("isActive", "==", true)
@@ -136,7 +150,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
 
     if (!usersSnapshot.empty) {
       const activeUsersCount = usersSnapshot.size;
-      const amountPerUser = distributionAmount / activeUsersCount;
+      const amountPerUser = Math.floor(distributionAmount / activeUsersCount);
       const timestamp = new Date().toISOString();
 
       const updates = usersSnapshot.docs.map(async (userDoc) => {

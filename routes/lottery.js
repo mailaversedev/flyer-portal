@@ -4,6 +4,9 @@ const { v4: uuidv4 } = require("uuid");
 const admin = require("firebase-admin");
 const db = admin.firestore();
 const { authenticateToken } = require("./auth");
+const {
+  calculateLotteryMetricsFromHkd,
+} = require("../config/lotteryConfig");
 
 // GET /api/lottery/stream - SSE endpoint for real-time lottery updates
 router.get("/stream", (req, res) => {
@@ -82,22 +85,14 @@ router.get("/", authenticateToken, async (req, res) => {
 
     const flyer = flyerDoc.data();
     // Use flyer fields or fallback to defaults
-    const pool = flyer.targetBudget.budget || 5000;
-    const lotteryFactor = 20;
-    const spreadingCoefficient = 0.845;
-    const eventCostPercent = 0.2;
-    const eventUsagePercent = 0.8;
-
-    // Step 1: Calculate final pool after spreading
-    const finalPool = pool / spreadingCoefficient;
-    // Step 2: Max number of users to get the lottery
-    const maxUsers = Math.floor(finalPool / lotteryFactor);
-    // Step 3: 80% of original pool used for event, 20% as cost
-    const eventMoney = pool * (1 - eventCostPercent);
-    // Step 4: 80% of event money used for lottery
-    const lotteryMoney = eventMoney * eventUsagePercent;
-    // Step 5: Average money per user
-    const avgMoneyPerUser = lotteryMoney / maxUsers;
+    const poolHkd = flyer?.targetBudget?.budget || 5000;
+    const {
+      pool,
+      lotteryMoney,
+      maxUsers,
+      avgMoneyPerUser,
+      mailcoinHkdRate,
+    } = calculateLotteryMetricsFromHkd(poolHkd);
 
     // --- Firestore collections ---
     const lotteryStateRef = db.collection("lottery").doc(flyerId);
@@ -131,12 +126,19 @@ router.get("/", authenticateToken, async (req, res) => {
       if (userClaimDoc.exists) {
         // Already claimed, return previous result
         const data = userClaimDoc.data();
+        const effectiveMaxUsers = Math.max(1, Math.floor(data.maxUsers || maxUsers));
+        const effectiveAvgMoneyPerUser = Math.max(
+          0,
+          Math.floor(data.avgMoneyPerUser || avgMoneyPerUser)
+        );
         res.status(200).json({
           success: true,
           message: "Already claimed",
           ...data,
-          avgMoneyPerUser,
-          maxUsers,
+          avgMoneyPerUser: effectiveAvgMoneyPerUser,
+          maxUsers: effectiveMaxUsers,
+          unit: "mailcoin",
+          mailcoinHkdRate,
         });
         throw new Error("__ALREADY_CLAIMED__"); // abort transaction
       }
@@ -152,19 +154,36 @@ router.get("/", authenticateToken, async (req, res) => {
           maxUsers,
           claims: 0,
           remaining: lotteryMoney,
+          unit: "mailcoin",
+          mailcoinHkdRate,
         };
         // We must perform the write later, after all reads
       } else {
         state = lotteryStateDoc.data();
       }
 
+      state.claims = Math.max(0, Math.floor(state.claims || 0));
+      state.maxUsers = Math.max(1, Math.floor(state.maxUsers || maxUsers));
+      state.lotteryMoney = Math.max(
+        0,
+        Math.floor(state.lotteryMoney || lotteryMoney)
+      );
+      state.remaining = Math.max(0, Math.floor(state.remaining || 0));
+
+      const effectiveAvgMoneyPerUser = Math.max(
+        0,
+        Math.floor(state.lotteryMoney / state.maxUsers)
+      );
+
       // 3. Check if pool is depleted or max users reached
       if (state.claims >= state.maxUsers || state.remaining <= 0) {
         res.status(200).json({
           success: false,
           message: "All lottery rewards have been claimed",
-          avgMoneyPerUser,
-          maxUsers,
+          avgMoneyPerUser: effectiveAvgMoneyPerUser,
+          maxUsers: state.maxUsers,
+          unit: "mailcoin",
+          mailcoinHkdRate,
         });
         throw new Error("__POOL_DEPLETED__");
       }
@@ -211,13 +230,17 @@ router.get("/", authenticateToken, async (req, res) => {
         // Last user gets all remaining
         reward = state.remaining;
       } else {
-        // Fluctuate +-50% of avgMoneyPerUser, but not more than remaining
-        const min = Math.max(0, avgMoneyPerUser * 0.5);
-        const max = Math.min(state.remaining, avgMoneyPerUser * 1.5);
-        reward = Math.random() * (max - min) + min;
-        reward = Math.floor(reward * 100) / 100; // round to 2 decimals
-        // Don't let reward exceed remaining for last user
-        if (reward > state.remaining) reward = state.remaining;
+        // Fluctuate +-50% of average in integer mailcoin, bounded by remaining
+        const min = Math.max(0, Math.floor(effectiveAvgMoneyPerUser * 0.5));
+        const max = Math.min(
+          state.remaining,
+          Math.floor(effectiveAvgMoneyPerUser * 1.5)
+        );
+        if (max <= min) {
+          reward = min;
+        } else {
+          reward = Math.floor(Math.random() * (max - min + 1)) + min;
+        }
       }
 
       // 5. Update state (WRITE)
@@ -235,9 +258,11 @@ router.get("/", authenticateToken, async (req, res) => {
         reward,
         claimedAt: new Date().toISOString(),
         claimNumber: newClaims,
-        avgMoneyPerUser,
-        maxUsers,
+        avgMoneyPerUser: effectiveAvgMoneyPerUser,
+        maxUsers: state.maxUsers,
         remainingAfter: newRemaining,
+        unit: "mailcoin",
+        mailcoinHkdRate,
       };
       transaction.set(userClaimsRef, claimData);
 
