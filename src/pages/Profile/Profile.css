@@ -5,16 +5,17 @@
 }
 
 .profile-card {
-  background: #ffffff;
-  border-radius: 12px;
+  background: #2a3447;
+  border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #3a4553;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .profile-card h2 {
   margin-top: 0;
   margin-bottom: 24px;
-  color: #333;
+  color: white;
   font-size: 24px;
 }
 
@@ -26,14 +27,16 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #555;
+  color: #9ca3af;
 }
 
 .profile-form input,
 .profile-form select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  background: #374151;
+  color: white;
+  border: 1px solid #4b5563;
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.2s;
