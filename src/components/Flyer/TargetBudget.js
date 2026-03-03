@@ -146,11 +146,24 @@ const TargetBudget = ({
                 onChange={(e) => handleInputChange("district", e.target.value)}
               >
                 <option value="">Please select</option>
-                <option value="central">Central</option>
+                <option value="central-&-western">Central & Western</option>
                 <option value="wan-chai">Wan Chai</option>
-                <option value="causeway-bay">Causeway Bay</option>
-                <option value="tsim-sha-tsui">Tsim Sha Tsui</option>
-                <option value="mong-kok">Mong Kok</option>
+                <option value="eastern">Eastern</option>
+                <option value="southern">Southern</option>
+                <option value="yau-tsim-mong">Yau Tsim Mong</option>
+                <option value="sham-shui-po">Sham Shui Po</option>
+                <option value="kowloon-city">Kowloon City</option>
+                <option value="wong-tai-sin">Wong Tai Sin</option>
+                <option value="kwun-tong">Kwun Tong</option>
+                <option value="tsuen-wan">Tsuen Wan</option>
+                <option value="tuen-mun">Tuen Mun</option>
+                <option value="yuen-long">Yuen Long</option>
+                <option value="north">North</option>
+                <option value="tai-po">Tai Po</option>
+                <option value="sai-kung">Sai Kung</option>
+                <option value="sha-tin">Sha Tin</option>
+                <option value="kwai-tsing">Kwai Tsing</option>
+                <option value="islands">Islands</option>
               </select>
             </div>
           </div>
