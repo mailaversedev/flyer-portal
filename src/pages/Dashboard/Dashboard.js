@@ -74,6 +74,11 @@ const Dashboard = () => {
             count++;
           }
 
+          let downloadRateVal = 0;
+          if (coupon.downloadCount && lottery.userReached) {
+            downloadRateVal = (coupon.downloadCount / lottery.userReached) * 100;
+          }
+
           return {
             id: flyer.id,
             thumbnail: flyer?.coverPhoto || "📄",
@@ -90,7 +95,7 @@ const Dashboard = () => {
               ? `HK$${(lottery.remaining * 0.02).toFixed(2)}`
               : "-",
             costPerBrowse: "-",
-            downloadRate: coupon.downloadCount ? `${coupon.downloadCount}` : "0",
+            downloadRate: downloadRateVal > 0 ? downloadRateVal.toFixed(2) + "%" : "-",
             convertedRate: "-",
           };
         });
