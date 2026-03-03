@@ -109,6 +109,14 @@ class ApiService {
     });
   }
 
+  // PUT /api/auth/staff/company - Update Company Profile
+  static async updateCompanyProfile(companyData) {
+    return this.makeRequest("/api/auth/staff/company", {
+      method: "PUT",
+      body: JSON.stringify(companyData),
+    });
+  }
+
   // POST /api/auth/staff/register - Staff Registration
   static async registerStaff(data) {
     return this.makeRequest("/api/auth/staff/register", {

@@ -8,6 +8,7 @@ import LeafletCreation from "./pages/Flyer/FlyerCreation/Leaflet";
 import QueryCreation from "./pages/Flyer/FlyerCreation/Query";
 import QRGeneration from "./pages/Flyer/FlyerCreation/QRGeneration";
 import StaffLogin from "./pages/Login/StaffLogin";
+import Profile from "./pages/Profile/Profile";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import "./App.css";
 
@@ -37,6 +38,7 @@ function App() {
                     />
                     <Route path="/flyer/create/qr" element={<QRGeneration />} />
                     <Route path="/wallet" element={<div>Wallet Page</div>} />
+                    <Route path="/profile" element={<Profile />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

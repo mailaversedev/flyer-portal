@@ -12,16 +12,24 @@ const Header = () => {
   const [company, setCompany] = useState(null);
 
   useEffect(() => {
-    const storedCompany = localStorage.getItem("company");
-    if (storedCompany) {
-      try {
-        const parsedCompany = JSON.parse(storedCompany);
-        setCompany(parsedCompany);
-        ApiService.setCurrentCompany(parsedCompany);
-      } catch (e) {
-        console.error("Failed to parse company info", e);
+    const handleStorageChange = () => {
+      const storedCompany = localStorage.getItem("company");
+      if (storedCompany) {
+        try {
+          const parsedCompany = JSON.parse(storedCompany);
+          setCompany(parsedCompany);
+          ApiService.setCurrentCompany(parsedCompany);
+        } catch (e) {
+          console.error("Failed to parse company info", e);
+        }
       }
-    }
+    };
+
+    // Initial load from storage mapping
+    handleStorageChange();
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const getPageTitle = () => {
@@ -35,6 +43,8 @@ const Header = () => {
         return "Types of Flyer Distribution";
       case "/flyer/create":
         return "Create Your Flyer";
+      case "/profile":
+        return "Company Profile";
       case "/wallet":
         return "Wallet";
       default:
@@ -66,7 +76,12 @@ const Header = () => {
         </button>
 
         {company && (
-          <div className="user-info">
+          <div 
+            className="user-info" 
+            onClick={() => navigate("/profile")}
+            style={{ cursor: "pointer" }}
+            title="Edit Profile"
+          >
             <div className="user-avatar">
               {company.icon ? (
                 <img
