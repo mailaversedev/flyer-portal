@@ -42,6 +42,7 @@ const BudgetCard = ({ metrics }) => {
             )}
           </div>
           <UserMetrics
+            totalCouponDownloaded={metrics?.totalCouponDownloaded || 0}
             totalInteracted={metrics?.totalInteracted || 0}
             avgBrowseRate={metrics?.avgBrowseRate || 0}
           />
