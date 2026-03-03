@@ -150,7 +150,9 @@ router.post("/claim", async (req, res) => {
       transaction.set(
         flyerRef,
         {
-          "coupon.downloadCount": admin.firestore.FieldValue.increment(1),
+          coupon: {
+            downloadCount: admin.firestore.FieldValue.increment(1),
+          },
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
