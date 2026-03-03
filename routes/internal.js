@@ -217,4 +217,62 @@ router.post("/notification", authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/internal/districts - Get list of HK Districts
+router.get("/districts", authenticateToken, (req, res) => {
+  const districts = [
+    "Central & Western", "Wan Chai", "Eastern", "Southern",
+    "Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong",
+    "Tsuen Wan", "Tuen Mun", "Yuen Long", "North",
+    "Tai Po", "Sai Kung", "Sha Tin", "Kwai Tsing", "Islands"
+  ];
+  res.status(200).json({
+    success: true,
+    data: districts
+  });
+});
+
+// GET /api/internal/buildings - Search buildings via CSDI API
+router.get("/buildings", authenticateToken, async (req, res) => {
+  try {
+    const { filter, startIndex = "0" } = req.query;
+    if (!filter) {
+      return res.status(400).json({ success: false, message: "Filter query param is required" });
+    }
+
+    let filterValue = filter;
+    if (filterValue === "Central & Western") {
+      filterValue = "Central%";
+    }
+
+    const filterXml = `<Filter><PropertyIsLike wildCard='%' singleChar='_' escapeChar='!'><PropertyName>SEARCH1_E</PropertyName><Literal>${filterValue}</Literal></PropertyIsLike></Filter>`;
+    
+    const url = new URL("https://portal.csdi.gov.hk/server/services/common/bd_rcd_1631167534872_19764/MapServer/WFSServer");
+    url.search = new URLSearchParams({
+      service: "wfs",
+      request: "GetFeature",
+      typenames: "BDBIAR",
+      outputFormat: "geojson",
+      count: "100",
+      startIndex: startIndex.toString(),
+      filter: filterXml
+    }).toString();
+
+    // Use native fetch (Node 18+)
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.status(200).json({
+      success: true,
+      data: data
+    });
+  } catch (error) {
+    console.error("Error fetching buildings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error fetching buildings",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Download, Minus, Plus } from "lucide-react";
+
+import ApiService from "../../services/ApiService";
 import "./TargetBudget.css";
 
 const MIN_BUDGET = 1000;
@@ -23,86 +25,88 @@ const TargetBudget = ({
   });
 
   const [previewZoom, setPreviewZoom] = useState(100);
+  const [districtOptions, setDistrictOptions] = useState([]);
   const [buildingOptions, setBuildingOptions] = useState([]);
   const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
-  const [buildingStartIndex, setBuildingStartIndex] = useState(0);
-  const [hasMoreBuildings, setHasMoreBuildings] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
-  // Reset pagination when district changes
+  // Fetch districts on mount
   useEffect(() => {
-    setBuildingOptions([]);
-    setBuildingStartIndex(0);
-    setHasMoreBuildings(true);
-  }, [formData.district]);
+    const fetchDistricts = async () => {
+      try {
+        const res = await ApiService.getDistricts();
+        if (res.success && res.data) {
+          setDistrictOptions(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to load district options", error);
+      }
+    };
+    fetchDistricts();
+  }, []);
 
-  // Fetch buildings whenever district or startIndex changes
+  // Fetch all buildings automatically when district changes
   useEffect(() => {
-    const fetchBuildings = async () => {
+    let isCancelled = false;
+
+    const fetchAllBuildings = async () => {
       if (!formData.district) {
+        setBuildingOptions([]);
         return;
       }
 
       setIsLoadingBuildings(true);
+      setLoadingProgress(0);
+      setBuildingOptions([]);
+      
       try {
-        let filterValue = formData.district;
-        // Search API specifies we need a wildcard for Central & Western
-        if (filterValue === "Central & Western") {
-          filterValue = "Central%";
-        }
+        let allUniqueNames = new Set();
+        let startIndex = 0;
+        let hasMore = true;
 
-        const filterXml = `<Filter><PropertyIsLike wildCard='%' singleChar='_' escapeChar='!'><PropertyName>SEARCH1_E</PropertyName><Literal>${filterValue}</Literal></PropertyIsLike></Filter>`;
-        
-        const url = new URL("https://portal.csdi.gov.hk/server/services/common/bd_rcd_1631167534872_19764/MapServer/WFSServer");
-        url.search = new URLSearchParams({
-          service: "wfs",
-          request: "GetFeature",
-          typenames: "BDBIAR",
-          outputFormat: "geojson",
-          count: "100",
-          startIndex: buildingStartIndex.toString(),
-          filter: filterXml
-        }).toString();
-
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data && data.features) {
-          const names = data.features.map(f => f.properties.ADDRESS_E).filter(Boolean);
-          const uniqueNames = [...new Set(names)].sort();
+        while (hasMore && !isCancelled) {
+          const response = await ApiService.getBuildings(formData.district, startIndex);
           
-          if (buildingStartIndex === 0) {
-            setBuildingOptions(uniqueNames);
-          } else {
-            setBuildingOptions(prev => {
-              const combined = [...prev, ...uniqueNames];
-              return [...new Set(combined)].sort();
-            });
-          }
+          if (response.success && response.data && response.data.features && response.data.features.length > 0) {
+            const data = response.data;
+            const names = data.features.map(f => f.properties.ADDRESS_E).filter(Boolean);
+            names.forEach(n => allUniqueNames.add(n));
+            
+            // Increment progress artificially just to show movement since we don't know the exact total
+            setLoadingProgress(prev => Math.min(prev + 15, 95));
 
-          if (data.features.length < 100) {
-            setHasMoreBuildings(false);
+            if (data.features.length < 100) {
+              hasMore = false;
+            } else {
+              startIndex += 100;
+            }
           } else {
-            setHasMoreBuildings(true);
+            hasMore = false;
           }
-        } else {
-          if (buildingStartIndex === 0) setBuildingOptions([]);
-          setHasMoreBuildings(false);
+        }
+        
+        if (!isCancelled) {
+          setLoadingProgress(100);
+          setBuildingOptions([...allUniqueNames].sort());
         }
       } catch (error) {
-        console.error("Failed to fetch building data", error);
-        if (buildingStartIndex === 0) setBuildingOptions([]);
+        if (!isCancelled) {
+          console.error("Failed to fetch building data", error);
+          setBuildingOptions([]);
+        }
       } finally {
-        setIsLoadingBuildings(false);
+        if (!isCancelled) {
+          setTimeout(() => setIsLoadingBuildings(false), 500); // Give progress bar half a second to show 100%
+        }
       }
     };
 
-    fetchBuildings();
-  }, [formData.district, buildingStartIndex]);
-
-  const handleLoadMoreBuildings = (e) => {
-    e.preventDefault();
-    setBuildingStartIndex(prev => prev + 100);
-  };
+    fetchAllBuildings();
+    
+    return () => {
+      isCancelled = true;
+    };
+  }, [formData.district]);
 
   const handleInputChange = (field, value) => {
     const updatedData = {
@@ -226,44 +230,48 @@ const TargetBudget = ({
                 onChange={(e) => handleInputChange("district", e.target.value)}
               >
                 <option value="">Please select</option>
-                <option value="Central & Western">Central & Western</option>
-                <option value="Wan Chai">Wan Chai</option>
-                <option value="Eastern">Eastern</option>
-                <option value="Southern">Southern</option>
-                <option value="Yau Tsim Mong">Yau Tsim Mong</option>
-                <option value="Sham Shui Po">Sham Shui Po</option>
-                <option value="Kowloon City">Kowloon City</option>
-                <option value="Wong Tai Sin">Wong Tai Sin</option>
-                <option value="Kwun Tong">Kwun Tong</option>
-                <option value="Tsuen Wan">Tsuen Wan</option>
-                <option value="Tuen Mun">Tuen Mun</option>
-                <option value="Yuen Long">Yuen Long</option>
-                <option value="North">North</option>
-                <option value="Tai Po">Tai Po</option>
-                <option value="Sai Kung">Sai Kung</option>
-                <option value="Sha Tin">Sha Tin</option>
-                <option value="Kwai Tsing">Kwai Tsing</option>
-                <option value="Islands">Islands</option>
+                {districtOptions.map((district, idx) => (
+                  <option key={idx} value={district}>
+                    {district}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           {/* Property Estate/Building Name */}
           <div className="form-group">
-            <label className="form-label">Property Estate/Building Name</label>
-            <div className="select-wrapper" style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Property Estate/Building Name</label>
+              {isLoadingBuildings && (
+                <span style={{ fontSize: "12px", color: "#64748b" }}>Loading data...</span>
+              )}
+            </div>
+            
+            {isLoadingBuildings && (
+              <div style={{ width: "100%", height: "4px", backgroundColor: "#e2e8f0", borderRadius: "2px", marginBottom: "8px", overflow: "hidden" }}>
+                <div style={{ 
+                  height: "100%", 
+                  width: `${loadingProgress}%`, 
+                  backgroundColor: "#3b82f6", 
+                  transition: "width 0.3s ease" 
+                }}></div>
+              </div>
+            )}
+
+            <div className="select-wrapper">
               <select
                 className="form-select"
                 value={formData.propertyEstate}
                 onChange={(e) =>
                   handleInputChange("propertyEstate", e.target.value)
                 }
-                disabled={(isLoadingBuildings && buildingStartIndex === 0) || !formData.district}
-                style={{ flex: 1 }}
+                disabled={isLoadingBuildings || !formData.district}
+                style={{ width: "100%" }}
               >
                 <option value="">
-                  {isLoadingBuildings && buildingStartIndex === 0
-                    ? "Loading buildings..." 
+                  {isLoadingBuildings
+                    ? "Loading all buildings..." 
                     : !formData.district 
                       ? "Select district first" 
                       : "Please select a building"}
@@ -274,26 +282,6 @@ const TargetBudget = ({
                   </option>
                 ))}
               </select>
-              {formData.district && hasMoreBuildings && (
-                <button
-                  type="button"
-                  className="btn-outline"
-                  onClick={handleLoadMoreBuildings}
-                  disabled={isLoadingBuildings}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #e2e8f0",
-                    background: "white",
-                    cursor: isLoadingBuildings ? "not-allowed" : "pointer",
-                    fontSize: "14px",
-                    color: "#64748b",
-                    whiteSpace: "nowrap"
-                  }}
-                >
-                  {isLoadingBuildings && buildingStartIndex > 0 ? "Loading..." : "Load More"}
-                </button>
-              )}
             </div>
           </div>
 

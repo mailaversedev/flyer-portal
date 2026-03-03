@@ -117,6 +117,16 @@ class ApiService {
     });
   }
 
+  // GET /api/internal/buildings - Get HK Buildings
+  static async getBuildings(filter, startIndex = 0) {
+    return this.makeRequest(`/api/internal/buildings?filter=${encodeURIComponent(filter)}&startIndex=${startIndex}`);
+  }
+
+  // GET /api/internal/districts - Get HK Districts
+  static async getDistricts() {
+    return this.makeRequest(`/api/internal/districts`);
+  }
+
   // POST /api/auth/staff/register - Staff Registration
   static async registerStaff(data) {
     return this.makeRequest("/api/auth/staff/register", {
