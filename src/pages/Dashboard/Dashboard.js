@@ -46,14 +46,20 @@ const Dashboard = () => {
         let totalBudget = 0;
         let totalBrowseRate = 0;
         let totalInteracted = 0;
+        let totalCouponDownloaded = 0;
         let typeCounts = {};
         let count = 0;
 
         const formattedData = response.data.map((flyer) => {
           const lottery = flyer.lottery || {};
+          const coupon = flyer.coupon || {};
 
           if (lottery.pool) {
             totalBudget += lottery.pool;
+          }
+
+          if (coupon.downloadCount) {
+             totalCouponDownloaded += coupon.downloadCount;
           }
 
           totalInteracted += lottery.userReached || 0;
@@ -84,7 +90,7 @@ const Dashboard = () => {
               ? `HK$${(lottery.remaining * 0.02).toFixed(2)}`
               : "-",
             costPerBrowse: "-",
-            downloadRate: "-",
+            downloadRate: coupon.downloadCount ? `${coupon.downloadCount}` : "0",
             convertedRate: "-",
           };
         });
@@ -93,6 +99,7 @@ const Dashboard = () => {
           totalBudget,
           avgBrowseRate: count > 0 ? (totalBrowseRate / count).toFixed(2) : 0,
           totalInteracted,
+          totalCouponDownloaded,
           typeCounts,
         });
 

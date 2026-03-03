@@ -251,6 +251,7 @@ router.post("/login", async (req, res) => {
             acc.totalEventMoney += stat.totalEventMoney || 0;
             acc.totalClaimCount += stat.totalClaimCount || 0;
             acc.flyerCount += stat.flyerCount || 0;
+            acc.couponDownloadCount += stat.couponDownloadCount || 0;
             return acc;
           },
           {
@@ -259,12 +260,14 @@ router.post("/login", async (req, res) => {
             totalEventMoney: 0,
             totalClaimCount: 0,
             flyerCount: 0,
+            couponDownloadCount: 0,
           },
         );
         companyInfo.stats = {
           year,
           claimCount: aggregated.claimCount,
           totalReward: aggregated.totalReward,
+          couponDownloadCount: aggregated.couponDownloadCount,
           months: aggregated.months,
           monthly: statsList,
         };

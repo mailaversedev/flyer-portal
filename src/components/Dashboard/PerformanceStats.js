@@ -9,12 +9,12 @@ const PerformanceStats = ({ statsData }) => {
       color: "#10b981",
     },
     {
-      value: statsData ? `${statsData.avgBrowseRate}%` : "-",
+      value: statsData && statsData.avgBrowseRate ? `${statsData.avgBrowseRate}%` : "-",
       label: "Avg Browse Rate",
       color: "#3b82f6",
     },
     {
-      value: "-", // Not available yet
+      value: statsData && statsData.totalCouponDownloaded ? statsData.totalCouponDownloaded : "-", 
       label: "Total Coupon Downloaded",
       color: "#8b5cf6",
     },
