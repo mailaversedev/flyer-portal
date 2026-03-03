@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Download, Minus, Plus } from "lucide-react";
 import "./TargetBudget.css";
 
@@ -23,6 +23,86 @@ const TargetBudget = ({
   });
 
   const [previewZoom, setPreviewZoom] = useState(100);
+  const [buildingOptions, setBuildingOptions] = useState([]);
+  const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
+  const [buildingStartIndex, setBuildingStartIndex] = useState(0);
+  const [hasMoreBuildings, setHasMoreBuildings] = useState(true);
+
+  // Reset pagination when district changes
+  useEffect(() => {
+    setBuildingOptions([]);
+    setBuildingStartIndex(0);
+    setHasMoreBuildings(true);
+  }, [formData.district]);
+
+  // Fetch buildings whenever district or startIndex changes
+  useEffect(() => {
+    const fetchBuildings = async () => {
+      if (!formData.district) {
+        return;
+      }
+
+      setIsLoadingBuildings(true);
+      try {
+        let filterValue = formData.district;
+        // Search API specifies we need a wildcard for Central & Western
+        if (filterValue === "Central & Western") {
+          filterValue = "Central%";
+        }
+
+        const filterXml = `<Filter><PropertyIsLike wildCard='%' singleChar='_' escapeChar='!'><PropertyName>SEARCH1_E</PropertyName><Literal>${filterValue}</Literal></PropertyIsLike></Filter>`;
+        
+        const url = new URL("https://portal.csdi.gov.hk/server/services/common/bd_rcd_1631167534872_19764/MapServer/WFSServer");
+        url.search = new URLSearchParams({
+          service: "wfs",
+          request: "GetFeature",
+          typenames: "BDBIAR",
+          outputFormat: "geojson",
+          count: "100",
+          startIndex: buildingStartIndex.toString(),
+          filter: filterXml
+        }).toString();
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data && data.features) {
+          const names = data.features.map(f => f.properties.ADDRESS_E).filter(Boolean);
+          const uniqueNames = [...new Set(names)].sort();
+          
+          if (buildingStartIndex === 0) {
+            setBuildingOptions(uniqueNames);
+          } else {
+            setBuildingOptions(prev => {
+              const combined = [...prev, ...uniqueNames];
+              return [...new Set(combined)].sort();
+            });
+          }
+
+          if (data.features.length < 100) {
+            setHasMoreBuildings(false);
+          } else {
+            setHasMoreBuildings(true);
+          }
+        } else {
+          if (buildingStartIndex === 0) setBuildingOptions([]);
+          setHasMoreBuildings(false);
+        }
+      } catch (error) {
+        console.error("Failed to fetch building data", error);
+        if (buildingStartIndex === 0) setBuildingOptions([]);
+      } finally {
+        setIsLoadingBuildings(false);
+      }
+    };
+
+    fetchBuildings();
+  }, [formData.district, buildingStartIndex]);
+
+  const handleLoadMoreBuildings = (e) => {
+    e.preventDefault();
+    setBuildingStartIndex(prev => prev + 100);
+  };
 
   const handleInputChange = (field, value) => {
     const updatedData = {
@@ -146,24 +226,24 @@ const TargetBudget = ({
                 onChange={(e) => handleInputChange("district", e.target.value)}
               >
                 <option value="">Please select</option>
-                <option value="central-&-western">Central & Western</option>
-                <option value="wan-chai">Wan Chai</option>
-                <option value="eastern">Eastern</option>
-                <option value="southern">Southern</option>
-                <option value="yau-tsim-mong">Yau Tsim Mong</option>
-                <option value="sham-shui-po">Sham Shui Po</option>
-                <option value="kowloon-city">Kowloon City</option>
-                <option value="wong-tai-sin">Wong Tai Sin</option>
-                <option value="kwun-tong">Kwun Tong</option>
-                <option value="tsuen-wan">Tsuen Wan</option>
-                <option value="tuen-mun">Tuen Mun</option>
-                <option value="yuen-long">Yuen Long</option>
-                <option value="north">North</option>
-                <option value="tai-po">Tai Po</option>
-                <option value="sai-kung">Sai Kung</option>
-                <option value="sha-tin">Sha Tin</option>
-                <option value="kwai-tsing">Kwai Tsing</option>
-                <option value="islands">Islands</option>
+                <option value="Central & Western">Central & Western</option>
+                <option value="Wan Chai">Wan Chai</option>
+                <option value="Eastern">Eastern</option>
+                <option value="Southern">Southern</option>
+                <option value="Yau Tsim Mong">Yau Tsim Mong</option>
+                <option value="Sham Shui Po">Sham Shui Po</option>
+                <option value="Kowloon City">Kowloon City</option>
+                <option value="Wong Tai Sin">Wong Tai Sin</option>
+                <option value="Kwun Tong">Kwun Tong</option>
+                <option value="Tsuen Wan">Tsuen Wan</option>
+                <option value="Tuen Mun">Tuen Mun</option>
+                <option value="Yuen Long">Yuen Long</option>
+                <option value="North">North</option>
+                <option value="Tai Po">Tai Po</option>
+                <option value="Sai Kung">Sai Kung</option>
+                <option value="Sha Tin">Sha Tin</option>
+                <option value="Kwai Tsing">Kwai Tsing</option>
+                <option value="Islands">Islands</option>
               </select>
             </div>
           </div>
@@ -171,15 +251,50 @@ const TargetBudget = ({
           {/* Property Estate/Building Name */}
           <div className="form-group">
             <label className="form-label">Property Estate/Building Name</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Please type"
-              value={formData.propertyEstate}
-              onChange={(e) =>
-                handleInputChange("propertyEstate", e.target.value)
-              }
-            />
+            <div className="select-wrapper" style={{ display: "flex", gap: "8px" }}>
+              <select
+                className="form-select"
+                value={formData.propertyEstate}
+                onChange={(e) =>
+                  handleInputChange("propertyEstate", e.target.value)
+                }
+                disabled={(isLoadingBuildings && buildingStartIndex === 0) || !formData.district}
+                style={{ flex: 1 }}
+              >
+                <option value="">
+                  {isLoadingBuildings && buildingStartIndex === 0
+                    ? "Loading buildings..." 
+                    : !formData.district 
+                      ? "Select district first" 
+                      : "Please select a building"}
+                </option>
+                {buildingOptions.map((building, idx) => (
+                  <option key={idx} value={building}>
+                    {building}
+                  </option>
+                ))}
+              </select>
+              {formData.district && hasMoreBuildings && (
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={handleLoadMoreBuildings}
+                  disabled={isLoadingBuildings}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #e2e8f0",
+                    background: "white",
+                    cursor: isLoadingBuildings ? "not-allowed" : "pointer",
+                    fontSize: "14px",
+                    color: "#64748b",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  {isLoadingBuildings && buildingStartIndex > 0 ? "Loading..." : "Load More"}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Targeted Group */}
