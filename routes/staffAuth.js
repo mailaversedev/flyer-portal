@@ -1,10 +1,12 @@
 const express = require("express");
-const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
-const db = admin.firestore();
+
 const { authenticateToken } = require("./auth");
+
+const router = express.Router();
+const db = admin.firestore();
 
 // JWT Secret - In production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || "flyer-portal-secret-key-2024";

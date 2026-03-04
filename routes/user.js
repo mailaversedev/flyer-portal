@@ -1,6 +1,7 @@
 const express = require("express");
-const router = express.Router();
 const admin = require("firebase-admin");
+
+const router = express.Router();
 const db = admin.firestore();
 
 // GET /profile - Get user profile

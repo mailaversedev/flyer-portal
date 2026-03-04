@@ -1,6 +1,8 @@
 const express = require("express");
-const router = express.Router();
+
 const { COMPANY_INDUSTRIES } = require("../config/companyIndustries");
+
+const router = express.Router();
 
 router.get("/industries", (_req, res) => {
   res.status(200).json({

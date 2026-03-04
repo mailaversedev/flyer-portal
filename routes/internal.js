@@ -1,9 +1,11 @@
 const express = require("express");
-const router = express.Router();
 const admin = require("firebase-admin");
-const db = admin.firestore();
 const nodemailer = require("nodemailer");
+
 const { authenticateToken } = require("./auth");
+
+const router = express.Router();
+const db = admin.firestore();
 
 // POST /api/internal/send-otp-email (no authentication required)
 

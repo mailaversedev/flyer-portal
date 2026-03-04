@@ -1,10 +1,12 @@
 const express = require("express");
-const router = express.Router();
 const { v4: uuidv4 } = require("uuid");
 const admin = require("firebase-admin");
-const db = admin.firestore();
+
 const { authenticateToken } = require("./auth");
 const { calculateLotteryMetricsFromHkd } = require("../config/lotteryConfig");
+
+const router = express.Router();
+const db = admin.firestore();
 
 // GET /api/lottery/stream - SSE endpoint for real-time lottery updates
 router.get("/stream", (req, res) => {

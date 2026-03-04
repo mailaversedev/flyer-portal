@@ -1,9 +1,51 @@
 const express = require("express");
-const router = express.Router();
 const admin = require("firebase-admin");
-const db = admin.firestore();
+
 const { authenticateToken } = require("./auth");
 const { calculateLotteryMetricsFromHkd } = require("../config/lotteryConfig");
+const {
+  processQueuedNotificationJobs,
+  cleanupExpiredNotificationJobs,
+  scheduleFlyerNotificationJob,
+} = require("../services/notificationJobService");
+
+const router = express.Router();
+const db = admin.firestore();
+
+router.post("/notification-jobs/process", async (req, res) => {
+  try {
+    const secret = req.header("x-job-secret");
+    const expectedSecret = process.env.NOTIFICATION_JOB_SECRET;
+
+    if (!expectedSecret || secret !== expectedSecret) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized worker request",
+      });
+    }
+
+    const maxJobs = Math.max(1, Math.min(20, Number(req.body?.maxJobs) || 3));
+    const [processResult, cleanupResult] = await Promise.all([
+      processQueuedNotificationJobs(maxJobs),
+      cleanupExpiredNotificationJobs(500),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...processResult,
+        deletedExpired: cleanupResult.deleted,
+      },
+    });
+  } catch (error) {
+    console.error("Error running notification job worker:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to run notification job worker",
+      error: error.message,
+    });
+  }
+});
 
 // POST /api/flyer - Create flyer (leaflet, query, or qr code)
 router.post("/flyer", authenticateToken, async (req, res) => {
@@ -204,10 +246,66 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     };
 
     res.status(201).json(response);
+
+    scheduleFlyerNotificationJob({
+      flyerId: flyerRef.id,
+      flyerType: type,
+      flyerHeader: flyerData.header || "",
+    }).catch((notificationError) => {
+      console.error("Failed to schedule flyer notification job:", notificationError);
+    });
   } catch (error) {
     res.status(400).json({
       success: false,
       message: "Failed to create flyer",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/flyer/:flyerId - Get single flyer by ID
+router.get("/flyer/:flyerId", async (req, res) => {
+  try {
+    const { flyerId } = req.params;
+
+    if (!flyerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing flyerId",
+      });
+    }
+
+    const flyerDoc = await db.collection("flyers").doc(flyerId).get();
+    if (!flyerDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Flyer not found",
+      });
+    }
+
+    const flyer = {
+      id: flyerDoc.id,
+      ...flyerDoc.data(),
+    };
+
+    try {
+      const lotteryDoc = await db.collection("lottery").doc(flyerId).get();
+      if (lotteryDoc.exists) {
+        flyer.lottery = lotteryDoc.data();
+      }
+    } catch (lotteryError) {
+      console.warn("Error fetching lottery metadata for single flyer:", lotteryError);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: flyer,
+    });
+  } catch (error) {
+    console.error("Error fetching flyer by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch flyer",
       error: error.message,
     });
   }
@@ -389,49 +487,45 @@ router.post("/flyer/:flyerId/answers", authenticateToken, async (req, res) => {
 });
 
 // GET /api/flyer/:flyerId/answer-status - Check if user submitted answer
-router.get(
-  "/flyer/:flyerId/answer-status",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { flyerId } = req.params;
-      const userId = req.user.userId;
+router.get("/flyer/:flyerId/answer-status", authenticateToken, async (req, res) => {
+  try {
+    const { flyerId } = req.params;
+    const userId = req.user.userId;
 
-      if (!flyerId) {
-        return res.status(400).json({
-          success: false,
-          message: "Missing flyerId",
-        });
-      }
-
-      const answerDoc = await db
-        .collection("flyers")
-        .doc(flyerId)
-        .collection("answers")
-        .doc(userId)
-        .get();
-
-      if (answerDoc.exists) {
-        res.status(200).json({
-          success: true,
-          submitted: true,
-          data: answerDoc.data(),
-        });
-      } else {
-        res.status(200).json({
-          success: true,
-          submitted: false,
-        });
-      }
-    } catch (error) {
-      console.error("Error checking answer status:", error);
-      res.status(500).json({
+    if (!flyerId) {
+      return res.status(400).json({
         success: false,
-        message: "Failed to check answer status",
-        error: error.message,
+        message: "Missing flyerId",
       });
     }
-  },
-);
+
+    const answerDoc = await db
+      .collection("flyers")
+      .doc(flyerId)
+      .collection("answers")
+      .doc(userId)
+      .get();
+
+    if (answerDoc.exists) {
+      res.status(200).json({
+        success: true,
+        submitted: true,
+        data: answerDoc.data(),
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        submitted: false,
+      });
+    }
+  } catch (error) {
+    console.error("Error checking answer status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to check answer status",
+      error: error.message,
+    });
+  }
+});
 
 module.exports = router;
