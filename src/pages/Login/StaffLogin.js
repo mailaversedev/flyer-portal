@@ -1,23 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import ApiService from "../../services/ApiService";
 import "./StaffLogin.css";
-
-const COMPANY_INDUSTRIES = [
-  "F&B",
-  "Lifestyle",
-  "Entertainment",
-  "Banking & Finance",
-  "Household",
-  "Real Estate",
-  "Education",
-  "Government Bodies",
-  "Utilities",
-  "Donation",
-  "Travelling",
-  "Healthcare",
-  "Fitness & Sports",
-];
 
 const StaffLogin = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -29,10 +13,33 @@ const StaffLogin = () => {
   const [companyIconFile, setCompanyIconFile] = useState(null);
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
+  const [companyIndustries, setCompanyIndustries] = useState([]);
+  const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCompanyIndustries = async () => {
+      setIsLoadingIndustries(true);
+      try {
+        const response = await ApiService.getCompanyIndustries();
+        if (response.success && Array.isArray(response.data)) {
+          setCompanyIndustries(response.data);
+        } else {
+          setCompanyIndustries([]);
+        }
+      } catch (fetchError) {
+        console.error("Failed to fetch company industries", fetchError);
+        setCompanyIndustries([]);
+      } finally {
+        setIsLoadingIndustries(false);
+      }
+    };
+
+    fetchCompanyIndustries();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -195,8 +202,12 @@ const StaffLogin = () => {
                     border: "1px solid #ddd",
                   }}
                 >
-                  <option value="">Select Industry...</option>
-                  {COMPANY_INDUSTRIES.map((industry) => (
+                  <option value="">
+                    {isLoadingIndustries
+                      ? "Loading industries..."
+                      : "Select Industry..."}
+                  </option>
+                  {companyIndustries.map((industry) => (
                     <option key={industry} value={industry}>
                       {industry}
                     </option>

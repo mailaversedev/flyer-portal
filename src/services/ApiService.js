@@ -127,6 +127,11 @@ class ApiService {
     return this.makeRequest(`/api/internal/districts`);
   }
 
+  // GET /api/industries - Get company industries
+  static async getCompanyIndustries() {
+    return this.makeRequest("/api/industries");
+  }
+
   // POST /api/auth/staff/register - Staff Registration
   static async registerStaff(data) {
     return this.makeRequest("/api/auth/staff/register", {

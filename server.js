@@ -21,6 +21,7 @@ const paymentRoutes = require("./routes/payment");
 const lotteryRoutes = require("./routes/lottery");
 const internalRoutes = require("./routes/internal");
 const couponRoutes = require("./routes/coupon");
+const metadataRoutes = require("./routes/metadata");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +38,7 @@ app.use("/api", flyerRoutes); // /api/flyer (protected), /api/flyers (public)
 app.use("/api/internal", internalRoutes); // /api/internal
 app.use("/api", fileRoutes); // /api/file
 app.use("/api/lottery", lotteryRoutes); // /api/lottery
+app.use("/api", metadataRoutes); // /api/industries
 
 // Protected Routes
 app.use("/api/user", authenticateToken, userRoutes);

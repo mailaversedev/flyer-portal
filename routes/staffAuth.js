@@ -204,6 +204,7 @@ router.post("/login", async (req, res) => {
         companyInfo = {
           id: companyDoc.id,
           name: companyData.name,
+          nature: companyData.nature,
           icon: companyData.icon,
           address: companyData.address,
           contact: companyData.contact,

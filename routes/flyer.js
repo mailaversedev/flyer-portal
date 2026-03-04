@@ -32,6 +32,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
           const companyInfo = companyDoc.data();
           flyerData.companyIcon = companyInfo.icon;
           flyerData.companyName = companyInfo.name;
+          flyerData.companyNature = companyInfo.nature;
         }
       }
     } catch (error) {

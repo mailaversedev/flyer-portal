@@ -2,22 +2,6 @@ import React, { useState, useEffect } from "react";
 import ApiService from "../../services/ApiService";
 import "./Profile.css";
 
-const COMPANY_INDUSTRIES = [
-  "F&B",
-  "Lifestyle",
-  "Entertainment",
-  "Banking & Finance",
-  "Household",
-  "Real Estate",
-  "Education",
-  "Government Bodies",
-  "Utilities",
-  "Donation",
-  "Travelling",
-  "Healthcare",
-  "Fitness & Sports",
-];
-
 const Profile = () => {
   const [companyName, setCompanyName] = useState("");
   const [companyNature, setCompanyNature] = useState("");
@@ -25,6 +9,8 @@ const Profile = () => {
   const [contact, setContact] = useState("");
   const [companyIconFile, setCompanyIconFile] = useState(null);
   const [currentIcon, setCurrentIcon] = useState("");
+  const [companyIndustries, setCompanyIndustries] = useState([]);
+  const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,6 +31,25 @@ const Profile = () => {
         console.error("Failed to parse company info", e);
       }
     }
+
+    const fetchCompanyIndustries = async () => {
+      setIsLoadingIndustries(true);
+      try {
+        const response = await ApiService.getCompanyIndustries();
+        if (response.success && Array.isArray(response.data)) {
+          setCompanyIndustries(response.data);
+        } else {
+          setCompanyIndustries([]);
+        }
+      } catch (fetchError) {
+        console.error("Failed to fetch company industries", fetchError);
+        setCompanyIndustries([]);
+      } finally {
+        setIsLoadingIndustries(false);
+      }
+    };
+
+    fetchCompanyIndustries();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -134,8 +139,12 @@ const Profile = () => {
               onChange={(e) => setCompanyNature(e.target.value)}
               required
             >
-              <option value="">Select Industry...</option>
-              {COMPANY_INDUSTRIES.map((industry) => (
+              <option value="">
+                {isLoadingIndustries
+                  ? "Loading industries..."
+                  : "Select Industry..."}
+              </option>
+              {companyIndustries.map((industry) => (
                 <option key={industry} value={industry}>
                   {industry}
                 </option>
