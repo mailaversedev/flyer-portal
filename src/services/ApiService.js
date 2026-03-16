@@ -229,10 +229,16 @@ class ApiService {
       );
 
       formData.append("Copy_Line", leafletData.header || "");
-      // Currently backend "Copy_Position" is optional, not added in input form yet
+      formData.append(
+        "Copy_Position",
+        leafletData.copyPosition || "natural placement",
+      );
 
       formData.append("Body_Copy", leafletData.bodyCopy || "");
-      // Currently backend "Body_Copy_Position" is optional, not added in input form yet
+      formData.append(
+        "Body_Copy_Position",
+        leafletData.bodyCopyPosition || "natural placement",
+      );
 
       if (leafletData.primaryColor) {
         formData.append("Primary_Color", leafletData.primaryColor);

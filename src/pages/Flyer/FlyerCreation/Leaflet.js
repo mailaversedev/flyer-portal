@@ -35,6 +35,8 @@ const LeafletCreation = () => {
     typography: "",
     brandVoice: "",
     logoImage: null,
+    copyPosition: "natural placement",
+    bodyCopyPosition: "natural placement",
     logoPosition: "natural placement",
   });
   const [loading, setLoading] = useState("");

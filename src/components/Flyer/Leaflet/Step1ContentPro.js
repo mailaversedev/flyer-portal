@@ -428,6 +428,26 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             )}
           </div>
 
+          <div className="form-group">
+            <label className="form-label">Copy Position (optional)</label>
+            <div className="select-wrapper">
+              <select
+                className="form-select"
+                value={data.copyPosition || "natural placement"}
+                onChange={(e) =>
+                  handleInputChange("copyPosition", e.target.value)
+                }
+              >
+                {logoPositions.map((pos) => (
+                  <option key={pos} value={pos}>
+                    {pos}
+                  </option>
+                ))}
+              </select>
+              <ChevronRight className="select-icon" size={16} />
+            </div>
+          </div>
+
           {/* Ad Content */}
           <div className="form-group full-width">
             <label className="form-label">Ad Content*</label>
@@ -453,6 +473,26 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
               value={data.bodyCopy || ""}
               onChange={(e) => handleInputChange("bodyCopy", e.target.value)}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Body Copy Position (optional)</label>
+            <div className="select-wrapper">
+              <select
+                className="form-select"
+                value={data.bodyCopyPosition || "natural placement"}
+                onChange={(e) =>
+                  handleInputChange("bodyCopyPosition", e.target.value)
+                }
+              >
+                {logoPositions.map((pos) => (
+                  <option key={pos} value={pos}>
+                    {pos}
+                  </option>
+                ))}
+              </select>
+              <ChevronRight className="select-icon" size={16} />
+            </div>
           </div>
 
           {/* Query_Context / Flyer Prompts */}
