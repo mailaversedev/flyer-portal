@@ -90,7 +90,6 @@ const Header = () => {
                   style={{
                     width: 28,
                     height: 28,
-                    borderRadius: "50%",
                     objectFit: "cover",
                   }}
                   onError={(e) => {

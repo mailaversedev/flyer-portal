@@ -32,7 +32,13 @@ const Sidebar = () => {
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="logo">
-          <div className="logo-icon">M</div>
+          <div className="logo-icon">
+            <img
+              src={`${process.env.PUBLIC_URL}/favicon.ico`}
+              alt="Mailaverse logo"
+              className="logo-icon-image"
+            />
+          </div>
           <h2 className="logo-text">MAILAVERSE</h2>
         </div>
       </div>
