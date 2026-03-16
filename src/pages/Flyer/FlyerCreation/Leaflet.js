@@ -21,6 +21,7 @@ const LeafletCreation = () => {
     header: "",
     subheader: "",
     adContent: "",
+    bodyCopy: "",
     flyerPrompts: "",
     promotionMessage: "",
     productPhoto: [],

@@ -43,7 +43,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
     }
 
     if (!data.adContent || data.adContent.trim() === "") {
-      newErrors.adContent = "Body Copy is required";
+      newErrors.adContent = "Ad Content is required";
     }
 
     if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
@@ -258,7 +258,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Resolution */}
         <div className="form-group">
-          <label className="form-label">Resolution</label>
+          <label className="form-label">Resolution (optional)</label>
           <div className="select-wrapper">
             <select
               className="form-select"
@@ -323,7 +323,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Brand & Styling Section */}
         <div className="form-group">
-          <label className="form-label">Primary Color (Hex)</label>
+          <label className="form-label">Primary Color (Hex) (optional)</label>
           <input
             type="text"
             className="form-input"
@@ -334,7 +334,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Secondary Color (Hex)</label>
+          <label className="form-label">Secondary Color (Hex) (optional)</label>
           <input
             type="text"
             className="form-input"
@@ -347,7 +347,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Typography</label>
+          <label className="form-label">Typography (optional)</label>
           <input
             type="text"
             className="form-input"
@@ -358,7 +358,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Brand Voice</label>
+          <label className="form-label">Brand Voice (optional)</label>
           <input
             type="text"
             className="form-input"
@@ -415,7 +415,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Logo Position */}
         <div className="form-group">
-          <label className="form-label">Logo Position</label>
+          <label className="form-label">Logo Position (optional)</label>
           <div className="select-wrapper">
             <select
               className="form-select"
@@ -454,12 +454,12 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             )}
           </div>
 
-          {/* Body Copy (Ad Content) */}
+          {/* Ad Content */}
           <div className="form-group full-width">
-            <label className="form-label">Body Copy (Ad Content)*</label>
+            <label className="form-label">Ad Content*</label>
             <textarea
               className={`form-textarea ${errors.adContent ? "error" : ""}`}
-              placeholder="Main advertising text..."
+              placeholder="Describe the ad content and key message..."
               rows={4}
               value={data.adContent || ""}
               onChange={(e) => handleInputChange("adContent", e.target.value)}
@@ -467,6 +467,18 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             {errors.adContent && (
               <span className="error-message">{errors.adContent}</span>
             )}
+          </div>
+
+          {/* Body Copy */}
+          <div className="form-group full-width">
+            <label className="form-label">Body Copy (optional)</label>
+            <textarea
+              className="form-textarea"
+              placeholder="Optional flyer body copy used for generation..."
+              rows={4}
+              value={data.bodyCopy || ""}
+              onChange={(e) => handleInputChange("bodyCopy", e.target.value)}
+            />
           </div>
 
           {/* Query_Context / Flyer Prompts */}

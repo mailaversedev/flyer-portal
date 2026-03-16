@@ -225,7 +225,7 @@ class ApiService {
       formData.append("Copy_Line", leafletData.header || "");
       // Currently backend "Copy_Position" is optional, not added in input form yet
 
-      formData.append("Body_Copy", leafletData.adContent || "");
+      formData.append("Body_Copy", leafletData.bodyCopy || "");
       // Currently backend "Body_Copy_Position" is optional, not added in input form yet
 
       if (leafletData.primaryColor) {
