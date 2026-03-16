@@ -1,5 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { Plus, ChevronRight } from "lucide-react";
+import ColorInputField from "./ColorInputField";
+import { getStandardLeafletValidationErrors } from "../../../utils/LeafletValidationUtil";
 import "./Step1Content.css";
 
 const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
@@ -7,35 +9,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
   const [errors, setErrors] = useState({});
 
   const validateRequiredFields = () => {
-    const newErrors = {};
-
-    if (!data.aspectRatio || data.aspectRatio.trim() === "") {
-      newErrors.aspectRatio = "Aspect Ratio is required";
-    }
-
-    if (!data.adType || data.adType.trim() === "") {
-      newErrors.adType = "Ad Type is required";
-    }
-
-    if (!data.header || data.header.trim() === "") {
-      newErrors.header = "Header is required";
-    }
-
-    if (!data.adContent || data.adContent.trim() === "") {
-      newErrors.adContent = "Ad Content is required";
-    }
-
-    if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
-      newErrors.flyerPrompts = "Flyer Prompts is required";
-    }
-
-    if (!data.promotionMessage || data.promotionMessage.trim() === "") {
-      newErrors.promotionMessage = "Promotion Message/Slogan is required";
-    }
-
-    if (!data.productDescriptions || data.productDescriptions.trim() === "") {
-      newErrors.productDescriptions = "Product Descriptions is required";
-    }
+    const newErrors = getStandardLeafletValidationErrors(data);
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -322,23 +296,13 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
           </div>
         </div>
 
-        {/* Select Theme Colour */}
-        <div className="form-group">
-          <label className="form-label">Select Theme Colour (optional)</label>
-          <div className="select-wrapper">
-            <select
-              className="form-select"
-              value={data.themeColor}
-              onChange={(e) => handleInputChange("themeColor", e.target.value)}
-            >
-              <option value="">Please select</option>
-              <option value="blue">Blue</option>
-              <option value="red">Red</option>
-              <option value="green">Green</option>
-            </select>
-            <ChevronRight className="select-icon" size={16} />
-          </div>
-        </div>
+        <ColorInputField
+          label="Theme Color (Hex) (optional)"
+          field="themeColor"
+          value={data.themeColor}
+          placeholder="#FFFFFF"
+          onChange={handleInputChange}
+        />
 
         {/* Upload Background Photo */}
         <div className="form-group full-width">
@@ -545,35 +509,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
 // Export validation function for parent component to use (keeping for backward compatibility)
 Step1Content.validateRequiredFields = (data, setErrorsCallback = null) => {
-  const errors = {};
-
-  if (!data.aspectRatio || data.aspectRatio.trim() === "") {
-    errors.aspectRatio = "Aspect Ratio is required";
-  }
-
-  if (!data.adType || data.adType.trim() === "") {
-    errors.adType = "Ad Type is required";
-  }
-
-  if (!data.header || data.header.trim() === "") {
-    errors.header = "Header is required";
-  }
-
-  if (!data.adContent || data.adContent.trim() === "") {
-    errors.adContent = "Ad Content is required";
-  }
-
-  if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
-    errors.flyerPrompts = "Flyer Prompts is required";
-  }
-
-  if (!data.promotionMessage || data.promotionMessage.trim() === "") {
-    errors.promotionMessage = "Promotion Message/Slogan is required";
-  }
-
-  if (!data.productDescriptions || data.productDescriptions.trim() === "") {
-    errors.productDescriptions = "Product Descriptions is required";
-  }
+  const errors = getStandardLeafletValidationErrors(data);
 
   // Set errors in component state if callback provided
   if (setErrorsCallback) {

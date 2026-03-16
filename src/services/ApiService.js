@@ -1,4 +1,10 @@
-// API service for flyer-portal
+import {
+  blobUrlToFile,
+  dataUrlToFile,
+  isBlobUrl,
+  isDataUrl,
+  isFile,
+} from "../utils/FileUtil";
 
 // API service for flyer-portal
 const API_BASE_URL =
@@ -350,48 +356,6 @@ class ApiService {
     if (Object.keys(filesToUpload).length === 0) {
       return {}; // No files to upload
     }
-
-    // Helper function to check if a value is a File object
-    const isFile = (value) => value instanceof File;
-
-    // Helper function to check if a value is a data URL (base64)
-    const isDataUrl = (value) =>
-      typeof value === "string" && value.startsWith("data:");
-
-    // Helper function to check if a value is a blob URL
-    const isBlobUrl = (value) =>
-      typeof value === "string" && value.startsWith("blob:");
-
-    // Convert data URL to File object
-    const dataUrlToFile = (dataUrl, filename = "image.png") => {
-      const arr = dataUrl.split(",");
-      const mime = arr[0].match(/:(.*?);/)[1];
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-      return new File([u8arr], filename, { type: mime });
-    };
-
-    // Convert blob URL to File object
-    const blobUrlToFile = async (blobUrl, filename = "image.png") => {
-      const response = await fetch(blobUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to read blob URL: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const extension = blob.type?.split("/")[1] || "png";
-      const resolvedName = filename.includes(".")
-        ? filename
-        : `${filename}.${extension}`;
-
-      return new File([blob], resolvedName, {
-        type: blob.type || "image/png",
-      });
-    };
 
     // Process single file field
     const processFileField = async (key, value) => {

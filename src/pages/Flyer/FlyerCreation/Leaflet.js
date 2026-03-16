@@ -12,7 +12,7 @@ const LeafletCreation = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProMode, setIsProMode] = useState(false);
   const [leafletData, setLeafletData] = useState({
-    aspectRatio: "",
+    aspectRatio: "1:1",
     adType: "",
     referenceFlyer: null,
     designStyle: "",

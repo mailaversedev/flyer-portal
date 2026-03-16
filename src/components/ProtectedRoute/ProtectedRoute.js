@@ -1,24 +1,7 @@
 import React, { useEffect } from "react";
 import { Navigate, useLocation } from "react-router";
 import ApiService from "../../services/ApiService";
-
-const isTokenExpired = (token) => {
-  if (!token) return true;
-  try {
-    // JWT is header.payload.signature. We need the payload (index 1).
-    const base64Url = token.split(".")[1];
-    // Convert Base64Url to standard Base64
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    // Decode Base64
-    const jsonPayload = window.atob(base64);
-    const payload = JSON.parse(jsonPayload);
-
-    // exp is in seconds, Date.now() is in milliseconds
-    return payload.exp * 1000 < Date.now();
-  } catch (e) {
-    return true;
-  }
-};
+import { isTokenExpired } from "../../utils/AuthUtil";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");

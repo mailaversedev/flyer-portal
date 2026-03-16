@@ -1,5 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { Plus, ChevronRight } from "lucide-react";
+import ColorInputField from "./ColorInputField";
+import { getProLeafletValidationErrors } from "../../../utils/LeafletValidationUtil";
 import "./Step1Content.css";
 
 const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
@@ -28,27 +30,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   ];
 
   const validateRequiredFields = () => {
-    const newErrors = {};
-
-    if (!data.aspectRatio || data.aspectRatio.trim() === "") {
-      newErrors.aspectRatio = "Aspect Ratio is required";
-    }
-
-    if (!data.productName || data.productName.trim() === "") {
-      newErrors.productName = "Product Name is required";
-    }
-
-    if (!data.header || data.header.trim() === "") {
-      newErrors.header = "Copy Line (Header) is required";
-    }
-
-    if (!data.adContent || data.adContent.trim() === "") {
-      newErrors.adContent = "Ad Content is required";
-    }
-
-    if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
-      newErrors.flyerPrompts = "Context/Prompts is required";
-    }
+    const newErrors = getProLeafletValidationErrors(data);
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -322,29 +304,21 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         </div>
 
         {/* Brand & Styling Section */}
-        <div className="form-group">
-          <label className="form-label">Primary Color (Hex) (optional)</label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="#FFFFFF"
-            value={data.primaryColor || ""}
-            onChange={(e) => handleInputChange("primaryColor", e.target.value)}
-          />
-        </div>
+        <ColorInputField
+          label="Primary Color (Hex) (optional)"
+          field="primaryColor"
+          value={data.primaryColor}
+          placeholder="#FFFFFF"
+          onChange={handleInputChange}
+        />
 
-        <div className="form-group">
-          <label className="form-label">Secondary Color (Hex) (optional)</label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="#A1B2C3"
-            value={data.secondaryColor || ""}
-            onChange={(e) =>
-              handleInputChange("secondaryColor", e.target.value)
-            }
-          />
-        </div>
+        <ColorInputField
+          label="Secondary Color (Hex) (optional)"
+          field="secondaryColor"
+          value={data.secondaryColor}
+          placeholder="#A1B2C3"
+          onChange={handleInputChange}
+        />
 
         <div className="form-group">
           <label className="form-label">Typography (optional)</label>
