@@ -75,7 +75,7 @@ async function startWorker() {
     try {
       await runCycle();
     } catch (error) {
-      console.error("Notification worker cycle failed:", error);
+      console.error("Flyer job worker cycle failed:", error);
     }
 
     if (!isShuttingDown) {

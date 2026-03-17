@@ -224,6 +224,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       flyerId: flyerRef.id,
       flyerType: type,
       flyerHeader: flyerData.header || "",
+      companyIcon: flyerData.companyIcon || null,
       amountPerUser: amountPerUser,
     }).catch((flyerJobError) => {
       console.error("Failed to schedule flyer job:", flyerJobError);

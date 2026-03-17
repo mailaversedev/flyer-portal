@@ -84,6 +84,8 @@ Example:
 - `NOTIFICATION_WORKER_MAX_JOBS` - max queued jobs processed per cycle, default `3`
 - `NOTIFICATION_WORKER_CLEANUP_BATCH` - max expired jobs deleted per cycle, default `200`
 - `NOTIFICATION_WORKER_CLEANUP_INTERVAL_MS` - how often cleanup runs, default `300000`
+- `FLYER_JOB_LEASE_MS` - stale processing lease timeout before a job can be reclaimed, default `600000`
+- `FLYER_JOB_REWARD_CONCURRENCY` - max concurrent idempotent reward transactions per worker chunk, default `20`
 - `NOTIFICATION_JOB_INLINE_PROCESSING` - set to `true` only if you explicitly want inline execution
 
 ### Notes

@@ -7,7 +7,24 @@ const FCM_BATCH_SIZE = 500;
 const NOTIFICATION_JOB_RETENTION_DAYS = 30;
 const MAX_NOTIFICATION_JOB_ATTEMPTS = 3;
 const FIRESTORE_IN_QUERY_SIZE = 30;
-const FIRESTORE_BATCH_WRITE_SIZE = 400;
+
+const FLYER_JOB_COLLECTION = "notificationJobs";
+const FLYER_JOB_LEASE_MS = Math.max(
+  60000,
+  Number(process.env.FLYER_JOB_LEASE_MS) || 10 * 60 * 1000,
+);
+const FLYER_JOB_REWARD_CONCURRENCY = Math.max(
+  1,
+  Math.min(50, Number(process.env.FLYER_JOB_REWARD_CONCURRENCY) || 20),
+);
+
+function getCurrentIsoTimestamp() {
+  return new Date().toISOString();
+}
+
+function getWorkerId() {
+  return process.env.DYNO || `pid-${process.pid}`;
+}
 
 function shouldProcessFlyerJobsInline() {
   return (
@@ -20,6 +37,10 @@ function getJobExpiryTimestamp() {
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + NOTIFICATION_JOB_RETENTION_DAYS);
   return admin.firestore.Timestamp.fromDate(expiryDate);
+}
+
+function getJobLeaseExpiryTimestamp() {
+  return admin.firestore.Timestamp.fromMillis(Date.now() + FLYER_JOB_LEASE_MS);
 }
 
 function getEventTitleByFlyerType(type) {
@@ -65,32 +86,70 @@ async function getWalletRefsByUserIds(userIds) {
   return walletRefsByUserId;
 }
 
-async function distributeRewardsToUsers(users, amountPerUser) {
-  if (!Array.isArray(users) || users.length === 0 || amountPerUser <= 0) {
-    return;
-  }
+function buildFlyerRewardTransactionId(jobId, userId) {
+  return `flyer_job_reward_${jobId}_${userId}`;
+}
 
-  const timestamp = new Date().toISOString();
-  const walletRefsByUserId = await getWalletRefsByUserIds(
-    users.map((user) => user.id),
-  );
+async function applyFlyerRewardToUser({
+  jobId,
+  flyerId,
+  flyerHeader,
+  companyIcon,
+  user,
+  amountPerUser,
+  walletRefsByUserId,
+}) {
+  const rewardTransactionId = buildFlyerRewardTransactionId(jobId, user.id);
+  const rewardTransactionRef = db.collection("transactions").doc(rewardTransactionId);
 
-  for (const userChunk of chunkArray(users, FIRESTORE_BATCH_WRITE_SIZE)) {
-    const batch = db.batch();
+  return db.runTransaction(async (transaction) => {
+    const existingRewardTransaction = await transaction.get(rewardTransactionRef);
+    if (existingRewardTransaction.exists) {
+      return false;
+    }
 
-    userChunk.forEach((user) => {
-      const walletRef = walletRefsByUserId.get(user.id);
+    let walletRef = walletRefsByUserId.get(user.id) || null;
+    let walletSnapshot = null;
 
-      if (walletRef) {
-        batch.update(walletRef, {
-          balance: admin.firestore.FieldValue.increment(amountPerUser),
-          updatedAt: timestamp,
-        });
-        return;
+    if (walletRef) {
+      walletSnapshot = await transaction.get(walletRef);
+      if (!walletSnapshot.exists) {
+        walletRef = null;
+        walletSnapshot = null;
       }
+    }
 
-      const newWalletRef = db.collection("wallets").doc();
-      batch.set(newWalletRef, {
+    if (!walletRef) {
+      const walletQuerySnapshot = await transaction.get(
+        db.collection("wallets").where("userId", "==", user.id).limit(1),
+      );
+
+      if (!walletQuerySnapshot.empty) {
+        walletSnapshot = walletQuerySnapshot.docs[0];
+        walletRef = walletSnapshot.ref;
+        walletRefsByUserId.set(user.id, walletRef);
+      }
+    }
+
+    const timestamp = getCurrentIsoTimestamp();
+    let previousBalance = 0;
+    let newBalance = amountPerUser;
+
+    if (walletRef && walletSnapshot) {
+      const walletData = walletSnapshot.data();
+      previousBalance = Number(walletData?.balance) || 0;
+      newBalance = previousBalance + amountPerUser;
+
+      transaction.update(walletRef, {
+        balance: newBalance,
+        updatedAt: timestamp,
+        version: (Number(walletData?.version) || 0) + 1,
+      });
+    } else {
+      walletRef = db.collection("wallets").doc();
+      walletRefsByUserId.set(user.id, walletRef);
+
+      transaction.set(walletRef, {
         userId: user.id,
         username: user.username || "",
         balance: amountPerUser,
@@ -100,9 +159,76 @@ async function distributeRewardsToUsers(users, amountPerUser) {
         isActive: true,
         version: 1,
       });
+    }
+
+    transaction.create(rewardTransactionRef, {
+      transactionId: rewardTransactionId,
+      userId: user.id,
+      walletId: walletRef.id,
+      type: "ADD",
+      amount: amountPerUser,
+      previousBalance,
+      newBalance,
+      description: flyerHeader
+        ? `New Flyer reward - ${flyerHeader}`
+        : "New Flyer reward",
+      status: "COMPLETED",
+      idempotencyKey: rewardTransactionId,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      metadata: {
+        source: "flyer_job_reward",
+        flyerId: flyerId || "",
+        flyerJobId: jobId,
+        companyIcon: companyIcon || null,
+      },
     });
 
-    await batch.commit();
+    return true;
+  });
+}
+
+async function distributeRewardsToUsers({
+  jobId,
+  flyerId,
+  flyerHeader,
+  companyIcon,
+  users,
+  amountPerUser,
+}) {
+  if (!Array.isArray(users) || users.length === 0 || amountPerUser <= 0 || !jobId) {
+    return;
+  }
+
+  const walletRefsByUserId = await getWalletRefsByUserIds(
+    users.map((user) => user.id),
+  );
+  const rewardErrors = [];
+
+  for (const userChunk of chunkArray(users, FLYER_JOB_REWARD_CONCURRENCY)) {
+    const chunkResults = await Promise.allSettled(
+      userChunk.map((user) =>
+        applyFlyerRewardToUser({
+          jobId,
+          flyerId,
+          flyerHeader,
+          companyIcon,
+          user,
+          amountPerUser,
+          walletRefsByUserId,
+        }),
+      ),
+    );
+
+    chunkResults.forEach((result) => {
+      if (result.status === "rejected") {
+        rewardErrors.push(result.reason);
+      }
+    });
+  }
+
+  if (rewardErrors.length > 0) {
+    throw rewardErrors[0];
   }
 }
 
@@ -140,8 +266,16 @@ async function claimFlyerJob(jobRef) {
     const data = doc.data();
     const attempts = data.attempts || 0;
     const status = data.status;
+    const leaseExpiresAt = data.leaseExpiresAt;
+    const leaseExpired =
+      leaseExpiresAt && typeof leaseExpiresAt.toMillis === "function"
+        ? leaseExpiresAt.toMillis() <= Date.now()
+        : false;
 
-    if (!["queued", "failed"].includes(status)) {
+    if (
+      !["queued", "failed"].includes(status) &&
+      !(status === "processing" && leaseExpired)
+    ) {
       return null;
     }
 
@@ -149,45 +283,118 @@ async function claimFlyerJob(jobRef) {
       return null;
     }
 
-    const now = new Date().toISOString();
+    const now = getCurrentIsoTimestamp();
+    const nextLeaseExpiry = getJobLeaseExpiryTimestamp();
     transaction.update(jobRef, {
       status: "processing",
-      startedAt: now,
+      startedAt: data.startedAt || now,
+      claimedAt: now,
+      lastHeartbeatAt: now,
+      leaseExpiresAt: nextLeaseExpiry,
+      workerId: getWorkerId(),
       updatedAt: now,
       attempts: attempts + 1,
       error: admin.firestore.FieldValue.delete(),
+      completedAt: admin.firestore.FieldValue.delete(),
     });
 
-    return { id: doc.id, ...data, attempts: attempts + 1 };
+    return {
+      id: doc.id,
+      ...data,
+      attempts: attempts + 1,
+      status: "processing",
+      leaseExpiresAt: nextLeaseExpiry,
+    };
   });
 }
 
+async function updateFlyerJobProgress(jobRef, progress = {}) {
+  const now = getCurrentIsoTimestamp();
+
+  await jobRef.update({
+    ...progress,
+    updatedAt: now,
+    lastHeartbeatAt: now,
+    leaseExpiresAt: getJobLeaseExpiryTimestamp(),
+    workerId: getWorkerId(),
+  });
+}
+
+async function markFlyerJobAsFailed(jobId, errorMessage) {
+  await db
+    .collection(FLYER_JOB_COLLECTION)
+    .doc(jobId)
+    .set(
+      {
+        status: "failed",
+        error: errorMessage || "Unknown flyer job failure",
+        updatedAt: getCurrentIsoTimestamp(),
+        lastFailedAt: getCurrentIsoTimestamp(),
+        expiresAt: getJobExpiryTimestamp(),
+        leaseExpiresAt: admin.firestore.FieldValue.delete(),
+        lastHeartbeatAt: admin.firestore.FieldValue.delete(),
+        workerId: admin.firestore.FieldValue.delete(),
+      },
+      { merge: true },
+    );
+}
+
+async function findNextQueuedFlyerJobId() {
+  const queuedSnapshot = await db
+    .collection(FLYER_JOB_COLLECTION)
+    .where("status", "in", ["queued", "failed"])
+    .orderBy("updatedAt", "asc")
+    .limit(1)
+    .get();
+
+  if (!queuedSnapshot.empty) {
+    return queuedSnapshot.docs[0].id;
+  }
+
+  const staleProcessingSnapshot = await db
+    .collection(FLYER_JOB_COLLECTION)
+    .where("leaseExpiresAt", "<=", admin.firestore.Timestamp.now())
+    .orderBy("leaseExpiresAt", "asc")
+    .limit(1)
+    .get();
+
+  if (!staleProcessingSnapshot.empty) {
+    return staleProcessingSnapshot.docs[0].id;
+  }
+
+  return null;
+}
+
 async function processFlyerJob(jobId) {
-  const jobRef = db.collection("notificationJobs").doc(jobId);
+  const jobRef = db.collection(FLYER_JOB_COLLECTION).doc(jobId);
   const claimedJob = await claimFlyerJob(jobRef);
   if (!claimedJob) {
-    return;
+    return false;
   }
 
   const job = claimedJob;
   const flyerId = job.flyerId || "";
   const flyerType = job.flyerType || "leaflet";
-  const flyerHeader = (job.flyerHeader || "").trim();
+  const flyerHeader = job.flyerHeader || "";
+  const companyIcon = job.companyIcon || null;
   const amountPerUser = job.amountPerUser || 0;
 
   const titlePrefix = getEventTitleByFlyerType(flyerType);
   const title = flyerHeader ? `${titlePrefix} ${flyerHeader}` : titlePrefix;
 
-  let lastDoc = null;
-  let usersScanned = 0;
-  let tokensProcessed = 0;
-  let successCount = 0;
-  let failureCount = 0;
+  let lastProcessedUserId = job.lastProcessedUserId || null;
+  let usersScanned = job.usersScanned || 0;
+  let tokensProcessed = job.tokensProcessed || 0;
+  let successCount = job.successCount || 0;
+  let failureCount = job.failureCount || 0;
 
   do {
-    let usersQuery = db.collection("users").limit(USER_PAGE_SIZE);
-    if (lastDoc) {
-      usersQuery = usersQuery.startAfter(lastDoc);
+    let usersQuery = db
+      .collection("users")
+      .orderBy(admin.firestore.FieldPath.documentId())
+      .limit(USER_PAGE_SIZE);
+    if (lastProcessedUserId) {
+      usersQuery = usersQuery.startAfter(lastProcessedUserId);
     }
 
     const usersSnapshot = await usersQuery.get();
@@ -282,22 +489,31 @@ async function processFlyerJob(jobId) {
 
     if (activeUserRewardTargets.length > 0 && amountPerUser > 0) {
       try {
-        await distributeRewardsToUsers(activeUserRewardTargets, amountPerUser);
+        await distributeRewardsToUsers({
+          jobId,
+          flyerId,
+          flyerHeader,
+          companyIcon,
+          users: activeUserRewardTargets,
+          amountPerUser,
+        });
       } catch (rewardError) {
         console.error("Failed to distribute flyer job rewards:", rewardError);
+        throw rewardError;
       }
     }
 
-    await jobRef.update({
+    lastProcessedUserId = usersSnapshot.docs[usersSnapshot.docs.length - 1]?.id || null;
+
+    await updateFlyerJobProgress(jobRef, {
       status: "processing",
       usersScanned,
       tokensProcessed,
       successCount,
       failureCount,
-      updatedAt: new Date().toISOString(),
+      lastProcessedUserId,
     });
 
-    lastDoc = usersSnapshot.docs[usersSnapshot.docs.length - 1] || null;
     if (usersSnapshot.size < USER_PAGE_SIZE) {
       break;
     }
@@ -309,15 +525,26 @@ async function processFlyerJob(jobId) {
     tokensProcessed,
     successCount,
     failureCount,
-    completedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    completedAt: getCurrentIsoTimestamp(),
+    updatedAt: getCurrentIsoTimestamp(),
     expiresAt: getJobExpiryTimestamp(),
+    leaseExpiresAt: admin.firestore.FieldValue.delete(),
+    lastHeartbeatAt: admin.firestore.FieldValue.delete(),
+    workerId: admin.firestore.FieldValue.delete(),
   });
+
+  return true;
 }
 
-async function scheduleFlyerJob({ flyerId, flyerType, flyerHeader, amountPerUser }) {
-  const createdAt = new Date().toISOString();
-  const jobRef = db.collection("notificationJobs").doc();
+async function scheduleFlyerJob({
+  flyerId,
+  flyerType,
+  flyerHeader,
+  companyIcon,
+  amountPerUser,
+}) {
+  const createdAt = getCurrentIsoTimestamp();
+  const jobRef = db.collection(FLYER_JOB_COLLECTION).doc();
 
   await jobRef.set({
     type: "flyer_created",
@@ -325,12 +552,14 @@ async function scheduleFlyerJob({ flyerId, flyerType, flyerHeader, amountPerUser
     flyerId,
     flyerType,
     flyerHeader: flyerHeader || "",
+    companyIcon: companyIcon || null,
     amountPerUser: amountPerUser || 0,
     usersScanned: 0,
     tokensProcessed: 0,
     successCount: 0,
     failureCount: 0,
     attempts: 0,
+    lastProcessedUserId: null,
     expiresAt: getJobExpiryTimestamp(),
     createdAt,
     updatedAt: createdAt,
@@ -341,12 +570,10 @@ async function scheduleFlyerJob({ flyerId, flyerType, flyerHeader, amountPerUser
       processFlyerJob(jobRef.id).catch(async (error) => {
         console.error("Error processing flyer job:", error);
         try {
-          await jobRef.update({
-            status: "failed",
-            error: error.message || "Unknown flyer job failure",
-            updatedAt: new Date().toISOString(),
-            expiresAt: getJobExpiryTimestamp(),
-          });
+          await markFlyerJobAsFailed(
+            jobRef.id,
+            error.message || "Unknown flyer job failure",
+          );
         } catch (updateErr) {
           console.error("Failed to update flyer job status:", updateErr);
         }
@@ -367,39 +594,28 @@ async function processQueuedFlyerJobs(maxJobs = 3) {
   let failed = 0;
 
   while (processed < maxJobs) {
-    const queuedSnapshot = await db
-      .collection("notificationJobs")
-      .where("status", "in", ["queued", "failed"])
-      .orderBy("updatedAt", "asc")
-      .limit(1)
-      .get();
-
-    if (queuedSnapshot.empty) {
+    const nextJobId = await findNextQueuedFlyerJobId();
+    if (!nextJobId) {
       break;
     }
 
-    const nextJobId = queuedSnapshot.docs[0].id;
-    processed += 1;
-
     try {
-      await processFlyerJob(nextJobId);
+      const didProcess = await processFlyerJob(nextJobId);
+      if (!didProcess) {
+        continue;
+      }
+
+      processed += 1;
       succeeded += 1;
     } catch (error) {
+      processed += 1;
       failed += 1;
       console.error("Queued flyer job failed:", error);
 
-      await db
-        .collection("notificationJobs")
-        .doc(nextJobId)
-        .set(
-          {
-            status: "failed",
-            error: error.message || "Unknown flyer job worker failure",
-            updatedAt: new Date().toISOString(),
-            expiresAt: getJobExpiryTimestamp(),
-          },
-          { merge: true },
-        );
+      await markFlyerJobAsFailed(
+        nextJobId,
+        error.message || "Unknown flyer job worker failure",
+      );
     }
   }
 
@@ -409,7 +625,7 @@ async function processQueuedFlyerJobs(maxJobs = 3) {
 async function cleanupExpiredFlyerJobs(maxDelete = 500) {
   const nowTs = admin.firestore.Timestamp.now();
   const snapshot = await db
-    .collection("notificationJobs")
+    .collection(FLYER_JOB_COLLECTION)
     .where("expiresAt", "<=", nowTs)
     .limit(maxDelete)
     .get();
