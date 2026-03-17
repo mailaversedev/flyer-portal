@@ -30,6 +30,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server": "node server.js",
+    "worker": "node worker.js",
     "build:serve": "npm run build && npm run server"
   },
   "eslintConfig": {

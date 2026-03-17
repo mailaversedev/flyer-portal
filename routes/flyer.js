@@ -4,15 +4,15 @@ const admin = require("firebase-admin");
 const { authenticateToken } = require("./auth");
 const { calculateLotteryMetricsFromHkd } = require("../config/lotteryConfig");
 const {
-  processQueuedNotificationJobs,
-  cleanupExpiredNotificationJobs,
-  scheduleFlyerNotificationJob,
-} = require("../services/notificationJobService");
+  processQueuedFlyerJobs,
+  cleanupExpiredFlyerJobs,
+  scheduleFlyerJob,
+} = require("../services/flyerJobService");
 
 const router = express.Router();
 const db = admin.firestore();
 
-router.post("/notification-jobs/process", async (req, res) => {
+async function processFlyerJobsHandler(req, res) {
   try {
     const secret = req.header("x-job-secret");
     const expectedSecret = process.env.NOTIFICATION_JOB_SECRET;
@@ -26,8 +26,8 @@ router.post("/notification-jobs/process", async (req, res) => {
 
     const maxJobs = Math.max(1, Math.min(20, Number(req.body?.maxJobs) || 3));
     const [processResult, cleanupResult] = await Promise.all([
-      processQueuedNotificationJobs(maxJobs),
-      cleanupExpiredNotificationJobs(500),
+      processQueuedFlyerJobs(maxJobs),
+      cleanupExpiredFlyerJobs(500),
     ]);
 
     res.status(200).json({
@@ -38,14 +38,17 @@ router.post("/notification-jobs/process", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error running notification job worker:", error);
+    console.error("Error running flyer job worker:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to run notification job worker",
+      message: "Failed to run flyer job worker",
       error: error.message,
     });
   }
-});
+}
+
+router.post("/flyer-jobs/process", processFlyerJobsHandler);
+router.post("/notification-jobs/process", processFlyerJobsHandler);
 
 // POST /api/flyer - Create flyer (leaflet, query, or qr code)
 router.post("/flyer", authenticateToken, async (req, res) => {
@@ -186,55 +189,25 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       }
     });
 
-    // 5. Distribute 20% of pool to all active users
-    // Note: This is kept outside the transaction to avoid hitting Firestore operation limits (500 ops)
-    // as the user base grows. It runs only if the transaction above succeeds.
+    // 5. Calculate distribution amount correctly using count() to avoid fetching all documents.
+    // The actual wallet distribution will now happen asynchronously in the flyer job background worker.
     const distributionAmount = Math.max(
       0,
       Math.floor(pool * eventUsagePercent * eventCostPercent),
     );
-    const usersSnapshot = await db
-      .collection("users")
-      .where("isActive", "==", true)
-      .get();
 
-    if (!usersSnapshot.empty) {
-      const activeUsersCount = usersSnapshot.size;
-      const amountPerUser = Math.floor(distributionAmount / activeUsersCount);
-      const timestamp = new Date().toISOString();
-
-      const updates = usersSnapshot.docs.map(async (userDoc) => {
-        const userData = userDoc.data();
-        const userId = userDoc.id;
-
-        const walletQuery = await db
-          .collection("wallets")
-          .where("userId", "==", userId)
-          .limit(1)
-          .get();
-
-        if (!walletQuery.empty) {
-          const walletDoc = walletQuery.docs[0];
-          const currentBalance = walletDoc.data().balance || 0;
-          await walletDoc.ref.update({
-            balance: currentBalance + amountPerUser,
-            updatedAt: timestamp,
-          });
-        } else {
-          await db.collection("wallets").add({
-            userId: userId,
-            username: userData.username,
-            balance: amountPerUser,
-            currency: "TOKEN",
-            createdAt: timestamp,
-            updatedAt: timestamp,
-            isActive: true,
-            version: 1,
-          });
-        }
-      });
-
-      await Promise.all(updates);
+    let amountPerUser = 0;
+    if (distributionAmount > 0) {
+      const countSnapshot = await db
+        .collection("users")
+        .where("isActive", "==", true)
+        .count()
+        .get();
+      
+      const activeUsersCount = countSnapshot.data().count;
+      if (activeUsersCount > 0) {
+        amountPerUser = Math.floor(distributionAmount / activeUsersCount);
+      }
     }
 
     const response = {
@@ -247,12 +220,13 @@ router.post("/flyer", authenticateToken, async (req, res) => {
 
     res.status(201).json(response);
 
-    scheduleFlyerNotificationJob({
+    scheduleFlyerJob({
       flyerId: flyerRef.id,
       flyerType: type,
       flyerHeader: flyerData.header || "",
-    }).catch((notificationError) => {
-      console.error("Failed to schedule flyer notification job:", notificationError);
+      amountPerUser: amountPerUser,
+    }).catch((flyerJobError) => {
+      console.error("Failed to schedule flyer job:", flyerJobError);
     });
   } catch (error) {
     res.status(400).json({

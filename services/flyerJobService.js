@@ -6,6 +6,15 @@ const USER_PAGE_SIZE = 500;
 const FCM_BATCH_SIZE = 500;
 const NOTIFICATION_JOB_RETENTION_DAYS = 30;
 const MAX_NOTIFICATION_JOB_ATTEMPTS = 3;
+const FIRESTORE_IN_QUERY_SIZE = 30;
+const FIRESTORE_BATCH_WRITE_SIZE = 400;
+
+function shouldProcessFlyerJobsInline() {
+  return (
+    process.env.NOTIFICATION_JOB_INLINE_PROCESSING === "true" ||
+    process.env.NODE_ENV !== "production"
+  );
+}
 
 function getJobExpiryTimestamp() {
   const expiryDate = new Date();
@@ -22,6 +31,78 @@ function getEventTitleByFlyerType(type) {
     case "leaflet":
     default:
       return "New Flyer Dropped!";
+  }
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+
+  return chunks;
+}
+
+async function getWalletRefsByUserIds(userIds) {
+  const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
+  const walletRefsByUserId = new Map();
+
+  for (const userIdChunk of chunkArray(uniqueUserIds, FIRESTORE_IN_QUERY_SIZE)) {
+    const walletSnapshot = await db
+      .collection("wallets")
+      .where("userId", "in", userIdChunk)
+      .get();
+
+    walletSnapshot.docs.forEach((walletDoc) => {
+      const walletData = walletDoc.data();
+      if (walletData?.userId && !walletRefsByUserId.has(walletData.userId)) {
+        walletRefsByUserId.set(walletData.userId, walletDoc.ref);
+      }
+    });
+  }
+
+  return walletRefsByUserId;
+}
+
+async function distributeRewardsToUsers(users, amountPerUser) {
+  if (!Array.isArray(users) || users.length === 0 || amountPerUser <= 0) {
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+  const walletRefsByUserId = await getWalletRefsByUserIds(
+    users.map((user) => user.id),
+  );
+
+  for (const userChunk of chunkArray(users, FIRESTORE_BATCH_WRITE_SIZE)) {
+    const batch = db.batch();
+
+    userChunk.forEach((user) => {
+      const walletRef = walletRefsByUserId.get(user.id);
+
+      if (walletRef) {
+        batch.update(walletRef, {
+          balance: admin.firestore.FieldValue.increment(amountPerUser),
+          updatedAt: timestamp,
+        });
+        return;
+      }
+
+      const newWalletRef = db.collection("wallets").doc();
+      batch.set(newWalletRef, {
+        userId: user.id,
+        username: user.username || "",
+        balance: amountPerUser,
+        currency: "TOKEN",
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        isActive: true,
+        version: 1,
+      });
+    });
+
+    await batch.commit();
   }
 }
 
@@ -49,7 +130,7 @@ async function removeInvalidTokenFromUsers(token, userIds) {
   }
 }
 
-async function claimNotificationJob(jobRef) {
+async function claimFlyerJob(jobRef) {
   return db.runTransaction(async (transaction) => {
     const doc = await transaction.get(jobRef);
     if (!doc.exists) {
@@ -81,9 +162,9 @@ async function claimNotificationJob(jobRef) {
   });
 }
 
-async function processFlyerNotificationJob(jobId) {
+async function processFlyerJob(jobId) {
   const jobRef = db.collection("notificationJobs").doc(jobId);
-  const claimedJob = await claimNotificationJob(jobRef);
+  const claimedJob = await claimFlyerJob(jobRef);
   if (!claimedJob) {
     return;
   }
@@ -92,6 +173,7 @@ async function processFlyerNotificationJob(jobId) {
   const flyerId = job.flyerId || "";
   const flyerType = job.flyerType || "leaflet";
   const flyerHeader = (job.flyerHeader || "").trim();
+  const amountPerUser = job.amountPerUser || 0;
 
   const titlePrefix = getEventTitleByFlyerType(flyerType);
   const title = flyerHeader ? `${titlePrefix} ${flyerHeader}` : titlePrefix;
@@ -116,8 +198,18 @@ async function processFlyerNotificationJob(jobId) {
     usersScanned += usersSnapshot.size;
 
     const tokenToUserIds = new Map();
+    const activeUserRewardTargets = [];
+
     usersSnapshot.docs.forEach((userDoc) => {
       const userData = userDoc.data();
+
+      if (userData.isActive === true && amountPerUser > 0) {
+        activeUserRewardTargets.push({
+          id: userDoc.id,
+          username: userData.username,
+        });
+      }
+
       const fcmTokens = Array.isArray(userData.fcmTokens)
         ? userData.fcmTokens
         : [];
@@ -188,6 +280,14 @@ async function processFlyerNotificationJob(jobId) {
       }
     }
 
+    if (activeUserRewardTargets.length > 0 && amountPerUser > 0) {
+      try {
+        await distributeRewardsToUsers(activeUserRewardTargets, amountPerUser);
+      } catch (rewardError) {
+        console.error("Failed to distribute flyer job rewards:", rewardError);
+      }
+    }
+
     await jobRef.update({
       status: "processing",
       usersScanned,
@@ -215,7 +315,7 @@ async function processFlyerNotificationJob(jobId) {
   });
 }
 
-async function scheduleFlyerNotificationJob({ flyerId, flyerType, flyerHeader }) {
+async function scheduleFlyerJob({ flyerId, flyerType, flyerHeader, amountPerUser }) {
   const createdAt = new Date().toISOString();
   const jobRef = db.collection("notificationJobs").doc();
 
@@ -225,6 +325,7 @@ async function scheduleFlyerNotificationJob({ flyerId, flyerType, flyerHeader })
     flyerId,
     flyerType,
     flyerHeader: flyerHeader || "",
+    amountPerUser: amountPerUser || 0,
     usersScanned: 0,
     tokensProcessed: 0,
     successCount: 0,
@@ -235,30 +336,32 @@ async function scheduleFlyerNotificationJob({ flyerId, flyerType, flyerHeader })
     updatedAt: createdAt,
   });
 
-  setImmediate(() => {
-    processFlyerNotificationJob(jobRef.id).catch(async (error) => {
-      console.error("Error processing flyer notification job:", error);
-      try {
-        await jobRef.update({
-          status: "failed",
-          error: error.message || "Unknown job failure",
-          updatedAt: new Date().toISOString(),
-          expiresAt: getJobExpiryTimestamp(),
-        });
-      } catch (updateErr) {
-        console.error("Failed to update notification job status:", updateErr);
-      }
-    });
+  if (shouldProcessFlyerJobsInline()) {
+    setImmediate(() => {
+      processFlyerJob(jobRef.id).catch(async (error) => {
+        console.error("Error processing flyer job:", error);
+        try {
+          await jobRef.update({
+            status: "failed",
+            error: error.message || "Unknown flyer job failure",
+            updatedAt: new Date().toISOString(),
+            expiresAt: getJobExpiryTimestamp(),
+          });
+        } catch (updateErr) {
+          console.error("Failed to update flyer job status:", updateErr);
+        }
+      });
 
-    cleanupExpiredNotificationJobs(200).catch((cleanupError) => {
-      console.error("Error cleaning expired notification jobs:", cleanupError);
+      cleanupExpiredFlyerJobs(200).catch((cleanupError) => {
+        console.error("Error cleaning expired flyer jobs:", cleanupError);
+      });
     });
-  });
+  }
 
   return jobRef.id;
 }
 
-async function processQueuedNotificationJobs(maxJobs = 3) {
+async function processQueuedFlyerJobs(maxJobs = 3) {
   let processed = 0;
   let succeeded = 0;
   let failed = 0;
@@ -279,11 +382,11 @@ async function processQueuedNotificationJobs(maxJobs = 3) {
     processed += 1;
 
     try {
-      await processFlyerNotificationJob(nextJobId);
+      await processFlyerJob(nextJobId);
       succeeded += 1;
     } catch (error) {
       failed += 1;
-      console.error("Queued notification job failed:", error);
+      console.error("Queued flyer job failed:", error);
 
       await db
         .collection("notificationJobs")
@@ -291,7 +394,7 @@ async function processQueuedNotificationJobs(maxJobs = 3) {
         .set(
           {
             status: "failed",
-            error: error.message || "Unknown queue worker failure",
+            error: error.message || "Unknown flyer job worker failure",
             updatedAt: new Date().toISOString(),
             expiresAt: getJobExpiryTimestamp(),
           },
@@ -303,7 +406,7 @@ async function processQueuedNotificationJobs(maxJobs = 3) {
   return { processed, succeeded, failed };
 }
 
-async function cleanupExpiredNotificationJobs(maxDelete = 500) {
+async function cleanupExpiredFlyerJobs(maxDelete = 500) {
   const nowTs = admin.firestore.Timestamp.now();
   const snapshot = await db
     .collection("notificationJobs")
@@ -325,7 +428,7 @@ async function cleanupExpiredNotificationJobs(maxDelete = 500) {
 }
 
 module.exports = {
-  processQueuedNotificationJobs,
-  cleanupExpiredNotificationJobs,
-  scheduleFlyerNotificationJob,
+  processQueuedFlyerJobs,
+  cleanupExpiredFlyerJobs,
+  scheduleFlyerJob,
 };
