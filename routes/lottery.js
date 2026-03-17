@@ -293,6 +293,7 @@ router.get("/", authenticateToken, async (req, res) => {
             source: "flyer_lottery",
             type: flyer.type || "unknown",
             id: flyerId,
+            companyIcon: flyer.companyIcon || null,
           },
         };
 

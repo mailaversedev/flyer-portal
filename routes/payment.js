@@ -335,6 +335,7 @@ router.get("/transactions", authenticateToken, async (req, res) => {
         description: data.description,
         status: data.status,
         createdAt: data.createdAt,
+        metadata: data.metadata,
       });
     });
 
@@ -398,6 +399,7 @@ router.get(
           idempotencyKey: txData.idempotencyKey,
           createdAt: txData.createdAt,
           updatedAt: txData.updatedAt,
+          metadata: txData.metadata,
         },
       });
     } catch (error) {
