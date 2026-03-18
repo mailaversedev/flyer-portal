@@ -118,6 +118,7 @@ router.post("/register", async (req, res) => {
     const tokenPayload = {
       userId: result.userId,
       username: userData.username,
+      locale: null, // New user has no locale preference yet
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
@@ -195,6 +196,7 @@ router.post("/login", async (req, res) => {
     const tokenPayload = {
       userId: userDoc.id,
       username: userData.username,
+      locale: userData.profile?.locale || null,
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
@@ -253,6 +255,7 @@ router.post("/refresh-token", authenticateToken, async (req, res) => {
     const tokenPayload = {
       userId: userDoc.id,
       username: userData.username,
+      locale: userData.profile?.locale || null,
     };
 
     const newToken = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
