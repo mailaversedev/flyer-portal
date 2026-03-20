@@ -1,0 +1,68 @@
+{
+  "common": {
+    "dashboard": "主頁",
+    "marketplace": "市集",
+    "flyer": "傳單",
+    "wallet": "錢包",
+    "profile": "公司資料",
+    "save": "儲存變更",
+    "saving": "儲存中...",
+    "searchPlaceholder": "搜尋...",
+    "language": "語言",
+    "english": "English",
+    "traditionalChinese": "繁體中文",
+    "logout": "登出"
+  },
+  "header": {
+    "flyerTypes": "傳單派發類型",
+    "createFlyer": "建立傳單",
+    "editProfile": "編輯資料",
+    "notifications": "通知"
+  },
+  "login": {
+    "portalLogin": "員工登入",
+    "companyOnboarding": "公司註冊",
+    "username": "用戶名稱",
+    "password": "密碼",
+    "displayName": "顯示名稱",
+    "companyName": "公司名稱",
+    "companyNature": "公司性質 / 行業",
+    "companyIcon": "公司圖示",
+    "addressOptional": "地址（選填）",
+    "contactOptional": "聯絡方式（選填）",
+    "enterUsername": "請輸入用戶名稱",
+    "enterPassword": "請輸入密碼",
+    "yourFullName": "你的姓名",
+    "companyNamePlaceholder": "公司名稱",
+    "companyAddressPlaceholder": "公司地址",
+    "contactPlaceholder": "聯絡電話",
+    "loadingIndustries": "正在載入行業...",
+    "selectIndustry": "請選擇行業...",
+    "registering": "註冊中...",
+    "loggingIn": "登入中...",
+    "registerCompany": "註冊公司",
+    "login": "登入",
+    "alreadyHaveAccount": "已有帳戶？立即登入",
+    "newCompany": "新公司？由此註冊",
+    "registrationSuccess": "註冊成功！請登入。",
+    "registrationFailed": "註冊失敗",
+    "loginFailed": "登入失敗",
+    "uploadCompanyIconFailed": "公司圖示上傳失敗：{{message}}"
+  },
+  "profilePage": {
+    "title": "公司資料",
+    "companyName": "公司名稱",
+    "companyNature": "公司性質 / 行業",
+    "companyIcon": "公司圖示",
+    "address": "地址",
+    "contact": "聯絡方式",
+    "portalLanguage": "平台語言",
+    "profileUpdated": "資料已成功更新！",
+    "selectIndustry": "請選擇行業...",
+    "loadingIndustries": "正在載入行業...",
+    "currentCompanyIcon": "目前公司圖示"
+  },
+  "walletPage": {
+    "title": "錢包頁面"
+  }
+}

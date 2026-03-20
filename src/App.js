@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { useTranslation } from "react-i18next";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Marketplace from "./pages/Marketplace/Marketplace";
@@ -13,6 +14,8 @@ import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import "./App.css";
 
 function App() {
+  const { t } = useTranslation();
+
   return (
     <Router>
       <div className="App">
@@ -37,7 +40,10 @@ function App() {
                       element={<QueryCreation />}
                     />
                     <Route path="/flyer/create/qr" element={<QRGeneration />} />
-                    <Route path="/wallet" element={<div>Wallet Page</div>} />
+                    <Route
+                      path="/wallet"
+                      element={<div>{t("walletPage.title")}</div>}
+                    />
                     <Route path="/profile" element={<Profile />} />
                   </Routes>
                 </Layout>

@@ -1,0 +1,68 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "marketplace": "Marketplace",
+    "flyer": "Flyer",
+    "wallet": "Wallet",
+    "profile": "Company Profile",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "searchPlaceholder": "Search...",
+    "language": "Language",
+    "english": "English",
+    "traditionalChinese": "繁體中文",
+    "logout": "Logout"
+  },
+  "header": {
+    "flyerTypes": "Types of Flyer Distribution",
+    "createFlyer": "Create Your Flyer",
+    "editProfile": "Edit Profile",
+    "notifications": "Notifications"
+  },
+  "login": {
+    "portalLogin": "Staff Portal Login",
+    "companyOnboarding": "Company Onboarding",
+    "username": "Username",
+    "password": "Password",
+    "displayName": "Display Name",
+    "companyName": "Company Name",
+    "companyNature": "Company Nature / Industry",
+    "companyIcon": "Company Icon",
+    "addressOptional": "Address (Optional)",
+    "contactOptional": "Contact (Optional)",
+    "enterUsername": "Enter your username",
+    "enterPassword": "Enter your password",
+    "yourFullName": "Your full name",
+    "companyNamePlaceholder": "Company Name",
+    "companyAddressPlaceholder": "Company Address",
+    "contactPlaceholder": "Contact Number",
+    "loadingIndustries": "Loading industries...",
+    "selectIndustry": "Select Industry...",
+    "registering": "Registering...",
+    "loggingIn": "Logging in...",
+    "registerCompany": "Register Company",
+    "login": "Login",
+    "alreadyHaveAccount": "Already have an account? Login",
+    "newCompany": "New Company? Onboard here",
+    "registrationSuccess": "Registration successful! Please login.",
+    "registrationFailed": "Registration failed",
+    "loginFailed": "Login failed",
+    "uploadCompanyIconFailed": "Failed to upload company icon: {{message}}"
+  },
+  "profilePage": {
+    "title": "Company Profile",
+    "companyName": "Company Name",
+    "companyNature": "Company Nature / Industry",
+    "companyIcon": "Company Icon",
+    "address": "Address",
+    "contact": "Contact",
+    "portalLanguage": "Portal Language",
+    "profileUpdated": "Profile updated successfully!",
+    "selectIndustry": "Select Industry...",
+    "loadingIndustries": "Loading industries...",
+    "currentCompanyIcon": "Current Company Icon"
+  },
+  "walletPage": {
+    "title": "Wallet Page"
+  }
+}

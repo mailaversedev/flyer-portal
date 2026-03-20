@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import ApiService from "../../services/ApiService";
+import i18n, { persistLocale } from "../../i18n";
 import "./StaffLogin.css";
 
 const StaffLogin = () => {
+  const { t } = useTranslation();
   const [isRegistering, setIsRegistering] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -15,8 +18,10 @@ const StaffLogin = () => {
   const [contact, setContact] = useState("");
   const [companyIndustries, setCompanyIndustries] = useState([]);
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
+  const [locale, setLocale] = useState(localStorage.getItem("locale") || i18n.language || "en");
 
   const [error, setError] = useState("");
+  const [isSuccessMessage, setIsSuccessMessage] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -44,6 +49,7 @@ const StaffLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsSuccessMessage(false);
     setLoading(true);
 
     try {
@@ -62,7 +68,11 @@ const StaffLogin = () => {
               throw new Error("Failed to upload company icon");
             }
           } catch (uploadError) {
-            setError("Failed to upload company icon: " + uploadError.message);
+              setError(
+                t("login.uploadCompanyIconFailed", {
+                  message: uploadError.message,
+                }),
+              );
             setLoading(false);
             return;
           }
@@ -78,6 +88,7 @@ const StaffLogin = () => {
           address,
           contact,
           role: "admin", // Default role for self-onboarding
+          locale,
         });
       } else {
         response = await ApiService.loginStaff(username, password);
@@ -86,12 +97,15 @@ const StaffLogin = () => {
       if (response.success) {
         if (isRegistering) {
           setIsRegistering(false);
-          setError("Registration successful! Please login.");
+          setError(t("login.registrationSuccess"));
+          setIsSuccessMessage(true);
           setPassword("");
         } else {
           // Login success
           localStorage.setItem("token", response.data.token);
           localStorage.setItem("user", JSON.stringify(response.data.user));
+          const nextLocale = persistLocale(response.data.user?.locale || locale);
+          await i18n.changeLanguage(nextLocale);
 
           if (response.data.company) {
             localStorage.setItem(
@@ -106,11 +120,15 @@ const StaffLogin = () => {
       } else {
         setError(
           response.message ||
-            (isRegistering ? "Registration failed" : "Login failed"),
+            (isRegistering
+              ? t("login.registrationFailed")
+              : t("login.loginFailed")),
         );
+        setIsSuccessMessage(false);
       }
     } catch (err) {
       setError(err.message || "An error occurred");
+      setIsSuccessMessage(false);
     } finally {
       setLoading(false);
     }
@@ -119,18 +137,41 @@ const StaffLogin = () => {
   const toggleMode = () => {
     setIsRegistering(!isRegistering);
     setError("");
+    setIsSuccessMessage(false);
+  };
+
+  const handleLocaleChange = async (event) => {
+    const nextLocale = event.target.value;
+    setLocale(nextLocale);
+    const normalizedLocale = persistLocale(nextLocale);
+    await i18n.changeLanguage(normalizedLocale);
   };
 
   return (
     <div className="staff-login-container">
+      <div className="page-locale-switcher">
+        <label htmlFor="login-locale">{t("common.language")}</label>
+        <select
+          id="login-locale"
+          value={locale}
+          onChange={handleLocaleChange}
+          className="login-locale-select"
+        >
+          <option value="en">{t("common.english")}</option>
+          <option value="zh-HK">{t("common.traditionalChinese")}</option>
+        </select>
+      </div>
+
       <div className="login-card">
-        <h2>{isRegistering ? "Company Onboarding" : "Staff Portal Login"}</h2>
+        <h2>
+          {isRegistering
+            ? t("login.companyOnboarding")
+            : t("login.portalLogin")}
+        </h2>
 
         {error && (
           <div
-            className={`error-message ${
-              error.includes("successful") ? "success-message" : ""
-            }`}
+            className={`error-message ${isSuccessMessage ? "success-message" : ""}`}
           >
             {error}
           </div>
@@ -138,25 +179,25 @@ const StaffLogin = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">{t("login.username")}</label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
+              placeholder={t("login.enterUsername")}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t("login.password")}</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t("login.enterPassword")}
               required
             />
           </div>
@@ -164,30 +205,30 @@ const StaffLogin = () => {
           {isRegistering && (
             <>
               <div className="form-group">
-                <label htmlFor="displayName">Display Name</label>
+                <label htmlFor="displayName">{t("login.displayName")}</label>
                 <input
                   type="text"
                   id="displayName"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Your full name"
+                  placeholder={t("login.yourFullName")}
                   required
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="companyName">Company Name</label>
+                <label htmlFor="companyName">{t("login.companyName")}</label>
                 <input
                   type="text"
                   id="companyName"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Company Name"
+                  placeholder={t("login.companyNamePlaceholder")}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="companyNature">Company Nature / Industry</label>
+                <label htmlFor="companyNature">{t("login.companyNature")}</label>
                 <select
                   id="companyNature"
                   value={companyNature}
@@ -204,8 +245,8 @@ const StaffLogin = () => {
                 >
                   <option value="">
                     {isLoadingIndustries
-                      ? "Loading industries..."
-                      : "Select Industry..."}
+                      ? t("login.loadingIndustries")
+                      : t("login.selectIndustry")}
                   </option>
                   {companyIndustries.map((industry) => (
                     <option key={industry} value={industry}>
@@ -216,7 +257,7 @@ const StaffLogin = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="companyIcon">Company Icon</label>
+                <label htmlFor="companyIcon">{t("login.companyIcon")}</label>
                 <input
                   type="file"
                   id="companyIcon"
@@ -225,23 +266,23 @@ const StaffLogin = () => {
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="address">Address (Optional)</label>
+                <label htmlFor="address">{t("login.addressOptional")}</label>
                 <input
                   type="text"
                   id="address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Company Address"
+                  placeholder={t("login.companyAddressPlaceholder")}
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="contact">Contact (Optional)</label>
+                <label htmlFor="contact">{t("login.contactOptional")}</label>
                 <input
                   type="text"
                   id="contact"
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
-                  placeholder="Contact Number"
+                  placeholder={t("login.contactPlaceholder")}
                 />
               </div>
             </>
@@ -250,11 +291,11 @@ const StaffLogin = () => {
           <button type="submit" className="login-button" disabled={loading}>
             {loading
               ? isRegistering
-                ? "Registering..."
-                : "Logging in..."
+                ? t("login.registering")
+                : t("login.loggingIn")
               : isRegistering
-                ? "Register Company"
-                : "Login"}
+                ? t("login.registerCompany")
+                : t("login.login")}
           </button>
 
           <div className="toggle-container">
@@ -264,8 +305,8 @@ const StaffLogin = () => {
               onClick={toggleMode}
             >
               {isRegistering
-                ? "Already have an account? Login"
-                : "New Company? Onboard here"}
+                ? t("login.alreadyHaveAccount")
+                : t("login.newCompany")}
             </button>
           </div>
         </form>
@@ -276,7 +317,7 @@ const StaffLogin = () => {
           <div className="loading-indicator-content">
             <div className="spinner" />
             <span className="loading-indicator-text">
-              {isRegistering ? "Registering..." : "Logging in..."}
+              {isRegistering ? t("login.registering") : t("login.loggingIn")}
             </span>
           </div>
         </div>

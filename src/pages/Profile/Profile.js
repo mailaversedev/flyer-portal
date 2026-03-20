@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import ApiService from "../../services/ApiService";
+import i18n, { persistLocale } from "../../i18n";
 import "./Profile.css";
 
 const Profile = () => {
+  const { t } = useTranslation();
   const [companyName, setCompanyName] = useState("");
   const [companyNature, setCompanyNature] = useState("");
   const [address, setAddress] = useState("");
@@ -11,6 +14,7 @@ const Profile = () => {
   const [currentIcon, setCurrentIcon] = useState("");
   const [companyIndustries, setCompanyIndustries] = useState([]);
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
+  const [locale, setLocale] = useState(localStorage.getItem("locale") || i18n.language || "en");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -30,6 +34,15 @@ const Profile = () => {
       } catch (e) {
         console.error("Failed to parse company info", e);
       }
+    }
+
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (storedUser?.locale) {
+        setLocale(storedUser.locale);
+      }
+    } catch (e) {
+      console.error("Failed to parse user info", e);
     }
 
     const fetchCompanyIndustries = async () => {
@@ -82,12 +95,15 @@ const Profile = () => {
         icon: companyIconUrl,
       });
 
+      await ApiService.updateStaffProfile({ locale });
+
       if (response.success) {
-        setSuccess("Profile updated successfully!");
+        setSuccess(t("profilePage.profileUpdated"));
 
         // Update local storage and ApiService
+        const storedCompany = JSON.parse(localStorage.getItem("company") || "{}");
         const updatedCompany = {
-          ...JSON.parse(localStorage.getItem("company")),
+          ...storedCompany,
           name: companyName,
           nature: companyNature,
           address: address,
@@ -97,6 +113,8 @@ const Profile = () => {
         localStorage.setItem("company", JSON.stringify(updatedCompany));
         ApiService.setCurrentCompany(updatedCompany);
         setCurrentIcon(companyIconUrl);
+        persistLocale(locale);
+        await i18n.changeLanguage(locale);
 
         // Optional UI reload to update header instantly
         window.dispatchEvent(new Event("storage"));
@@ -113,26 +131,26 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <div className="profile-card">
-        <h2>Company Profile</h2>
+        <h2>{t("profilePage.title")}</h2>
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="error-message success-message">{success}</div>}
 
         <form onSubmit={handleSubmit} className="profile-form">
           <div className="form-group">
-            <label htmlFor="companyName">Company Name</label>
+            <label htmlFor="companyName">{t("profilePage.companyName")}</label>
             <input
               type="text"
               id="companyName"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Company Name"
+              placeholder={t("login.companyNamePlaceholder")}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="companyNature">Company Nature / Industry</label>
+            <label htmlFor="companyNature">{t("profilePage.companyNature")}</label>
             <select
               id="companyNature"
               value={companyNature}
@@ -141,8 +159,8 @@ const Profile = () => {
             >
               <option value="">
                 {isLoadingIndustries
-                  ? "Loading industries..."
-                  : "Select Industry..."}
+                  ? t("profilePage.loadingIndustries")
+                  : t("profilePage.selectIndustry")}
               </option>
               {companyIndustries.map((industry) => (
                 <option key={industry} value={industry}>
@@ -153,12 +171,24 @@ const Profile = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="companyIcon">Company Icon</label>
+            <label htmlFor="portalLanguage">{t("profilePage.portalLanguage")}</label>
+            <select
+              id="portalLanguage"
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+            >
+              <option value="en">{t("common.english")}</option>
+              <option value="zh-HK">{t("common.traditionalChinese")}</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="companyIcon">{t("profilePage.companyIcon")}</label>
             {currentIcon && !companyIconFile && (
               <div className="current-icon">
                 <img 
                   src={currentIcon} 
-                  alt="Current Company Icon" 
+                  alt={t("profilePage.currentCompanyIcon")} 
                   style={{ width: "60px", height: "60px", borderRadius: "8px", objectFit: "cover", display: "block" }} 
                 />
               </div>
@@ -172,29 +202,29 @@ const Profile = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="address">Address</label>
+            <label htmlFor="address">{t("profilePage.address")}</label>
             <input
               type="text"
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Company Address"
+              placeholder={t("login.companyAddressPlaceholder")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="contact">Contact</label>
+            <label htmlFor="contact">{t("profilePage.contact")}</label>
             <input
               type="text"
               id="contact"
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder="Contact Number"
+              placeholder={t("login.contactPlaceholder")}
             />
           </div>
 
           <button type="submit" className="save-button" disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
+            {loading ? t("common.saving") : t("common.save")}
           </button>
         </form>
       </div>

@@ -6,6 +6,7 @@
   width: 100%;
   background-color: #1a1f37;
   color: white;
+  position: relative;
 }
 
 .login-card {
@@ -21,6 +22,38 @@
 .login-card h2 {
   margin-bottom: 1.5rem;
   color: #fff;
+}
+
+.page-locale-switcher {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 1;
+}
+
+.page-locale-switcher label {
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
+
+.login-locale-select,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #4a5568;
+  background-color: #1a1f37;
+  color: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.login-locale-select {
+  width: auto;
+  min-width: 140px;
 }
 
 .form-group {
@@ -47,6 +80,13 @@
 }
 
 .form-group input:focus {
+  outline: none;
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
+}
+
+.form-group select:focus,
+.login-locale-select:focus {
   outline: none;
   border-color: #63b3ed;
   box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);

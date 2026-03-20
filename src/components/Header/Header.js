@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Search, Bell, LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
+import i18n, { persistLocale } from "../../i18n";
 
 import "./Header.css";
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [company, setCompany] = useState(null);
+  const [selectedLocale, setSelectedLocale] = useState(
+    localStorage.getItem("locale") || i18n.language || "en",
+  );
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -23,6 +29,9 @@ const Header = () => {
           console.error("Failed to parse company info", e);
         }
       }
+
+      const storedLocale = localStorage.getItem("locale") || i18n.language;
+      setSelectedLocale(storedLocale);
     };
 
     // Initial load from storage mapping
@@ -36,19 +45,37 @@ const Header = () => {
     switch (location.pathname) {
       case "/":
       case "/dashboard":
-        return "Dashboard";
+        return t("common.dashboard");
       case "/marketplace":
-        return "Marketplace";
+        return t("common.marketplace");
       case "/flyer":
-        return "Types of Flyer Distribution";
+        return t("header.flyerTypes");
       case "/flyer/create":
-        return "Create Your Flyer";
+        return t("header.createFlyer");
       case "/profile":
-        return "Company Profile";
+        return t("common.profile");
       case "/wallet":
-        return "Wallet";
+        return t("common.wallet");
       default:
-        return "Dashboard";
+        if (location.pathname.startsWith("/flyer/create")) {
+          return t("header.createFlyer");
+        }
+
+        return t("common.dashboard");
+    }
+  };
+
+  const handleLocaleChange = async (event) => {
+    const locale = event.target.value;
+    setSelectedLocale(locale);
+
+    const normalizedLocale = persistLocale(locale);
+    await i18n.changeLanguage(normalizedLocale);
+
+    try {
+      await ApiService.updateStaffProfile({ locale: normalizedLocale });
+    } catch (error) {
+      console.error("Failed to persist locale", error);
     }
   };
 
@@ -56,6 +83,7 @@ const Header = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("company");
+    localStorage.removeItem("locale");
     navigate("/staff/login");
   };
 
@@ -67,11 +95,30 @@ const Header = () => {
       <div className="header-center">
         <div className="search-container">
           <Search className="search-icon" size={20} />
-          <input type="text" placeholder="Search..." className="search-input" />
+          <input
+            type="text"
+            placeholder={t("common.searchPlaceholder")}
+            className="search-input"
+          />
         </div>
       </div>
       <div className="header-right">
-        <button className="notification-btn">
+        <div className="locale-switcher">
+          <label className="locale-label" htmlFor="header-locale-select">
+            {t("common.language")}
+          </label>
+          <select
+            id="header-locale-select"
+            className="locale-select"
+            value={selectedLocale}
+            onChange={handleLocaleChange}
+          >
+            <option value="en">{t("common.english")}</option>
+            <option value="zh-HK">{t("common.traditionalChinese")}</option>
+          </select>
+        </div>
+
+        <button className="notification-btn" title={t("header.notifications")}>
           <Bell size={20} />
         </button>
 
@@ -80,7 +127,7 @@ const Header = () => {
             className="user-info" 
             onClick={() => navigate("/profile")}
             style={{ cursor: "pointer" }}
-            title="Edit Profile"
+            title={t("header.editProfile")}
           >
             <div className="user-avatar">
               {company.icon ? (
@@ -111,7 +158,7 @@ const Header = () => {
           </div>
         )}
 
-        <button className="logout-btn" onClick={handleLogout} title="Logout">
+        <button className="logout-btn" onClick={handleLogout} title={t("common.logout")}>
           <LogOut size={20} />
         </button>
       </div>

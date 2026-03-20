@@ -146,6 +146,14 @@ class ApiService {
     });
   }
 
+  // PUT /api/auth/staff/profile - Update Staff Profile / Preferences
+  static async updateStaffProfile(profileData) {
+    return this.makeRequest("/api/auth/staff/profile", {
+      method: "PUT",
+      body: JSON.stringify(profileData),
+    });
+  }
+
   // POST /api/auth/staff/refresh-token - Refresh Staff Token
   static async refreshStaffToken(token) {
     // We use fetch directly here to avoid circular dependency with makeRequest's error handling

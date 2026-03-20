@@ -76,3 +76,9 @@
   background: #ffb8a3;
   cursor: not-allowed;
 }
+
+.success-message {
+  background-color: rgba(72, 187, 120, 0.1);
+  color: #68d391;
+  border: 1px solid rgba(72, 187, 120, 0.2);
+}

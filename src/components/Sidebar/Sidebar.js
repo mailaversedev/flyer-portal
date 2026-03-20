@@ -1,28 +1,31 @@
 import React from "react";
 import { NavLink } from "react-router";
+import { useTranslation } from "react-i18next";
 import { LayoutDashboard, ShoppingBag, FileText, Wallet } from "lucide-react";
 import "./Sidebar.css";
 
 const Sidebar = () => {
+  const { t } = useTranslation();
+
   const navigationItems = [
     {
-      name: "Dashboard",
+      name: t("common.dashboard"),
       path: "/dashboard",
       icon: LayoutDashboard,
       active: true,
     },
     {
-      name: "Marketplace",
+      name: t("common.marketplace"),
       path: "/marketplace",
       icon: ShoppingBag,
     },
     {
-      name: "Flyer",
+      name: t("common.flyer"),
       path: "/flyer",
       icon: FileText,
     },
     {
-      name: "Wallet",
+      name: t("common.wallet"),
       path: "/wallet",
       icon: Wallet,
     },

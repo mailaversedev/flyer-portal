@@ -31,6 +31,7 @@ router.post("/register", async (req, res) => {
       contact,
       role,
       companyNature,
+      locale,
     } = req.body;
 
     // Validate required fields
@@ -97,6 +98,9 @@ router.post("/register", async (req, res) => {
         password: hashedPassword,
         role: role || "staff",
         companyId: companyId, // Link to company if created
+        profile: {
+          locale: locale || "en",
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isActive: true,
@@ -284,6 +288,7 @@ router.post("/login", async (req, res) => {
       displayName: staffData.displayName,
       role: staffData.role,
       companyId: staffData.companyId,
+      locale: staffData.profile?.locale || null,
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
@@ -306,6 +311,7 @@ router.post("/login", async (req, res) => {
           displayName: staffData.displayName,
           role: staffData.role,
           companyId: staffData.companyId,
+          locale: staffData.profile?.locale || null,
         },
         company: companyInfo,
       },
@@ -352,6 +358,7 @@ router.post("/refresh-token", authenticateToken, async (req, res) => {
       displayName: staffData.displayName,
       role: staffData.role,
       companyId: staffData.companyId,
+      locale: staffData.profile?.locale || null,
     };
 
     const newToken = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
@@ -361,6 +368,14 @@ router.post("/refresh-token", authenticateToken, async (req, res) => {
       message: "Token refreshed successfully",
       data: {
         token: newToken,
+        user: {
+          id: staffDoc.id,
+          username: staffData.username,
+          displayName: staffData.displayName,
+          role: staffData.role,
+          companyId: staffData.companyId,
+          locale: staffData.profile?.locale || null,
+        },
       },
     });
   } catch (error) {
@@ -368,6 +383,44 @@ router.post("/refresh-token", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error during token refresh",
+      error: error.message,
+    });
+  }
+});
+
+// PUT /profile - Update staff profile information
+router.put("/profile", authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { displayName, ...profileData } = req.body;
+
+    const updateData = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (displayName !== undefined) {
+      updateData.displayName = displayName;
+    }
+
+    if (Object.keys(profileData).length > 0) {
+      updateData.profile = profileData;
+    }
+
+    await db.collection("staffs").doc(userId).set(updateData, { merge: true });
+
+    res.status(200).json({
+      success: true,
+      message: "Staff profile updated successfully",
+      data: {
+        displayName: updateData.displayName,
+        profile: updateData.profile,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating staff profile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during staff profile update",
       error: error.message,
     });
   }
