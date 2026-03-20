@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Navigate, useLocation } from "react-router";
 import ApiService from "../../services/ApiService";
-import i18n, { persistLocale } from "../../i18n";
+import { applyLocale, getPendingLocale } from "../../i18n";
 import { isTokenExpired } from "../../utils/AuthUtil";
 
 const ProtectedRoute = ({ children }) => {
@@ -17,13 +17,15 @@ const ProtectedRoute = ({ children }) => {
             localStorage.setItem("token", result.data.token);
 
             if (result.data.user) {
-              localStorage.setItem("user", JSON.stringify(result.data.user));
+              const pendingLocale = getPendingLocale();
+              const nextUser = pendingLocale
+                ? { ...result.data.user, locale: pendingLocale }
+                : result.data.user;
 
-              if (result.data.user.locale) {
-                const locale = persistLocale(result.data.user.locale);
-                if (i18n.language !== locale) {
-                  await i18n.changeLanguage(locale);
-                }
+              localStorage.setItem("user", JSON.stringify(nextUser));
+
+              if (nextUser.locale) {
+                await applyLocale(nextUser.locale);
               }
             }
           }

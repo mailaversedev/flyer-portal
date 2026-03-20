@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import ApiService from "../../services/ApiService";
-import i18n, { persistLocale } from "../../i18n";
+import i18n, {
+  applyLocale,
+  clearPendingLocale,
+  markPendingLocale,
+  normalizeLocale,
+} from "../../i18n";
 import "./Profile.css";
 
 const Profile = () => {
@@ -14,7 +19,9 @@ const Profile = () => {
   const [currentIcon, setCurrentIcon] = useState("");
   const [companyIndustries, setCompanyIndustries] = useState([]);
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
-  const [locale, setLocale] = useState(localStorage.getItem("locale") || i18n.language || "en");
+  const [locale, setLocale] = useState(
+    normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -95,6 +102,7 @@ const Profile = () => {
         icon: companyIconUrl,
       });
 
+      markPendingLocale(locale);
       await ApiService.updateStaffProfile({ locale });
 
       if (response.success) {
@@ -113,8 +121,8 @@ const Profile = () => {
         localStorage.setItem("company", JSON.stringify(updatedCompany));
         ApiService.setCurrentCompany(updatedCompany);
         setCurrentIcon(companyIconUrl);
-        persistLocale(locale);
-        await i18n.changeLanguage(locale);
+        await applyLocale(locale);
+        clearPendingLocale(locale);
 
         // Optional UI reload to update header instantly
         window.dispatchEvent(new Event("storage"));
@@ -122,6 +130,7 @@ const Profile = () => {
         throw new Error(response.message || "Failed to update profile");
       }
     } catch (err) {
+      clearPendingLocale(locale);
       setError(err.message || "An error occurred");
     } finally {
       setLoading(false);

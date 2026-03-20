@@ -4,7 +4,11 @@ import { Search, Bell, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
-import i18n, { persistLocale } from "../../i18n";
+import i18n, {
+  applyLocale,
+  clearPendingLocale,
+  normalizeLocale,
+} from "../../i18n";
 
 import "./Header.css";
 
@@ -14,7 +18,7 @@ const Header = () => {
   const { t } = useTranslation();
   const [company, setCompany] = useState(null);
   const [selectedLocale, setSelectedLocale] = useState(
-    localStorage.getItem("locale") || i18n.language || "en",
+    normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
   );
 
   useEffect(() => {
@@ -29,16 +33,23 @@ const Header = () => {
           console.error("Failed to parse company info", e);
         }
       }
+    };
 
-      const storedLocale = localStorage.getItem("locale") || i18n.language;
-      setSelectedLocale(storedLocale);
+    const handleLanguageChanged = (locale) => {
+      setSelectedLocale(normalizeLocale(locale));
     };
 
     // Initial load from storage mapping
     handleStorageChange();
+    handleLanguageChanged(i18n.resolvedLanguage);
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    i18n.on("languageChanged", handleLanguageChanged);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      i18n.off("languageChanged", handleLanguageChanged);
+    };
   }, []);
 
   const getPageTitle = () => {
@@ -67,15 +78,15 @@ const Header = () => {
 
   const handleLocaleChange = async (event) => {
     const locale = event.target.value;
-    setSelectedLocale(locale);
-
-    const normalizedLocale = persistLocale(locale);
-    await i18n.changeLanguage(normalizedLocale);
+    const normalizedLocale = await applyLocale(locale, { markPending: true });
+    setSelectedLocale(normalizedLocale);
 
     try {
       await ApiService.updateStaffProfile({ locale: normalizedLocale });
+      clearPendingLocale(normalizedLocale);
     } catch (error) {
       console.error("Failed to persist locale", error);
+      clearPendingLocale(normalizedLocale);
     }
   };
 

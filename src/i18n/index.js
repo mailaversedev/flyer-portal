@@ -6,6 +6,7 @@ import zhHKCommon from "./locales/zh-HK/common.json";
 
 export const DEFAULT_LOCALE = "en";
 export const SUPPORTED_LOCALES = ["en", "zh-HK"];
+const PENDING_LOCALE_KEY = "pendingLocale";
 
 const normalizeLocale = (locale) => {
   if (!locale || typeof locale !== "string") {
@@ -62,7 +63,44 @@ export const persistLocale = (locale) => {
     );
   }
 
-  window.dispatchEvent(new Event("storage"));
+  return normalizedLocale;
+};
+
+export const getPendingLocale = () => {
+  const pendingLocale = sessionStorage.getItem(PENDING_LOCALE_KEY);
+  return pendingLocale ? normalizeLocale(pendingLocale) : null;
+};
+
+export const markPendingLocale = (locale) => {
+  const normalizedLocale = normalizeLocale(locale);
+  sessionStorage.setItem(PENDING_LOCALE_KEY, normalizedLocale);
+  return normalizedLocale;
+};
+
+export const clearPendingLocale = (locale = null) => {
+  if (!locale) {
+    sessionStorage.removeItem(PENDING_LOCALE_KEY);
+    return;
+  }
+
+  const pendingLocale = getPendingLocale();
+  if (pendingLocale === normalizeLocale(locale)) {
+    sessionStorage.removeItem(PENDING_LOCALE_KEY);
+  }
+};
+
+export const applyLocale = async (locale, options = {}) => {
+  const { markPending = false } = options;
+  const normalizedLocale = persistLocale(locale);
+
+  if (markPending) {
+    markPendingLocale(normalizedLocale);
+  }
+
+  if (i18n.resolvedLanguage !== normalizedLocale) {
+    await i18n.changeLanguage(normalizedLocale);
+  }
+
   return normalizedLocale;
 };
 

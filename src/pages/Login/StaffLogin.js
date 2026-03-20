@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import ApiService from "../../services/ApiService";
-import i18n, { persistLocale } from "../../i18n";
+import i18n, { applyLocale, normalizeLocale } from "../../i18n";
 import "./StaffLogin.css";
 
 const StaffLogin = () => {
@@ -18,7 +18,9 @@ const StaffLogin = () => {
   const [contact, setContact] = useState("");
   const [companyIndustries, setCompanyIndustries] = useState([]);
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
-  const [locale, setLocale] = useState(localStorage.getItem("locale") || i18n.language || "en");
+  const [locale, setLocale] = useState(
+    normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
+  );
 
   const [error, setError] = useState("");
   const [isSuccessMessage, setIsSuccessMessage] = useState(false);
@@ -104,8 +106,7 @@ const StaffLogin = () => {
           // Login success
           localStorage.setItem("token", response.data.token);
           localStorage.setItem("user", JSON.stringify(response.data.user));
-          const nextLocale = persistLocale(response.data.user?.locale || locale);
-          await i18n.changeLanguage(nextLocale);
+          await applyLocale(response.data.user?.locale || locale);
 
           if (response.data.company) {
             localStorage.setItem(
@@ -143,8 +144,8 @@ const StaffLogin = () => {
   const handleLocaleChange = async (event) => {
     const nextLocale = event.target.value;
     setLocale(nextLocale);
-    const normalizedLocale = persistLocale(nextLocale);
-    await i18n.changeLanguage(normalizedLocale);
+    const normalizedLocale = await applyLocale(nextLocale);
+    setLocale(normalizedLocale);
   };
 
   return (
