@@ -1,9 +1,11 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import UserMetrics from "./UserMetrics";
 import "./BudgetCard.css";
 
 const BudgetCard = ({ metrics }) => {
+  const { t, i18n } = useTranslation();
   const totalBudget = metrics?.totalBudget || 0;
   const years = Array.from(
     { length: 5 },
@@ -16,7 +18,7 @@ const BudgetCard = ({ metrics }) => {
     <div className="budget-card">
       <div className="budget-header">
         <div className="budget-title-section">
-          <h3 className="budget-title">Total Budget Spent</h3>
+          <h3 className="budget-title">{t("dashboard.totalBudgetSpent")}</h3>
           <div className="time-filter">
             <span
               className="dropdown-label"
@@ -51,7 +53,7 @@ const BudgetCard = ({ metrics }) => {
           <span className="currency">HK$</span>
           <span className="amount">
             {totalBudget
-              ? (totalBudget * 0.02).toLocaleString(undefined, {
+              ? (totalBudget * 0.02).toLocaleString(i18n.language, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })

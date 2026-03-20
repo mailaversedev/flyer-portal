@@ -1,10 +1,12 @@
 import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { Plus, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import ColorInputField from "./ColorInputField";
 import { getProLeafletValidationErrors } from "../../../utils/LeafletValidationUtil";
 import "./Step1Content.css";
 
 const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
+  const { t } = useTranslation();
   const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState({});
 
@@ -21,12 +23,12 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
     "21:9",
   ];
   const logoPositions = [
-    "natural placement",
-    "top-left",
-    "top-right",
-    "bottom-left",
-    "bottom-right",
-    "center",
+    { value: "natural placement", label: t("leafletPro.naturalPlacement") },
+    { value: "top-left", label: t("leafletPro.topLeft") },
+    { value: "top-right", label: t("leafletPro.topRight") },
+    { value: "bottom-left", label: t("leafletPro.bottomLeft") },
+    { value: "bottom-right", label: t("leafletPro.bottomRight") },
+    { value: "center", label: t("leafletPro.center") },
   ];
 
   const validateRequiredFields = () => {
@@ -202,11 +204,11 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
       <div className="form-grid">
         {/* Product Name - REQUIRED */}
         <div className="form-group full-width">
-          <label className="form-label">Product Name*</label>
+          <label className="form-label">{t("leafletPro.productName")}</label>
           <input
             type="text"
             className={`form-input ${errors.productName ? "error" : ""}`}
-            placeholder="e.g. NeonFizz Energy Drink"
+            placeholder={t("leafletPro.productNamePlaceholder")}
             value={data.productName || ""}
             onChange={(e) => handleInputChange("productName", e.target.value)}
           />
@@ -217,14 +219,14 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Aspect Ratio */}
         <div className="form-group">
-          <label className="form-label">Aspect Ratio*</label>
+          <label className="form-label">{t("leafletPro.aspectRatio")}</label>
           <div className="select-wrapper">
             <select
               className={`form-select ${errors.aspectRatio ? "error" : ""}`}
               value={data.aspectRatio}
               onChange={(e) => handleInputChange("aspectRatio", e.target.value)}
             >
-              <option value="">Select Ratio</option>
+              <option value="">{t("leafletPro.selectRatio")}</option>
               {proAspectRatios.map((ratio) => (
                 <option key={ratio} value={ratio}>
                   {ratio}
@@ -240,7 +242,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Resolution */}
         <div className="form-group">
-          <label className="form-label">Resolution (optional)</label>
+          <label className="form-label">{t("leafletPro.resolution")}</label>
           <div className="select-wrapper">
             <select
               className="form-select"
@@ -258,7 +260,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         {/* Reference Image / Campaign Moodboard */}
         <div className="form-group full-width">
           <label className="form-label">
-            Campaign Moodboard / Reference Image (optional)
+            {t("leafletPro.moodboard")}
           </label>
           {data.referenceFlyer ? (
             <SingleImageDisplay
@@ -305,7 +307,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Brand & Styling Section */}
         <ColorInputField
-          label="Primary Color (Hex) (optional)"
+          label={t("leafletPro.primaryColor")}
           field="primaryColor"
           value={data.primaryColor}
           placeholder="#FFFFFF"
@@ -313,7 +315,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         />
 
         <ColorInputField
-          label="Secondary Color (Hex) (optional)"
+          label={t("leafletPro.secondaryColor")}
           field="secondaryColor"
           value={data.secondaryColor}
           placeholder="#A1B2C3"
@@ -321,22 +323,22 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         />
 
         <div className="form-group">
-          <label className="form-label">Typography (optional)</label>
+          <label className="form-label">{t("leafletPro.typography")}</label>
           <input
             type="text"
             className="form-input"
-            placeholder="e.g. Sans-serif, Clean"
+            placeholder={t("leafletPro.typographyPlaceholder")}
             value={data.typography || ""}
             onChange={(e) => handleInputChange("typography", e.target.value)}
           />
         </div>
 
         <div className="form-group">
-          <label className="form-label">Brand Voice (optional)</label>
+          <label className="form-label">{t("leafletPro.brandVoice")}</label>
           <input
             type="text"
             className="form-input"
-            placeholder="e.g. Edgy, Youthful"
+            placeholder={t("leafletPro.brandVoicePlaceholder")}
             value={data.brandVoice || ""}
             onChange={(e) => handleInputChange("brandVoice", e.target.value)}
           />
@@ -344,7 +346,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Upload Logo */}
         <div className="form-group full-width">
-          <label className="form-label">Upload Logo (optional)</label>
+          <label className="form-label">{t("leafletPro.uploadLogo")}</label>
           {data.logoImage ? (
             <SingleImageDisplay
               imageObj={data.logoImage}
@@ -380,7 +382,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
                   document.getElementById("logoImageInput").click()
                 }
               >
-                <span>Select Logo file</span>
+                <span>{t("leafletPro.selectLogoFile")}</span>
                 <ChevronRight size={16} />
               </div>
             </>
@@ -389,7 +391,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Logo Position */}
         <div className="form-group">
-          <label className="form-label">Logo Position (optional)</label>
+          <label className="form-label">{t("leafletPro.logoPosition")}</label>
           <div className="select-wrapper">
             <select
               className="form-select"
@@ -399,8 +401,8 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
               }
             >
               {logoPositions.map((pos) => (
-                <option key={pos} value={pos}>
-                  {pos}
+                <option key={pos.value} value={pos.value}>
+                  {pos.label}
                 </option>
               ))}
             </select>
@@ -410,16 +412,16 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
       </div>
 
       <div className="content-section">
-        <h3 className="section-title">Copy & Content</h3>
+        <h3 className="section-title">{t("leafletPro.copyContent")}</h3>
 
         <div className="form-grid">
           {/* Copy Line (Header) */}
           <div className="form-group full-width">
-            <label className="form-label">Copy Line (Header)*</label>
+            <label className="form-label">{t("leafletPro.copyLine")}</label>
             <input
               type="text"
               className={`form-input ${errors.header ? "error" : ""}`}
-              placeholder="e.g. Ignite the Night"
+              placeholder={t("leafletPro.copyLinePlaceholder")}
               value={data.header || ""}
               onChange={(e) => handleInputChange("header", e.target.value)}
             />
@@ -429,7 +431,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Copy Position (optional)</label>
+            <label className="form-label">{t("leafletPro.copyPosition")}</label>
             <div className="select-wrapper">
               <select
                 className="form-select"
@@ -439,8 +441,8 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
                 }
               >
                 {logoPositions.map((pos) => (
-                  <option key={pos} value={pos}>
-                    {pos}
+                  <option key={pos.value} value={pos.value}>
+                    {pos.label}
                   </option>
                 ))}
               </select>
@@ -450,10 +452,10 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Ad Content */}
           <div className="form-group full-width">
-            <label className="form-label">Ad Content*</label>
+            <label className="form-label">{t("leafletPro.adContent")}</label>
             <textarea
               className={`form-textarea ${errors.adContent ? "error" : ""}`}
-              placeholder="Describe the ad content and key message..."
+              placeholder={t("leafletPro.adContentPlaceholder")}
               rows={4}
               value={data.adContent || ""}
               onChange={(e) => handleInputChange("adContent", e.target.value)}
@@ -465,10 +467,10 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Body Copy */}
           <div className="form-group full-width">
-            <label className="form-label">Body Copy (optional)</label>
+            <label className="form-label">{t("leafletPro.bodyCopy")}</label>
             <textarea
               className="form-textarea"
-              placeholder="Optional flyer body copy used for generation..."
+              placeholder={t("leafletPro.bodyCopyPlaceholder")}
               rows={4}
               value={data.bodyCopy || ""}
               onChange={(e) => handleInputChange("bodyCopy", e.target.value)}
@@ -476,7 +478,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Body Copy Position (optional)</label>
+            <label className="form-label">{t("leafletPro.bodyCopyPosition")}</label>
             <div className="select-wrapper">
               <select
                 className="form-select"
@@ -486,8 +488,8 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
                 }
               >
                 {logoPositions.map((pos) => (
-                  <option key={pos} value={pos}>
-                    {pos}
+                  <option key={pos.value} value={pos.value}>
+                    {pos.label}
                   </option>
                 ))}
               </select>
@@ -497,10 +499,10 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Query_Context / Flyer Prompts */}
           <div className="form-group full-width">
-            <label className="form-label">Prompts / Query Context*</label>
+            <label className="form-label">{t("leafletPro.prompts")}</label>
             <textarea
               className={`form-textarea ${errors.flyerPrompts ? "error" : ""}`}
-              placeholder="Describe the context: e.g. a drink that is energizing and refreshing..."
+              placeholder={t("leafletPro.promptsPlaceholder")}
               rows={6}
               value={data.flyerPrompts}
               onChange={(e) =>
@@ -515,14 +517,14 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           {/* Upload Product Photo */}
           <div className="form-group full-width">
             <label className="form-label">
-              Upload Product Photo (optional){" "}
+              {t("leafletPro.uploadProduct")}{" "}
               <span className="counter">{data.productPhoto.length}/5</span>
             </label>
             <div
               className="file-select"
               onClick={() => handleFileUpload("productPhoto")}
             >
-              <span>Select file</span>
+              <span>{t("leafletStandard.selectFile")}</span>
               <ChevronRight size={16} />
             </div>
             <ThumbnailRow images={data.productPhoto} field="productPhoto" />
@@ -530,13 +532,13 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Tag */}
           <div className="form-group">
-            <label className="form-label">Tag (optional, max 3)</label>
+            <label className="form-label">{t("leafletPro.tagOptional")}</label>
             <div className="tag-input-container">
               <div className="tag-input">
                 <span className="hash">#</span>
                 <input
                   type="text"
-                  placeholder="Please enter"
+                  placeholder={t("qrGeneration.pleaseEnter")}
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleAddTag()}

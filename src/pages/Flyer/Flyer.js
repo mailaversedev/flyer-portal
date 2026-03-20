@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router";
+import { useTranslation } from "react-i18next";
 import FlyerDistributionCard from "../../components/Flyer/FlyerDistributionCard";
 import "./Flyer.css";
 
 const Flyer = () => {
+  const { t } = useTranslation();
   const [showBanner, setShowBanner] = useState(false);
 
   const location = useLocation();
   const successMessage = location.state?.success
-    ? location.state?.message || "Flyer created successfully!"
+    ? location.state?.message || t("flyerPage.successCreated")
     : null;
 
   useEffect(() => {
@@ -22,29 +24,29 @@ const Flyer = () => {
   const flyerTypes = [
     {
       id: 1,
-      title: "Distribute Your Leaflet",
-      subtitle: "Read to Earn",
+      title: t("flyerPage.leafletTitle"),
+      subtitle: t("flyerPage.leafletSubtitle"),
       icon: "leaflet",
-      primaryButton: "Create by FlyerGenie",
-      secondaryButton: "Direct Upload",
+      primaryButton: t("flyerPage.leafletPrimary"),
+      secondaryButton: t("flyerPage.leafletSecondary"),
       primaryRoute: "/flyer/create/leaflet",
       isPrimary: true,
     },
     {
       id: 2,
-      title: "Build Your Survey",
-      subtitle: "Survey to Earn",
+      title: t("flyerPage.surveyTitle"),
+      subtitle: t("flyerPage.surveySubtitle"),
       icon: "survey",
-      primaryButton: "Select",
+      primaryButton: t("flyerPage.select"),
       primaryRoute: "/flyer/create/query",
       isPrimary: false,
     },
     {
       id: 3,
-      title: "Create QR Code",
-      subtitle: "Survey to Earn",
+      title: t("flyerPage.qrTitle"),
+      subtitle: t("flyerPage.qrSubtitle"),
       icon: "qr",
-      primaryButton: "Select",
+      primaryButton: t("flyerPage.select"),
       primaryRoute: "/flyer/create/qr",
       isPrimary: false,
     },
@@ -53,7 +55,7 @@ const Flyer = () => {
   return (
     <div className="flyer">
       <div className="flyer-header">
-        <h1 className="flyer-title">Types of Flyer Distribution</h1>
+        <h1 className="flyer-title">{t("flyerPage.title")}</h1>
       </div>
       <div className="flyer-distribution-grid">
         {flyerTypes.map((type) => (

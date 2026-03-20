@@ -1,15 +1,21 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import "./CampaignTable.css";
 
 const CampaignTable = ({ campaignData, loading }) => {
-  const [activeTab, setActiveTab] = useState("Read to Earn");
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState("read");
 
-  const tabs = ["Read to Earn", "Survey to Earn", "Scan to Earn"];
+  const tabs = [
+    { key: "read", label: t("dashboard.readToEarn") },
+    { key: "survey", label: t("dashboard.surveyToEarn") },
+    { key: "scan", label: t("dashboard.scanToEarn") },
+  ];
 
   const filteredData = campaignData.filter((campaign) => {
-    if (activeTab === "Read to Earn") return campaign.adType === "Leaflet";
-    if (activeTab === "Survey to Earn") return campaign.adType === "Query";
-    if (activeTab === "Scan to Earn") return campaign.adType === "Qr";
+    if (activeTab === "read") return campaign.adType === "Leaflet";
+    if (activeTab === "survey") return campaign.adType === "Query";
+    if (activeTab === "scan") return campaign.adType === "Qr";
     return true;
   });
 
@@ -18,33 +24,33 @@ const CampaignTable = ({ campaignData, loading }) => {
       <div className="table-tabs">
         {tabs.map((tab) => (
           <button
-            key={tab}
-            className={`table-tab ${activeTab === tab ? "active" : ""}`}
-            onClick={() => setActiveTab(tab)}
+            key={tab.key}
+            className={`table-tab ${activeTab === tab.key ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.key)}
           >
-            {tab}
+            {tab.label}
           </button>
         ))}
       </div>
 
       <div className="table-container">
         {loading ? (
-          <div className="table-loading">Loading campaigns...</div>
+          <div className="table-loading">{t("dashboard.loadingCampaigns")}</div>
         ) : (
           <table className="campaigns-table">
             <thead>
               <tr>
-                <th>Thumbnail</th>
-                <th>Ad Title</th>
-                <th>Status</th>
-                <th>Ad Type</th>
-                <th>Total Reached</th>
-                <th>Browse Rate(%)</th>
-                <th>Total Budget</th>
-                <th>Remaining Pool</th>
-                <th>Cost per Browse(CPB)</th>
-                <th>Download (%)</th>
-                <th>Converted (%)</th>
+                <th>{t("dashboard.thumbnail")}</th>
+                <th>{t("dashboard.adTitle")}</th>
+                <th>{t("dashboard.status")}</th>
+                <th>{t("dashboard.adType")}</th>
+                <th>{t("dashboard.totalReached")}</th>
+                <th>{t("dashboard.browseRate")}</th>
+                <th>{t("dashboard.totalBudget")}</th>
+                <th>{t("dashboard.remainingPool")}</th>
+                <th>{t("dashboard.costPerBrowse")}</th>
+                <th>{t("dashboard.downloadRate")}</th>
+                <th>{t("dashboard.convertedRate")}</th>
               </tr>
             </thead>
             <tbody>
@@ -96,7 +102,7 @@ const CampaignTable = ({ campaignData, loading }) => {
                     colSpan="11"
                     style={{ textAlign: "center", padding: "20px" }}
                   >
-                    No campaigns found
+                    {t("dashboard.noCampaigns")}
                   </td>
                 </tr>
               )}

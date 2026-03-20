@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Download, Minus, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
 import "./TargetBudget.css";
@@ -14,6 +15,7 @@ const TargetBudget = ({
   history = [],
   isDirectUpload = false,
 }) => {
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({
     district: data?.district || "",
     propertyEstate: data?.propertyEstate || "",
@@ -171,7 +173,7 @@ const TargetBudget = ({
   };
 
   const formatBudget = (amount) => {
-    return amount.toLocaleString();
+    return amount.toLocaleString(i18n.language);
   };
 
   const handleDownload = () => {
@@ -183,16 +185,16 @@ const TargetBudget = ({
       <div className="budget-layout">
         {/* Left Side - Budget Form */}
         <div className="budget-form">
-          <h3 className="section-title">Budget the Leaflet/Flyer</h3>
+          <h3 className="section-title">{t("targetBudget.title")}</h3>
 
           {isDirectUpload && (
             <>
               <div className="form-group">
-                <label className="form-label">Header</label>
+                <label className="form-label">{t("targetBudget.header")}</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Summer Sale"
+                  placeholder={t("targetBudget.headerPlaceholder")}
                   value={data.header || ""}
                   onChange={(e) =>
                     handleContentChange("header", e.target.value)
@@ -200,10 +202,10 @@ const TargetBudget = ({
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Product Description</label>
+                <label className="form-label">{t("targetBudget.productDescription")}</label>
                 <textarea
                   className="form-input"
-                  placeholder="Description..."
+                  placeholder={t("targetBudget.descriptionPlaceholder")}
                   rows={3}
                   value={data.productDescriptions || ""}
                   onChange={(e) =>
@@ -222,14 +224,14 @@ const TargetBudget = ({
 
           {/* District */}
           <div className="form-group">
-            <label className="form-label">District</label>
+            <label className="form-label">{t("targetBudget.district")}</label>
             <div className="select-wrapper">
               <select
                 className="form-select"
                 value={formData.district}
                 onChange={(e) => handleInputChange("district", e.target.value)}
               >
-                <option value="">Please select</option>
+                <option value="">{t("qrGeneration.pleaseSelect")}</option>
                 {districtOptions.map((district, idx) => (
                   <option key={idx} value={district}>
                     {district}
@@ -242,9 +244,9 @@ const TargetBudget = ({
           {/* Property Estate/Building Name */}
           <div className="form-group">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
-              <label className="form-label" style={{ marginBottom: 0 }}>Property Estate/Building Name</label>
+              <label className="form-label" style={{ marginBottom: 0 }}>{t("targetBudget.buildingName")}</label>
               {isLoadingBuildings && (
-                <span style={{ fontSize: "12px", color: "#64748b" }}>Loading data...</span>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>{t("targetBudget.loadingData")}</span>
               )}
             </div>
             
@@ -271,10 +273,10 @@ const TargetBudget = ({
               >
                 <option value="">
                   {isLoadingBuildings
-                    ? "Loading all buildings..." 
+                    ? t("targetBudget.loadingBuildings") 
                     : !formData.district 
-                      ? "Select district first" 
-                      : "Please select a building"}
+                      ? t("targetBudget.selectDistrictFirst") 
+                      : t("targetBudget.selectBuilding")}
                 </option>
                 {buildingOptions.map((building, idx) => (
                   <option key={idx} value={building}>
@@ -287,11 +289,11 @@ const TargetBudget = ({
 
           {/* Targeted Group */}
           <div className="form-group">
-            <label className="form-label">Targeted Group (if any)</label>
+            <label className="form-label">{t("targetBudget.targetedGroup")}</label>
             <input
               type="text"
               className="form-input"
-              placeholder="Please type"
+              placeholder={t("targetBudget.pleaseType")}
               value={formData.targetedGroup}
               onChange={(e) =>
                 handleInputChange("targetedGroup", e.target.value)
@@ -315,7 +317,7 @@ const TargetBudget = ({
                   }
                   style={{ width: "auto", marginRight: "8px" }}
                 />
-                <span className="checkbox-text">By AI Targeted Group</span>
+                <span className="checkbox-text">{t("targetBudget.aiTargeted")}</span>
               </label>
 
               <label
@@ -334,14 +336,14 @@ const TargetBudget = ({
                   }
                   style={{ width: "auto", marginRight: "8px" }}
                 />
-                <span className="checkbox-text">No Specific</span>
+                <span className="checkbox-text">{t("targetBudget.noSpecific")}</span>
               </label>
             </div>
           </div>
 
           {/* Budget */}
           <div className="form-group">
-            <label className="form-label">Budget (HK$)</label>
+            <label className="form-label">{t("targetBudget.budgetHkd")}</label>
             <div className="budget-slider-container">
               <input
                 type="range"
@@ -360,17 +362,19 @@ const TargetBudget = ({
             </div>
             <div className="audience-projection">
               <span className="projection-label">
-                Projected Reached Audience
+                {t("targetBudget.projectedAudience")}
               </span>
               <span className="projection-value">
-                approximate {Math.floor(formData.budget / 0.845)} persons
+                {t("targetBudget.approximatePersons", {
+                  count: Math.floor(formData.budget / 0.845),
+                })}
               </span>
             </div>
           </div>
 
           {/* Payment */}
           <div className="form-group">
-            <label className="form-label">Payment</label>
+            <label className="form-label">{t("targetBudget.payment")}</label>
             <div className="payment-options">
               <label
                 className="checkbox-label"
@@ -391,7 +395,7 @@ const TargetBudget = ({
                   style={{ width: "auto", marginRight: "8px" }}
                 />
                 <span className="checkbox-text">
-                  Credit Card (VISA, Master)
+                  {t("targetBudget.creditCard")}
                 </span>
               </label>
 
@@ -413,7 +417,7 @@ const TargetBudget = ({
                   }
                   style={{ width: "auto", marginRight: "8px" }}
                 />
-                <span className="checkbox-text">By Bank Transfer</span>
+                <span className="checkbox-text">{t("targetBudget.bankTransfer")}</span>
               </label>
 
               <label
@@ -434,7 +438,7 @@ const TargetBudget = ({
                   }
                   style={{ width: "auto", marginRight: "8px" }}
                 />
-                <span className="checkbox-text">By FPS</span>
+                <span className="checkbox-text">{t("targetBudget.fps")}</span>
               </label>
             </div>
           </div>
@@ -471,11 +475,11 @@ const TargetBudget = ({
                       transition: "all 0.2s ease",
                       boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                     }}
-                    title={`Version ${history.length - idx}`}
+                      title={t("flyerPage.version", { number: history.length - idx })}
                   >
                     <img
                       src={url}
-                      alt={`Generated Version ${idx + 1}`}
+                      alt={t("flyerPage.version", { number: idx + 1 })}
                       style={{
                         width: "100%",
                         height: "100%",
@@ -496,27 +500,24 @@ const TargetBudget = ({
                 >
                   <img
                     src={data.coverPhoto}
-                    alt="Generated Leaflet"
+                    alt={t("targetBudget.generatedLeaflet")}
                     className="generated-flyer-image"
                   />
                 </div>
               ) : (
                 <div className="flyer-placeholder">
                   <div className="placeholder-content">
-                    <div className="placeholder-header">FIRE FITNESS</div>
+                    <div className="placeholder-header">{t("targetBudget.placeholderHeader")}</div>
                     <div className="placeholder-main">
                       <div className="placeholder-figure"></div>
-                      <div className="placeholder-text">FREE 1-HOUR TRIAL</div>
+                      <div className="placeholder-text">{t("targetBudget.placeholderTrial")}</div>
                       <div className="placeholder-subtitle">
-                        THIS IS MORE FOR &gt; JUST A FITNESS PLACE IT'S NOT
-                        WORLD PLACE
-                        <br />
-                        FULL OF VITALITY AND PASSION
+                        {t("targetBudget.placeholderSubtitle")}
                       </div>
                     </div>
                     <div className="placeholder-footer">
                       <div className="placeholder-qr"></div>
-                      <div className="placeholder-contact">Apply</div>
+                      <div className="placeholder-contact">{t("targetBudget.apply")}</div>
                     </div>
                   </div>
                 </div>
@@ -539,7 +540,7 @@ const TargetBudget = ({
               </button>
               <button className="download-button" onClick={handleDownload}>
                 <Download size={16} />
-                Download
+                {t("targetBudget.download")}
               </button>
             </div>
           </div>

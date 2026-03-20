@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Plus, ChevronDown, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import "./Step2Survey.css";
 
 const Step2Survey = ({ data, onUpdate }) => {
+  const { t } = useTranslation();
   const [questions, setQuestions] = useState(
     data.questions || [
       {
@@ -112,7 +114,7 @@ const Step2Survey = ({ data, onUpdate }) => {
 
     // Question text is mandatory
     if (!question.question || question.question.trim() === "") {
-      errors.push("Question text is mandatory");
+      errors.push(t("queryStep2.questionMandatory"));
     }
 
     // At least one answer is required for multiple choice and single choice
@@ -124,7 +126,7 @@ const Step2Survey = ({ data, onUpdate }) => {
         (answer) => answer && answer.trim() !== "",
       );
       if (validAnswers.length === 0) {
-        errors.push("At least one answer is required for choice questions");
+        errors.push(t("queryStep2.answerRequired"));
       }
     }
 
@@ -149,7 +151,7 @@ const Step2Survey = ({ data, onUpdate }) => {
         {/* Left Side - Question Configuration */}
         <div className="questions-form">
           <div className="questions-sidebar">
-            <h3 className="sidebar-title">List of Questions</h3>
+            <h3 className="sidebar-title">{t("queryStep2.questionsList")}</h3>
             <div className="questions-list">
               {questions.map((question) => {
                 const validation = getQuestionValidationStatus(question);
@@ -159,7 +161,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                       className={`question-item ${selectedQuestion === question.id ? "active" : ""} ${!validation.isValid ? "invalid" : ""}`}
                       onClick={() => setSelectedQuestion(question.id)}
                     >
-                      Question {question.id}
+                      {t("queryStep2.question", { number: question.id })}
                       {!validation.isValid && (
                         <span className="validation-indicator">!</span>
                       )}
@@ -168,7 +170,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                       <button
                         className="remove-question-btn"
                         onClick={() => removeQuestion(question.id)}
-                        title="Remove question"
+                        title={t("queryStep2.removeQuestion")}
                       >
                         <X size={14} />
                       </button>
@@ -185,7 +187,7 @@ const Step2Survey = ({ data, onUpdate }) => {
           <div className="question-editor">
             <div className="form-section">
               <div className="form-group">
-                <label className="form-label">Type of Question</label>
+                <label className="form-label">{t("queryStep2.questionType")}</label>
                 <div className="select-wrapper">
                   <select
                     className="form-select"
@@ -194,21 +196,21 @@ const Step2Survey = ({ data, onUpdate }) => {
                       updateQuestion(currentQuestion.id, "type", e.target.value)
                     }
                   >
-                    <option value="">Please select</option>
-                    <option value="multiple-choice">Multiple Choice</option>
-                    <option value="single-choice">Single Choice</option>
-                    <option value="text-input">Text Input</option>
-                    <option value="rating">Rating</option>
+                    <option value="">{t("qrGeneration.pleaseSelect")}</option>
+                    <option value="multiple-choice">{t("queryStep2.multipleChoice")}</option>
+                    <option value="single-choice">{t("queryStep2.singleChoice")}</option>
+                    <option value="text-input">{t("queryStep2.textInput")}</option>
+                    <option value="rating">{t("queryStep2.rating")}</option>
                   </select>
                   <ChevronDown className="select-icon" size={16} />
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Question</label>
+                <label className="form-label">{t("queryStep2.questionLabel")}</label>
                 <textarea
                   className="form-textarea"
-                  placeholder="Please enter"
+                  placeholder={t("queryStep2.answerPlaceholder")}
                   rows={3}
                   value={currentQuestion.question}
                   onChange={(e) =>
@@ -224,8 +226,8 @@ const Step2Survey = ({ data, onUpdate }) => {
               <div className="form-group">
                 <label className="form-label">
                   {currentQuestion.type === "rating"
-                    ? "Rating Scale"
-                    : "Answer"}
+                    ? t("queryStep2.ratingScale")
+                    : t("queryStep2.answer")}
                 </label>
                 {currentQuestion.type === "rating" ? (
                   <div className="rating-config">
@@ -247,7 +249,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                             )
                           }
                         />
-                        <span>1-5 Stars</span>
+                        <span>{t("queryStep2.stars")}</span>
                       </label>
                     </div>
                     <div className="rating-option">
@@ -265,7 +267,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                             )
                           }
                         />
-                        <span>1-10 Scale</span>
+                        <span>{t("queryStep2.scale10")}</span>
                       </label>
                     </div>
                   </div>
@@ -275,7 +277,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                       <div className="text-input-config">
                         <textarea
                           className="form-textarea answer-input"
-                          placeholder="Placeholder text for the answer (optional)"
+                          placeholder={t("queryStep2.textPlaceholder")}
                           rows={2}
                           value={currentQuestion.answers[0] || ""}
                           onChange={(e) =>
@@ -283,7 +285,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                           }
                         />
                         <small className="input-hint">
-                          This will be shown as placeholder text to users
+                          {t("queryStep2.inputHint")}
                         </small>
                       </div>
                     ) : (
@@ -292,7 +294,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                           <div key={index} className="answer-input-container">
                             <textarea
                               className="form-textarea answer-input"
-                              placeholder="Please enter"
+                              placeholder={t("queryStep2.answerPlaceholder")}
                               rows={2}
                               value={answer}
                               onChange={(e) =>
@@ -309,7 +311,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                                 onClick={() =>
                                   removeAnswer(currentQuestion.id, index)
                                 }
-                                title="Remove answer"
+                                title={t("queryStep2.removeAnswer")}
                               >
                                 <X size={14} />
                               </button>
@@ -320,7 +322,7 @@ const Step2Survey = ({ data, onUpdate }) => {
                           className="add-answer-btn"
                           onClick={() => addNewAnswer(currentQuestion.id)}
                         >
-                          + Add New Answer
+                          {t("queryStep2.addAnswer")}
                         </button>
                       </>
                     )}
@@ -345,12 +347,11 @@ const Step2Survey = ({ data, onUpdate }) => {
         {/* Right Side - Preview */}
         <div className="preview-panel">
           <div className="preview-container">
-            <h3 className="preview-title">Preview</h3>
+            <h3 className="preview-title">{t("queryStep2.preview")}</h3>
             <div className="preview-content">
               <div className="preview-question">
                 <div className="question-number">
-                  {selectedQuestion}.{" "}
-                  {currentQuestion.question || "Where are you from?"}
+                  {selectedQuestion}. {currentQuestion.question || t("queryStep2.previewFallback")}
                 </div>
                 <div className="preview-answers">
                   {currentQuestion.type === "rating" ? (
@@ -378,14 +379,14 @@ const Step2Survey = ({ data, onUpdate }) => {
                       type="text"
                       className="form-input preview-input"
                       placeholder={
-                        currentQuestion.answers[0] || "Enter your answer..."
+                        currentQuestion.answers[0] || t("queryStep2.enterAnswer")
                       }
                       readOnly
                     />
                   ) : (
                     <div className="select-wrapper preview-select">
                       <select className="form-select">
-                        <option>Select</option>
+                        <option>{t("queryStep2.select")}</option>
                         {currentQuestion.answers
                           .filter((answer) => answer.trim())
                           .map((answer, index) => (

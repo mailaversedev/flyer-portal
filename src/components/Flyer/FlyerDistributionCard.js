@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { Upload } from "lucide-react";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import "./FlyerDistributionCard.css";
 
 const FlyerDistributionCard = ({
@@ -12,6 +13,7 @@ const FlyerDistributionCard = ({
   primaryRoute,
   isPrimary,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -52,7 +54,7 @@ const FlyerDistributionCard = ({
       case "leaflet":
         return (
           <div className="device-mockup leaflet-mockup">
-            <div className="mockup-header">Leaflet Ad</div>
+            <div className="mockup-header">{t("flyerPage.mockLeaflet")}</div>
             <div className="mockup-content">
               <div className="content-line"></div>
               <div className="content-line"></div>
@@ -63,7 +65,7 @@ const FlyerDistributionCard = ({
       case "survey":
         return (
           <div className="device-mockup survey-mockup">
-            <div className="mockup-header">Questions</div>
+            <div className="mockup-header">{t("flyerPage.mockQuestions")}</div>
             <div className="mockup-content">
               <div className="question-item">
                 <div className="question-line"></div>
@@ -85,7 +87,7 @@ const FlyerDistributionCard = ({
           <div className="device-mockup qr-mockup">
             <div className="qr-code">
               <div className="qr-pattern">
-                <span>QR</span>
+                <span>{t("flyerPage.qrShort")}</span>
               </div>
             </div>
           </div>

@@ -39,6 +39,29 @@
   font-size: 0.9rem;
 }
 
+@media (max-width: 640px) {
+  .page-locale-switcher {
+    top: 16px;
+    right: 16px;
+    gap: 0.5rem;
+  }
+
+  .page-locale-switcher label {
+    display: none;
+  }
+
+  .login-locale-select {
+    min-width: 120px;
+    font-size: 0.9rem;
+    padding: 0.625rem 0.75rem;
+  }
+
+  .login-card {
+    margin: 0 16px;
+    max-width: calc(100% - 32px);
+  }
+}
+
 .login-locale-select,
 .form-group select {
   width: 100%;

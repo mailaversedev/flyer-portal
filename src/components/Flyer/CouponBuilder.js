@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Upload, Calendar, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import "./CouponBuilder.css";
 
 const DigitalCoupon = ({
@@ -9,6 +10,7 @@ const DigitalCoupon = ({
   expire,
   couponType,
 }) => {
+  const { t } = useTranslation();
   const renderCouponValue = () => {
     if (couponType === "fixed") {
       return (
@@ -84,7 +86,7 @@ const DigitalCoupon = ({
               >
                 %
               </span>
-              <span style={{ color: "black", fontSize: "14px" }}>OFF</span>
+              <span style={{ color: "black", fontSize: "14px" }}>{t("couponBuilder.off")}</span>
             </div>
           )}
         </div>
@@ -164,7 +166,7 @@ const DigitalCoupon = ({
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: "20px", color: "#999" }}>Store</span>
+            <span style={{ fontSize: "20px", color: "#999" }}>{t("couponBuilder.store")}</span>
           </div>
         )}
       </div>
@@ -192,12 +194,12 @@ const DigitalCoupon = ({
           }}
         >
           {couponType === "free"
-            ? "YOUR ENTIRE PURCHASE"
-            : description || "Item Description"}
+            ? t("couponBuilder.entirePurchase")
+            : description || t("couponBuilder.itemDescriptionFallback")}
         </div>
 
         <div style={{ color: "rgba(0,0,0,0.38)", fontSize: "12px" }}>
-          Offer valid until {expire || "YYYY-MM-DD"}
+          {t("couponBuilder.offerValidUntil", { date: expire || "YYYY-MM-DD" })}
         </div>
       </div>
     </div>
@@ -205,6 +207,7 @@ const DigitalCoupon = ({
 };
 
 const CouponBuilder = ({ data, onUpdate }) => {
+  const { t } = useTranslation();
   const couponData = data?.coupon || {};
   const [formData, setFormData] = useState({
     couponType: couponData.couponType || "",
@@ -257,11 +260,11 @@ const CouponBuilder = ({ data, onUpdate }) => {
         style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}
       >
         <div className="coupon-form" style={{ flex: 1 }}>
-          <h2 className="section-title">Coupon Builder</h2>
+          <h2 className="section-title">{t("couponBuilder.title")}</h2>
 
           <div className="form-section">
             <div className="form-group">
-              <label className="form-label">Select Types of Coupon</label>
+              <label className="form-label">{t("couponBuilder.couponType")}</label>
               <select
                 className="form-select"
                 value={formData.couponType}
@@ -269,11 +272,11 @@ const CouponBuilder = ({ data, onUpdate }) => {
                   handleInputChange("couponType", e.target.value)
                 }
               >
-                <option value="">Please select</option>
-                <option value="percentage">Percentage Discount</option>
-                <option value="fixed">Fixed Amount Discount</option>
-                <option value="free">Free</option>
-                <option value="buy_one_get_one">Buy One Get One Free</option>
+                <option value="">{t("qrGeneration.pleaseSelect")}</option>
+                <option value="percentage">{t("couponBuilder.percentageDiscount")}</option>
+                <option value="fixed">{t("couponBuilder.fixedDiscount")}</option>
+                <option value="free">{t("couponBuilder.free")}</option>
+                <option value="buy_one_get_one">{t("couponBuilder.buyOneGetOne")}</option>
               </select>
             </div>
 
@@ -282,16 +285,16 @@ const CouponBuilder = ({ data, onUpdate }) => {
               <div className="form-group">
                 <label className="form-label">
                   {formData.couponType === "percentage"
-                    ? "Discount Percentage (%)"
-                    : "Discount Amount"}
+                    ? t("couponBuilder.discountPercentage")
+                    : t("couponBuilder.discountAmount")}
                 </label>
                 <input
                   type="number"
                   className="form-input"
                   placeholder={
                     formData.couponType === "percentage"
-                      ? "Enter percentage"
-                      : "Enter amount"
+                        ? t("couponBuilder.enterPercentage")
+                        : t("couponBuilder.enterAmount")
                   }
                   value={formData.discountValue || ""}
                   onChange={(e) =>
@@ -303,11 +306,11 @@ const CouponBuilder = ({ data, onUpdate }) => {
             )}
 
             <div className="form-group">
-              <label className="form-label">Item Description</label>
+              <label className="form-label">{t("couponBuilder.itemDescription")}</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="Enter item description"
+                placeholder={t("couponBuilder.enterItemDescription")}
                 value={formData.itemDescription || ""}
                 onChange={(e) =>
                   handleInputChange("itemDescription", e.target.value)
@@ -317,7 +320,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Upload</label>
+              <label className="form-label">{t("couponBuilder.upload")}</label>
               <div className="upload-container">
                 <input
                   type="file"
@@ -333,7 +336,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
                   }
                 >
                   <span>
-                    {formData.couponFile ? "File Selected" : "Select file"}
+                    {formData.couponFile ? t("couponBuilder.fileSelected") : t("couponBuilder.selectFile")}
                   </span>
                   <Upload size={16} />
                 </button>
@@ -356,7 +359,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Upload QR Code (Optional)</label>
+              <label className="form-label">{t("couponBuilder.uploadQr")}</label>
               <div className="upload-container">
                 <input
                   type="file"
@@ -372,8 +375,8 @@ const CouponBuilder = ({ data, onUpdate }) => {
                 >
                   <span>
                     {formData.qrCodeImage
-                      ? "QR Image Selected"
-                      : "Select QR image"}
+                      ? t("couponBuilder.qrSelected")
+                      : t("couponBuilder.selectQr")}
                   </span>
                   <Upload size={16} />
                 </button>
@@ -397,7 +400,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Upload Barcode (Optional)</label>
+              <label className="form-label">{t("couponBuilder.uploadBarcode")}</label>
               <div className="upload-container">
                 <input
                   type="file"
@@ -415,8 +418,8 @@ const CouponBuilder = ({ data, onUpdate }) => {
                 >
                   <span>
                     {formData.barcodeImage
-                      ? "Barcode Image Selected"
-                      : "Select barcode image"}
+                      ? t("couponBuilder.barcodeSelected")
+                      : t("couponBuilder.selectBarcode")}
                   </span>
                   <Upload size={16} />
                 </button>
@@ -440,10 +443,10 @@ const CouponBuilder = ({ data, onUpdate }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Terms & Conditions</label>
+              <label className="form-label">{t("couponBuilder.terms")}</label>
               <textarea
                 className="form-textarea"
-                placeholder="Please enter"
+                placeholder={t("qrGeneration.pleaseEnter")}
                 value={formData.termsConditions}
                 onChange={(e) =>
                   handleInputChange("termsConditions", e.target.value)
@@ -453,7 +456,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Expired Date</label>
+              <label className="form-label">{t("couponBuilder.expiredDate")}</label>
               <div className="date-input-container">
                 <input
                   type="date"
@@ -498,7 +501,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
                   fontSize: "12px",
                 }}
               >
-                Mobile View
+                {t("couponBuilder.mobileView")}
               </div>
             </div>
           </div>

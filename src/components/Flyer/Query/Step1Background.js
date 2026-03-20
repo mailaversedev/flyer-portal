@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Upload, Plus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import "./Step1Background.css";
 
 const Step1Background = ({ data, onUpdate }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     coverPhoto: data.coverPhoto || null,
     adCategory: data.adCategory || "",
@@ -77,11 +79,11 @@ const Step1Background = ({ data, onUpdate }) => {
         {/* Left Side - Form */}
         <div className="background-form">
           <div className="form-section">
-            <h2 className="section-title">Background Information</h2>
+            <h2 className="section-title">{t("queryStep1.backgroundInformation")}</h2>
 
             {/* Cover Photo Upload */}
             <div className="form-group">
-              <label className="form-label">Cover Photo</label>
+              <label className="form-label">{t("queryStep1.coverPhoto")}</label>
               <div className="upload-area">
                 <input
                   type="file"
@@ -92,15 +94,15 @@ const Step1Background = ({ data, onUpdate }) => {
                 />
                 <label htmlFor="cover-upload" className="upload-label">
                   <Upload size={24} />
-                  <span>Click to upload cover photo</span>
-                  <span className="upload-hint">PNG, JPG up to 10MB</span>
+                  <span>{t("queryStep1.clickUploadCover")}</span>
+                  <span className="upload-hint">{t("queryStep1.uploadHint")}</span>
                 </label>
               </div>
             </div>
 
             {/* Ad Category */}
             <div className="form-group">
-              <label className="form-label">Ad Category</label>
+              <label className="form-label">{t("queryStep1.adCategory")}</label>
               <div className="select-wrapper">
                 <select
                   value={formData.adCategory}
@@ -109,7 +111,7 @@ const Step1Background = ({ data, onUpdate }) => {
                   }
                   className="form-select"
                 >
-                  <option value="">Select a category</option>
+                  <option value="">{t("queryStep1.selectCategory")}</option>
                   {adCategories.map((category) => (
                     <option key={category} value={category}>
                       {category}
@@ -121,11 +123,11 @@ const Step1Background = ({ data, onUpdate }) => {
 
             {/* Header */}
             <div className="form-group">
-              <label className="form-label">Header</label>
+              <label className="form-label">{t("queryStep1.header")}</label>
               <textarea
                 value={formData.header}
                 onChange={(e) => handleInputChange("header", e.target.value)}
-                placeholder="Enter your ad header..."
+                placeholder={t("queryStep1.headerPlaceholder")}
                 className="form-textarea header-input"
                 rows={3}
               />
@@ -133,11 +135,11 @@ const Step1Background = ({ data, onUpdate }) => {
 
             {/* Content */}
             <div className="form-group">
-              <label className="form-label">Content</label>
+              <label className="form-label">{t("queryStep1.content")}</label>
               <textarea
                 value={formData.adContent}
                 onChange={(e) => handleInputChange("adContent", e.target.value)}
-                placeholder="Enter your ad content..."
+                placeholder={t("queryStep1.contentPlaceholder")}
                 className="form-textarea content-input"
                 rows={6}
               />
@@ -145,7 +147,7 @@ const Step1Background = ({ data, onUpdate }) => {
 
             {/* Tags */}
             <div className="form-group">
-              <label className="form-label">Tags</label>
+              <label className="form-label">{t("queryStep1.tags")}</label>
               <div className="tags-input-container">
                 <div className="tag-input-wrapper">
                   <input
@@ -153,7 +155,7 @@ const Step1Background = ({ data, onUpdate }) => {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Add a tag..."
+                    placeholder={t("queryStep1.tagPlaceholder")}
                     className="tag-input"
                   />
                   <button
@@ -190,7 +192,7 @@ const Step1Background = ({ data, onUpdate }) => {
         {/* Right Side - Preview */}
         <div className="preview-panel">
           <div className="preview-container">
-            <h3 className="preview-title">Preview</h3>
+            <h3 className="preview-title">{t("queryStep1.preview")}</h3>
             <div className="preview-content">
               <div className="preview-ad">
                 {/* Cover Photo Preview */}
@@ -204,7 +206,7 @@ const Step1Background = ({ data, onUpdate }) => {
                   ) : (
                     <div className="cover-placeholder">
                       <Upload size={48} />
-                      <span>No cover photo uploaded</span>
+                      <span>{t("queryStep1.noCoverPhoto")}</span>
                     </div>
                   )}
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import Step1Content from "../../../components/Flyer/Leaflet/Step1Content";
 import Step1ContentPro from "../../../components/Flyer/Leaflet/Step1ContentPro";
 import TargetBudget from "../../../components/Flyer/TargetBudget";
@@ -9,6 +10,7 @@ import ApiService from "../../../services/ApiService";
 import "./Leaflet.css";
 
 const LeafletCreation = () => {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProMode, setIsProMode] = useState(false);
   const [leafletData, setLeafletData] = useState({
@@ -66,7 +68,7 @@ const LeafletCreation = () => {
         return;
       }
 
-      setLoading("Generating leaflet, please wait...");
+      setLoading(t("leafletCreation.generatingWait"));
       console.log("Generating leaflet with data:", leafletData);
 
       try {
@@ -110,7 +112,7 @@ const LeafletCreation = () => {
 
   const handleCreate = async () => {
     try {
-      setLoading("Creating flyer, please wait...");
+      setLoading(t("leafletCreation.creatingWait"));
 
       // Upload file fields (including direct-upload cover photo blob URL)
       const uploadedFileUrls = await ApiService.uploadFilesFromData({
@@ -155,16 +157,16 @@ const LeafletCreation = () => {
         navigate("/flyer", {
           state: {
             success: true,
-            message: "Leaflet flyer created successfully!",
+            message: t("leafletCreation.createdSuccess"),
           },
         });
       } else {
         console.error("Failed to create flyer:", response.message);
-        alert("Failed to create flyer. Please try again.");
+        alert(t("leafletCreation.createFailed"));
       }
     } catch (error) {
       console.error("Error creating flyer:", error);
-      alert("An error occurred while creating the flyer. Please try again.");
+      alert(t("leafletCreation.createError"));
     } finally {
       setLoading("");
     }
@@ -186,7 +188,7 @@ const LeafletCreation = () => {
               className={`step-indicator ${currentStep >= 1 ? "active" : ""}`}
             >
               <span className="step-number">1</span>
-              <span className="step-label">Content</span>
+              <span className="step-label">{t("creation.content")}</span>
             </div>
             <div
               className={`step-connector ${currentStep >= 2 ? "active" : ""}`}
@@ -195,7 +197,7 @@ const LeafletCreation = () => {
               className={`step-indicator ${currentStep >= 2 ? "active" : ""}`}
             >
               <span className="step-number">2</span>
-              <span className="step-label">Target & Budget</span>
+              <span className="step-label">{t("creation.targetBudget")}</span>
             </div>
             <div
               className={`step-connector ${currentStep >= 3 ? "active" : ""}`}
@@ -204,7 +206,7 @@ const LeafletCreation = () => {
               className={`step-indicator ${currentStep >= 3 ? "active" : ""}`}
             >
               <span className="step-number">3</span>
-              <span className="step-label">Create Coupon</span>
+              <span className="step-label">{t("creation.createCoupon")}</span>
             </div>
           </div>
         </div>
@@ -243,7 +245,7 @@ const LeafletCreation = () => {
                       gap: "6px",
                     }}
                   >
-                    <Settings size={16} /> Standard
+                    <Settings size={16} /> {t("creation.standard")}
                   </button>
                   <button
                     type="button"
@@ -261,7 +263,7 @@ const LeafletCreation = () => {
                       gap: "6px",
                     }}
                   >
-                    <Sparkles size={16} /> Pro
+                    <Sparkles size={16} /> {t("creation.pro")}
                   </button>
                 </div>
               </div>
@@ -310,7 +312,7 @@ const LeafletCreation = () => {
             disabled={loading}
           >
             <ChevronLeft size={16} />
-            Back
+            {t("creation.back")}
           </button>
 
           {currentStep === 1 && (
@@ -319,7 +321,7 @@ const LeafletCreation = () => {
               onClick={handleNext}
               disabled={loading}
             >
-              {loading ? "Generating..." : "Next"}
+              {loading ? t("leafletCreation.generating") : t("creation.next")}
             </button>
           )}
 
@@ -335,14 +337,14 @@ const LeafletCreation = () => {
                   color: "#3b82f6",
                 }}
               >
-                No Coupon this time
+                {t("creation.noCoupon")}
               </button>
               <button
                 className="nav-button next-button"
                 onClick={handleNext}
                 disabled={loading}
               >
-                Proceed to Coupon Builder
+                {t("creation.proceedToCoupon")}
               </button>
             </div>
           )}
@@ -353,7 +355,7 @@ const LeafletCreation = () => {
               onClick={handleCreate}
               disabled={loading}
             >
-              Create
+              {t("creation.create")}
             </button>
           )}
         </div>

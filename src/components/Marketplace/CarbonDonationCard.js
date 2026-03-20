@@ -1,5 +1,6 @@
 import React from "react";
 import { CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import "./CarbonDonationCard.css";
 
 const CarbonDonationCard = ({
@@ -8,6 +9,7 @@ const CarbonDonationCard = ({
   donationAmount,
   isVerified,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="carbon-donation-card">
       <div className="card-background">
@@ -22,7 +24,9 @@ const CarbonDonationCard = ({
           <div className="carbon-unit">{unit}</div>
         </div>
 
-        <button className="donate-button">DONATE {donationAmount}</button>
+        <button className="donate-button">
+          {t("marketplacePage.donate", { amount: donationAmount })}
+        </button>
       </div>
     </div>
   );

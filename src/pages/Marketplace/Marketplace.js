@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import CarbonDonationCard from "../../components/Marketplace/CarbonDonationCard";
 import "./Marketplace.css";
 
 const Marketplace = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("latest");
 
   const carbonProjects = [
@@ -187,23 +189,23 @@ const Marketplace = () => {
             className={`filter-tab ${activeTab === "latest" ? "active" : ""}`}
             onClick={() => setActiveTab("latest")}
           >
-            Latest
+            {t("marketplacePage.latest")}
           </button>
           <button
             className={`filter-tab ${activeTab === "lowest-cost" ? "active" : ""}`}
             onClick={() => setActiveTab("lowest-cost")}
           >
-            Lowest Cost
+            {t("marketplacePage.lowestCost")}
           </button>
           <button
             className={`filter-tab ${activeTab === "highest-cost" ? "active" : ""}`}
             onClick={() => setActiveTab("highest-cost")}
           >
-            Highest Cost
+            {t("marketplacePage.highestCost")}
           </button>
         </div>
 
-        <button className="donation-button">Donation</button>
+        <button className="donation-button">{t("marketplacePage.donation")}</button>
       </div>
 
       <div className="carbon-grid">

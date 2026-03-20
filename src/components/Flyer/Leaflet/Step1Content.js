@@ -1,10 +1,12 @@
 import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { Plus, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import ColorInputField from "./ColorInputField";
 import { getStandardLeafletValidationErrors } from "../../../utils/LeafletValidationUtil";
 import "./Step1Content.css";
 
 const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
+  const { t } = useTranslation();
   const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState({});
 
@@ -188,7 +190,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         {/* Aspect Ratio */}
         <div className="form-group">
           <label className="form-label">
-            Aspect Ratio*
+            {t("leafletStandard.aspectRatio")}
             <span className="ratio-options">1:1 3:4 9:16</span>
           </label>
           <div className="select-wrapper">
@@ -197,7 +199,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               value={data.aspectRatio}
               onChange={(e) => handleInputChange("aspectRatio", e.target.value)}
             >
-              <option value="">Please select</option>
+              <option value="">{t("qrGeneration.pleaseSelect")}</option>
               <option value="1:1">1:1</option>
               <option value="3:4">3:4</option>
               <option value="9:16">9:16</option>
@@ -211,17 +213,17 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Select Ad Type */}
         <div className="form-group">
-          <label className="form-label">Select Ad Type*</label>
+          <label className="form-label">{t("leafletStandard.selectAdType")}</label>
           <div className="select-wrapper">
             <select
               className={`form-select ${errors.adType ? "error" : ""}`}
               value={data.adType}
               onChange={(e) => handleInputChange("adType", e.target.value)}
             >
-              <option value="">Please select</option>
-              <option value="promotional">Promotional</option>
-              <option value="informational">Informational</option>
-              <option value="event">Event</option>
+              <option value="">{t("qrGeneration.pleaseSelect")}</option>
+              <option value="promotional">{t("qrGeneration.promotional")}</option>
+              <option value="informational">{t("qrGeneration.informational")}</option>
+              <option value="event">{t("qrGeneration.event")}</option>
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
@@ -233,7 +235,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         {/* Upload Reference Flyer Photo */}
         <div className="form-group full-width">
           <label className="form-label">
-            Upload Reference Flyer Photo (optional)
+            {t("leafletStandard.uploadReference")}
           </label>
           {data.referenceFlyer ? (
             <SingleImageDisplay
@@ -280,24 +282,24 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
         {/* Select Design Style */}
         <div className="form-group">
-          <label className="form-label">Select Design Style (optional)</label>
+          <label className="form-label">{t("leafletStandard.selectDesign")}</label>
           <div className="select-wrapper">
             <select
               className="form-select"
               value={data.designStyle}
               onChange={(e) => handleInputChange("designStyle", e.target.value)}
             >
-              <option value="">Please select</option>
-              <option value="modern">Modern</option>
-              <option value="classic">Classic</option>
-              <option value="minimalist">Minimalist</option>
+              <option value="">{t("qrGeneration.pleaseSelect")}</option>
+              <option value="modern">{t("leafletStandard.modern")}</option>
+              <option value="classic">{t("leafletStandard.classic")}</option>
+              <option value="minimalist">{t("leafletStandard.minimalist")}</option>
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
         </div>
 
         <ColorInputField
-          label="Theme Color (Hex) (optional)"
+          label={t("leafletStandard.themeColor")}
           field="themeColor"
           value={data.themeColor}
           placeholder="#FFFFFF"
@@ -307,7 +309,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         {/* Upload Background Photo */}
         <div className="form-group full-width">
           <label className="form-label">
-            Upload Background Photo (optional)
+            {t("leafletStandard.uploadBackground")}
           </label>
           {data.backgroundPhoto ? (
             <SingleImageDisplay
@@ -355,16 +357,16 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
       {/* Input Your Customised Content */}
       <div className="content-section">
-        <h3 className="section-title">Input Your Customised Content</h3>
+        <h3 className="section-title">{t("leafletStandard.contentTitle")}</h3>
 
         <div className="form-grid">
           {/* Header */}
           <div className="form-group">
-            <label className="form-label">Header*</label>
+            <label className="form-label">{t("leafletStandard.header")}</label>
             <input
               type="text"
               className={`form-input ${errors.header ? "error" : ""}`}
-              placeholder="Please enter"
+              placeholder={t("qrGeneration.pleaseEnter")}
               value={data.header}
               onChange={(e) => handleInputChange("header", e.target.value)}
             />
@@ -375,11 +377,11 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Subheader */}
           <div className="form-group">
-            <label className="form-label">Subheader</label>
+            <label className="form-label">{t("leafletStandard.subheader")}</label>
             <input
               type="text"
               className="form-input"
-              placeholder="Please enter"
+              placeholder={t("qrGeneration.pleaseEnter")}
               value={data.subheader}
               onChange={(e) => handleInputChange("subheader", e.target.value)}
             />
@@ -387,10 +389,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Ad Content */}
           <div className="form-group full-width">
-            <label className="form-label">Ad Content*</label>
+            <label className="form-label">{t("leafletStandard.adContent")}</label>
             <textarea
               className={`form-textarea ${errors.adContent ? "error" : ""}`}
-              placeholder="Please enter the promotional content/message"
+              placeholder={t("leafletStandard.adContentPlaceholder")}
               rows={4}
               value={data.adContent}
               onChange={(e) => handleInputChange("adContent", e.target.value)}
@@ -402,10 +404,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Prompts of Your Flyer */}
           <div className="form-group full-width">
-            <label className="form-label">Prompts of Your Flyer*</label>
+            <label className="form-label">{t("leafletStandard.prompts")}</label>
             <textarea
               className={`form-textarea ${errors.flyerPrompts ? "error" : ""}`}
-              placeholder="Please describe the design, content & message of the flyer"
+              placeholder={t("leafletStandard.promptsPlaceholder")}
               rows={6}
               value={data.flyerPrompts}
               onChange={(e) =>
@@ -419,10 +421,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Promotion Message/Slogan */}
           <div className="form-group full-width">
-            <label className="form-label">Promotion Message/Slogan*</label>
+            <label className="form-label">{t("leafletStandard.promotionMessage")}</label>
             <textarea
               className={`form-textarea ${errors.promotionMessage ? "error" : ""}`}
-              placeholder="Please enter"
+              placeholder={t("qrGeneration.pleaseEnter")}
               rows={3}
               value={data.promotionMessage}
               onChange={(e) =>
@@ -437,14 +439,14 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
           {/* Upload Product Photo */}
           <div className="form-group full-width">
             <label className="form-label">
-              Upload Product Photo (optional){" "}
+              {t("leafletStandard.uploadProduct")}{" "}
               <span className="counter">{data.productPhoto.length}/5</span>
             </label>
             <div
               className="file-select"
               onClick={() => handleFileUpload("productPhoto")}
             >
-              <span>Select file</span>
+              <span>{t("leafletStandard.selectFile")}</span>
               <ChevronRight size={16} />
             </div>
             <ThumbnailRow images={data.productPhoto} field="productPhoto" />
@@ -452,11 +454,11 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Product Descriptions */}
           <div className="form-group full-width">
-            <label className="form-label">Product Descriptions*</label>
+            <label className="form-label">{t("leafletStandard.productDescriptions")}</label>
             <input
               type="text"
               className={`form-input ${errors.productDescriptions ? "error" : ""}`}
-              placeholder="Please enter"
+              placeholder={t("qrGeneration.pleaseEnter")}
               value={data.productDescriptions}
               onChange={(e) =>
                 handleInputChange("productDescriptions", e.target.value)
@@ -471,13 +473,13 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
           {/* Tag */}
           <div className="form-group">
-            <label className="form-label">Tag (optional, max 3)</label>
+            <label className="form-label">{t("leafletStandard.tagOptional")}</label>
             <div className="tag-input-container">
               <div className="tag-input">
                 <span className="hash">#</span>
                 <input
                   type="text"
-                  placeholder="Please enter"
+                  placeholder={t("qrGeneration.pleaseEnter")}
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleAddTag()}

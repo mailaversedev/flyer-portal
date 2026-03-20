@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Step1Background from "../../../components/Flyer/Query/Step1Background";
 import Step2Survey from "../../../components/Flyer/Query/Step2Survey";
 import TargetBudget from "../../../components/Flyer/TargetBudget";
@@ -9,6 +10,7 @@ import ApiService from "../../../services/ApiService";
 import "./Query.css";
 
 const QueryCreation = () => {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [queryData, setQueryData] = useState({
     // Step 1 - Background data
@@ -52,7 +54,7 @@ const QueryCreation = () => {
   const handleComplete = async () => {
     try {
       console.log("Creating query flyer...", queryData);
-      setLoading("Creating flyer, please wait...");
+      setLoading(t("queryCreation.creatingWait"));
 
       // Upload only file fields and get their URLs
       const uploadedFileUrls = await ApiService.uploadFilesFromData(queryData);
@@ -77,16 +79,16 @@ const QueryCreation = () => {
         navigate("/flyer", {
           state: {
             success: true,
-            message: "Survey flyer created successfully!",
+            message: t("queryCreation.createdSuccess"),
           },
         });
       } else {
         console.error("Failed to create flyer:", response.message);
-        alert("Failed to create flyer. Please try again.");
+        alert(t("queryCreation.createFailed"));
       }
     } catch (error) {
       console.error("Error creating flyer:", error);
-      alert("An error occurred while creating the flyer. Please try again.");
+      alert(t("queryCreation.createError"));
     } finally {
       setLoading("");
     }
@@ -108,7 +110,7 @@ const QueryCreation = () => {
               className={`step-indicator ${currentStep >= 1 ? "active" : ""}`}
             >
               <span className="step-number">1</span>
-              <span className="step-label">Background</span>
+              <span className="step-label">{t("creation.background")}</span>
             </div>
             <div
               className={`step-connector ${currentStep >= 2 ? "active" : ""}`}
@@ -117,7 +119,7 @@ const QueryCreation = () => {
               className={`step-indicator ${currentStep >= 2 ? "active" : ""}`}
             >
               <span className="step-number">2</span>
-              <span className="step-label">Survey Questions</span>
+              <span className="step-label">{t("creation.surveyQuestions")}</span>
             </div>
             <div
               className={`step-connector ${currentStep >= 3 ? "active" : ""}`}
@@ -126,7 +128,7 @@ const QueryCreation = () => {
               className={`step-indicator ${currentStep >= 3 ? "active" : ""}`}
             >
               <span className="step-number">3</span>
-              <span className="step-label">Target & Budget</span>
+              <span className="step-label">{t("creation.targetBudget")}</span>
             </div>
             <div
               className={`step-connector ${currentStep >= 4 ? "active" : ""}`}
@@ -135,7 +137,7 @@ const QueryCreation = () => {
               className={`step-indicator ${currentStep >= 4 ? "active" : ""}`}
             >
               <span className="step-number">4</span>
-              <span className="step-label">Create Coupon</span>
+              <span className="step-label">{t("creation.createCoupon")}</span>
             </div>
           </div>
         </div>
@@ -171,7 +173,7 @@ const QueryCreation = () => {
             disabled={loading}
           >
             <ChevronLeft size={16} />
-            Back
+            {t("creation.back")}
           </button>
 
           {currentStep < 3 && (
@@ -181,8 +183,8 @@ const QueryCreation = () => {
               disabled={loading}
             >
               {currentStep === 1
-                ? "Next: Survey Questions"
-                : "Next: Target & Budget"}
+                ? t("queryCreation.nextSurvey")
+                : t("queryCreation.nextTarget")}
             </button>
           )}
 
@@ -198,14 +200,14 @@ const QueryCreation = () => {
                   color: "#3b82f6",
                 }}
               >
-                No Coupon this time
+                {t("creation.noCoupon")}
               </button>
               <button
                 className="nav-button next-button"
                 onClick={handleNext}
                 disabled={loading}
               >
-                Proceed to Coupon Builder
+                {t("creation.proceedToCoupon")}
               </button>
             </div>
           )}
@@ -216,7 +218,7 @@ const QueryCreation = () => {
               onClick={handleComplete}
               disabled={loading}
             >
-              Create
+              {t("creation.create")}
             </button>
           )}
         </div>
