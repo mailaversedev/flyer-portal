@@ -262,8 +262,18 @@ const StaffLogin = () => {
                 <input
                   type="file"
                   id="companyIcon"
-                  accept="image/*"
-                  onChange={(e) => setCompanyIconFile(e.target.files[0])}
+                  accept="image/png, image/jpeg"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      if (file.type !== "image/png" && file.type !== "image/jpeg") {
+                        alert("Only PNG and JPEG images are allowed.");
+                        e.target.value = null;
+                        return;
+                      }
+                      setCompanyIconFile(file);
+                    }
+                  }}
                 />
               </div>
               <div className="form-group">
