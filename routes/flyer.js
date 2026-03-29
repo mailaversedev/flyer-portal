@@ -203,8 +203,12 @@ router.post("/flyer", authenticateToken, async (req, res) => {
         .where("isActive", "==", true)
         .count()
         .get();
-      
-      const activeUsersCount = countSnapshot.data().count;
+
+      /**
+       * to handle small user base where count can be less than maxUsers,
+       * we take the max of both to ensure the distribution amount is not too large per user.
+       */
+      const activeUsersCount = Math.max(countSnapshot.data().count, maxUsers);
       if (activeUsersCount > 0) {
         amountPerUser = Math.floor(distributionAmount / activeUsersCount);
       }
