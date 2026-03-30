@@ -242,6 +242,52 @@ router.post("/flyer", authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/company/:companyId - Get single company by ID
+router.get("/company/:companyId", async (req, res) => {
+  try {
+    const { companyId } = req.params;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing companyId",
+      });
+    }
+
+    const companyDoc = await db.collection("companies").doc(companyId).get();
+    if (!companyDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    const company = companyDoc.data() || {};
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: companyDoc.id,
+        name: company.name || "",
+        icon: company.icon || null,
+        address: company.address || null,
+        contact: company.contact || null,
+        nature: company.nature || null,
+        createdAt: company.createdAt || null,
+        updatedAt: company.updatedAt || null,
+        isActive: typeof company.isActive === "boolean" ? company.isActive : true,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching company by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch company",
+      error: error.message,
+    });
+  }
+});
+
 // GET /api/flyer/:flyerId - Get single flyer by ID
 router.get("/flyer/:flyerId", async (req, res) => {
   try {
