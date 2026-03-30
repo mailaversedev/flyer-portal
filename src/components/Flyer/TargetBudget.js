@@ -202,14 +202,14 @@ const TargetBudget = ({
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("targetBudget.productDescription")}</label>
+                <label className="form-label">{t("targetBudget.adContent")}</label>
                 <textarea
                   className="form-input"
-                  placeholder={t("targetBudget.descriptionPlaceholder")}
+                  placeholder={t("targetBudget.adContentPlaceholder")}
                   rows={3}
-                  value={data.productDescriptions || ""}
+                  value={data.adContents || ""}
                   onChange={(e) =>
-                    handleContentChange("productDescriptions", e.target.value)
+                    handleContentChange("adContents", e.target.value)
                   }
                   style={{
                     height: "auto",

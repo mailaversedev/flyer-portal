@@ -185,7 +185,7 @@
     "header": "Header",
     "headerPlaceholder": "e.g. Summer Sale",
     "productDescription": "Product Description",
-    "descriptionPlaceholder": "Description...",
+    "adContentPlaceholder": "Description...",
     "district": "District",
     "buildingName": "Property Estate/Building Name",
     "loadingData": "Loading data...",
