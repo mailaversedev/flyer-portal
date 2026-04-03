@@ -209,6 +209,7 @@ const DigitalCoupon = ({
 const CouponBuilder = ({ data, onUpdate }) => {
   const { t } = useTranslation();
   const couponData = data?.coupon || {};
+  const hasCustomCouponPreview = Boolean(couponData.couponFile);
 
   const handleInputChange = (field, value) => {
     const updatedData = {
@@ -240,6 +241,10 @@ const CouponBuilder = ({ data, onUpdate }) => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemoveCouponFile = () => {
+    handleInputChange("couponFile", null);
   };
 
   return (
@@ -338,7 +343,8 @@ const CouponBuilder = ({ data, onUpdate }) => {
                     />
                     <button
                       className="remove-file"
-                      onClick={() => handleInputChange("couponFile", null)}
+                      type="button"
+                      onClick={handleRemoveCouponFile}
                     >
                       <X size={14} />
                     </button>
@@ -467,32 +473,52 @@ const CouponBuilder = ({ data, onUpdate }) => {
           style={{ width: "380px", flexShrink: 0 }}
         >
           <div className="form-group">
-            <div
-              style={{
-                padding: "20px",
-                backgroundColor: "#1E1E1E",
-                borderRadius: "20px",
-                border: "1px solid #333",
-              }}
-            >
-              <DigitalCoupon
-                companyIcon={data?.companyIcon || ""}
-                value={couponData.discountValue}
-                description={couponData.itemDescription}
-                expire={couponData.expiredDate}
-                couponType={couponData.couponType}
-              />
+            {hasCustomCouponPreview ? (
+              <div className="custom-coupon-preview-card">
+                <div className="custom-coupon-preview-media">
+                  <img
+                    src={couponData.couponFile}
+                    alt="Custom coupon preview"
+                    className="custom-coupon-preview-image"
+                  />
+                  <button
+                    className="remove-file custom-coupon-remove"
+                    type="button"
+                    onClick={handleRemoveCouponFile}
+                    aria-label="Remove custom coupon"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
               <div
                 style={{
-                  textAlign: "center",
-                  color: "#666",
-                  marginTop: "10px",
-                  fontSize: "12px",
+                  padding: "20px",
+                  backgroundColor: "#1E1E1E",
+                  borderRadius: "20px",
+                  border: "1px solid #333",
                 }}
               >
-                {t("couponBuilder.mobileView")}
+                <DigitalCoupon
+                  companyIcon={data?.companyIcon || ""}
+                  value={couponData.discountValue}
+                  description={couponData.itemDescription}
+                  expire={couponData.expiredDate}
+                  couponType={couponData.couponType}
+                />
+                <div
+                  style={{
+                    textAlign: "center",
+                    color: "#666",
+                    marginTop: "10px",
+                    fontSize: "12px",
+                  }}
+                >
+                  {t("couponBuilder.mobileView")}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
