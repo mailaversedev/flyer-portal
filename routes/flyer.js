@@ -384,6 +384,14 @@ router.get("/company/:companyId", async (req, res) => {
         address: company.address || null,
         contact: company.contact || null,
         nature: company.nature || null,
+        coverPhotos: Array.isArray(company.coverPhotos)
+          ? company.coverPhotos
+              .filter((photo) => typeof photo === "string" && photo.trim())
+              .slice(0, 5)
+          : [],
+        introduction:
+          typeof company.introduction === "string" ? company.introduction : null,
+        website: typeof company.website === "string" ? company.website : null,
         createdAt: company.createdAt || null,
         updatedAt: company.updatedAt || null,
         isActive: typeof company.isActive === "boolean" ? company.isActive : true,

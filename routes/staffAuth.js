@@ -214,6 +214,19 @@ router.post("/login", async (req, res) => {
           icon: companyData.icon,
           address: companyData.address,
           contact: companyData.contact,
+          coverPhotos: Array.isArray(companyData.coverPhotos)
+            ? companyData.coverPhotos.filter(
+                (photo) => typeof photo === "string" && photo.trim(),
+              )
+            : [],
+          introduction:
+            typeof companyData.introduction === "string"
+              ? companyData.introduction
+              : null,
+          website:
+            typeof companyData.website === "string"
+              ? companyData.website
+              : null,
           isActive: companyData.isActive,
         };
 
@@ -430,7 +443,7 @@ router.put("/profile", authenticateToken, async (req, res) => {
 router.put("/company", authenticateToken, async (req, res) => {
   try {
     const { userId } = req.user;
-    const { name, nature, address, contact, icon } = req.body;
+    const { name, nature, address, contact, icon, coverPhotos, introduction, website } = req.body;
 
     // Get staff info to find companyId
     const staffDoc = await db.collection("staffs").doc(userId).get();
@@ -454,6 +467,15 @@ router.put("/company", authenticateToken, async (req, res) => {
     if (address !== undefined) updateData.address = address;
     if (contact !== undefined) updateData.contact = contact;
     if (icon !== undefined) updateData.icon = icon;
+    if (coverPhotos !== undefined) {
+      updateData.coverPhotos = Array.isArray(coverPhotos)
+        ? coverPhotos
+            .filter((photo) => typeof photo === "string" && photo.trim())
+            .slice(0, 5)
+        : [];
+    }
+    if (introduction !== undefined) updateData.introduction = introduction;
+    if (website !== undefined) updateData.website = website;
 
     await companyRef.update(updateData);
 

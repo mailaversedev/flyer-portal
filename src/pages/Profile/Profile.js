@@ -10,13 +10,19 @@ import i18n, {
 import "./Profile.css";
 
 const Profile = () => {
+  const MAX_COMPANY_COVER_PHOTOS = 5;
   const { t } = useTranslation();
   const [companyName, setCompanyName] = useState("");
   const [companyNature, setCompanyNature] = useState("");
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
+  const [website, setWebsite] = useState("");
+  const [introduction, setIntroduction] = useState("");
   const [companyIconFile, setCompanyIconFile] = useState(null);
   const [currentIcon, setCurrentIcon] = useState("");
+  const [companyCoverFiles, setCompanyCoverFiles] = useState([]);
+  const [companyCoverPreviewUrls, setCompanyCoverPreviewUrls] = useState([]);
+  const [currentCoverPhotos, setCurrentCoverPhotos] = useState([]);
   const [companyIndustries, setCompanyIndustries] = useState([]);
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
   const [locale, setLocale] = useState(
@@ -28,6 +34,20 @@ const Profile = () => {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
+    if (companyCoverFiles.length === 0) {
+      setCompanyCoverPreviewUrls([]);
+      return undefined;
+    }
+
+    const previewUrls = companyCoverFiles.map((file) => URL.createObjectURL(file));
+    setCompanyCoverPreviewUrls(previewUrls);
+
+    return () => {
+      previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+    };
+  }, [companyCoverFiles]);
+
+  useEffect(() => {
     // Load existing local storage company data
     const storedCompany = localStorage.getItem("company");
     if (storedCompany) {
@@ -37,7 +57,14 @@ const Profile = () => {
         setCompanyNature(parsedCompany.nature || "");
         setAddress(parsedCompany.address || "");
         setContact(parsedCompany.contact || "");
+        setWebsite(parsedCompany.website || "");
+        setIntroduction(parsedCompany.introduction || "");
         setCurrentIcon(parsedCompany.icon || "");
+        setCurrentCoverPhotos(
+          Array.isArray(parsedCompany.coverPhotos)
+            ? parsedCompany.coverPhotos.slice(0, MAX_COMPANY_COVER_PHOTOS)
+            : [],
+        );
       } catch (e) {
         console.error("Failed to parse company info", e);
       }
@@ -80,6 +107,7 @@ const Profile = () => {
 
     try {
       let companyIconUrl = currentIcon;
+      let companyCoverPhotoUrls = currentCoverPhotos;
       if (companyIconFile) {
         // Upload new icon file using ApiService
         const uploadResponse = await ApiService.uploadFile(
@@ -93,6 +121,22 @@ const Profile = () => {
         }
       }
 
+      if (companyCoverFiles.length > 0) {
+        const uploadedCoverPhotos = await Promise.all(
+          companyCoverFiles.map(async (file) => {
+            const uploadResponse = await ApiService.uploadFile(
+              file,
+              "companyCoverPhoto",
+            );
+            if (!uploadResponse.success || !uploadResponse.url) {
+              throw new Error("Failed to upload company cover photo");
+            }
+            return uploadResponse.url;
+          }),
+        );
+        companyCoverPhotoUrls = uploadedCoverPhotos;
+      }
+
       // Update API request
       const response = await ApiService.updateCompanyProfile({
         name: companyName,
@@ -100,6 +144,9 @@ const Profile = () => {
         address: address,
         contact: contact,
         icon: companyIconUrl,
+        website: website.trim(),
+        introduction: introduction.trim(),
+        coverPhotos: companyCoverPhotoUrls,
       });
 
       markPendingLocale(locale);
@@ -117,10 +164,15 @@ const Profile = () => {
           address: address,
           contact: contact,
           icon: companyIconUrl,
+          website: website.trim(),
+          introduction: introduction.trim(),
+          coverPhotos: companyCoverPhotoUrls,
         };
         localStorage.setItem("company", JSON.stringify(updatedCompany));
         ApiService.setCurrentCompany(updatedCompany);
         setCurrentIcon(companyIconUrl);
+        setCurrentCoverPhotos(companyCoverPhotoUrls);
+        setCompanyCoverFiles([]);
         await applyLocale(locale);
         clearPendingLocale(locale);
 
@@ -135,6 +187,30 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCompanyCoverPhotosChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > MAX_COMPANY_COVER_PHOTOS) {
+      alert(
+        t("profilePage.companyCoverPhotosLimit", {
+          count: MAX_COMPANY_COVER_PHOTOS,
+        }),
+      );
+      e.target.value = null;
+      return;
+    }
+
+    const hasInvalidFile = files.some(
+      (file) => !file.type.startsWith("image/"),
+    );
+    if (hasInvalidFile) {
+      alert(t("profilePage.companyCoverPhotosInvalid"));
+      e.target.value = null;
+      return;
+    }
+
+    setCompanyCoverFiles(files);
   };
 
   return (
@@ -195,10 +271,10 @@ const Profile = () => {
             <label htmlFor="companyIcon">{t("profilePage.companyIcon")}</label>
             {currentIcon && !companyIconFile && (
               <div className="current-icon">
-                <img 
-                  src={currentIcon} 
-                  alt={t("profilePage.currentCompanyIcon")} 
-                  style={{ width: "60px", height: "60px", borderRadius: "8px", objectFit: "cover", display: "block" }} 
+                <img
+                  src={currentIcon}
+                  alt={t("profilePage.currentCompanyIcon")}
+                  style={{ width: "60px", height: "60px", borderRadius: "8px", objectFit: "cover", display: "block" }}
                 />
               </div>
             )}
@@ -217,6 +293,68 @@ const Profile = () => {
                   setCompanyIconFile(file);
                 }
               }}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="companyCoverPhotos">
+              {t("profilePage.companyCoverPhotos")}
+            </label>
+            <p className="form-hint">
+              {t("profilePage.companyCoverPhotosHint", {
+                count: MAX_COMPANY_COVER_PHOTOS,
+              })}
+            </p>
+            <input
+              type="file"
+              id="companyCoverPhotos"
+              accept="image/*"
+              multiple
+              onChange={handleCompanyCoverPhotosChange}
+            />
+
+            {(companyCoverFiles.length > 0 || currentCoverPhotos.length > 0) && (
+              <div className="cover-photo-preview-grid">
+                {(companyCoverFiles.length > 0
+                  ? companyCoverPreviewUrls.map((previewUrl, index) => ({
+                      key: `${companyCoverFiles[index]?.name || index}-${index}`,
+                      url: previewUrl,
+                      label:
+                        companyCoverFiles[index]?.name ||
+                        `${t("profilePage.companyCoverPhoto")} ${index + 1}`,
+                    }))
+                  : currentCoverPhotos.map((photo, index) => ({
+                      key: `${photo}-${index}`,
+                      url: photo,
+                      label: `${t("profilePage.companyCoverPhoto")} ${index + 1}`,
+                    }))).map((photo) => (
+                  <div key={photo.key} className="cover-photo-preview-card">
+                    <img src={photo.url} alt={photo.label} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="website">{t("profilePage.website")}</label>
+            <input
+              type="url"
+              id="website"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              placeholder={t("profilePage.websitePlaceholder")}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="introduction">{t("profilePage.introduction")}</label>
+            <textarea
+              id="introduction"
+              value={introduction}
+              onChange={(e) => setIntroduction(e.target.value)}
+              placeholder={t("profilePage.introductionPlaceholder")}
+              rows={5}
             />
           </div>
 
