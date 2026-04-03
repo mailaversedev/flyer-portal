@@ -136,7 +136,7 @@
   },
   "leafletCreation": {
     "generating": "生成中...",
-    "generatingWait": "正在生成傳單，請稍候...",
+    "generatingWait": "正在生成傳單，請稍候1-2分鐘...",
     "creatingWait": "正在建立傳單，請稍候...",
     "createdSuccess": "傳單廣告已成功建立！",
     "createFailed": "建立傳單失敗，請再試一次。",

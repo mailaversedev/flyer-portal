@@ -136,7 +136,7 @@
   },
   "leafletCreation": {
     "generating": "Generating...",
-    "generatingWait": "Generating leaflet, please wait...",
+    "generatingWait": "Generating leaflet, please wait 1-2 mins...",
     "creatingWait": "Creating flyer, please wait...",
     "createdSuccess": "Leaflet flyer created successfully!",
     "createFailed": "Failed to create flyer. Please try again.",
