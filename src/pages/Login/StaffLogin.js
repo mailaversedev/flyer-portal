@@ -11,6 +11,7 @@ const StaffLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [companyDisplayName, setCompanyDisplayName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyNature, setCompanyNature] = useState("");
   const [companyIconFile, setCompanyIconFile] = useState(null);
@@ -84,6 +85,7 @@ const StaffLogin = () => {
           username,
           password,
           displayName,
+          companyDisplayName,
           companyName,
           companyNature,
           companyIcon: companyIconUrl,
@@ -225,6 +227,19 @@ const StaffLogin = () => {
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder={t("login.companyNamePlaceholder")}
                   required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="companyDisplayName">
+                  {t("login.companyDisplayName")}
+                </label>
+                <input
+                  type="text"
+                  id="companyDisplayName"
+                  value={companyDisplayName}
+                  onChange={(e) => setCompanyDisplayName(e.target.value)}
+                  placeholder={t("login.companyDisplayNamePlaceholder")}
                 />
               </div>
 

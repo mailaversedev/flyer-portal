@@ -25,6 +25,7 @@ router.post("/register", async (req, res) => {
       username,
       displayName,
       password,
+      companyDisplayName,
       companyName,
       companyIcon,
       address,
@@ -77,6 +78,7 @@ router.post("/register", async (req, res) => {
       if (companyName) {
         const companyRef = db.collection("companies").doc();
         companyData = {
+          companyDisplayName,
           name: companyName,
           icon: companyIcon,
           address,
@@ -209,6 +211,7 @@ router.post("/login", async (req, res) => {
         const companyData = companyDoc.data();
         companyInfo = {
           id: companyDoc.id,
+          companyDisplayName: companyData.companyDisplayName,
           name: companyData.name,
           nature: companyData.nature,
           icon: companyData.icon,
@@ -443,7 +446,7 @@ router.put("/profile", authenticateToken, async (req, res) => {
 router.put("/company", authenticateToken, async (req, res) => {
   try {
     const { userId } = req.user;
-    const { name, nature, address, contact, icon, coverPhotos, introduction, website } = req.body;
+    const { companyDisplayName, name, nature, address, contact, icon, coverPhotos, introduction, website } = req.body;
 
     // Get staff info to find companyId
     const staffDoc = await db.collection("staffs").doc(userId).get();
@@ -462,6 +465,9 @@ router.put("/company", authenticateToken, async (req, res) => {
     const updateData = {
       updatedAt: new Date().toISOString()
     };
+    if (companyDisplayName !== undefined) {
+      updateData.companyDisplayName = companyDisplayName;
+    }
     if (name !== undefined) updateData.name = name;
     if (nature !== undefined) updateData.nature = nature;
     if (address !== undefined) updateData.address = address;

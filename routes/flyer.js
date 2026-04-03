@@ -76,6 +76,8 @@ router.post("/flyer", authenticateToken, async (req, res) => {
         if (companyDoc.exists) {
           const companyInfo = companyDoc.data();
           flyerData.companyIcon = companyInfo.icon;
+          flyerData.companyDisplayName =
+            companyInfo.companyDisplayName || companyInfo.displayName || null;
           flyerData.companyName = companyInfo.name;
           flyerData.companyNature = companyInfo.nature;
         }
@@ -379,6 +381,12 @@ router.get("/company/:companyId", async (req, res) => {
       success: true,
       data: {
         id: companyDoc.id,
+        companyDisplayName:
+          typeof company.companyDisplayName === "string"
+            ? company.companyDisplayName
+            : typeof company.displayName === "string"
+              ? company.displayName
+              : null,
         name: company.name || "",
         icon: company.icon || null,
         address: company.address || null,

@@ -32,6 +32,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [companyDisplayName, setCompanyDisplayName] = useState("");
 
   useEffect(() => {
     if (companyCoverFiles.length === 0) {
@@ -64,6 +65,9 @@ const Profile = () => {
           Array.isArray(parsedCompany.coverPhotos)
             ? parsedCompany.coverPhotos.slice(0, MAX_COMPANY_COVER_PHOTOS)
             : [],
+        );
+        setCompanyDisplayName(
+          parsedCompany.companyDisplayName || parsedCompany.displayName || "",
         );
       } catch (e) {
         console.error("Failed to parse company info", e);
@@ -139,6 +143,7 @@ const Profile = () => {
 
       // Update API request
       const response = await ApiService.updateCompanyProfile({
+        companyDisplayName: companyDisplayName.trim(),
         name: companyName,
         nature: companyNature,
         address: address,
@@ -159,6 +164,7 @@ const Profile = () => {
         const storedCompany = JSON.parse(localStorage.getItem("company") || "{}");
         const updatedCompany = {
           ...storedCompany,
+          companyDisplayName: companyDisplayName.trim(),
           name: companyName,
           nature: companyNature,
           address: address,
@@ -222,6 +228,19 @@ const Profile = () => {
         {success && <div className="error-message success-message">{success}</div>}
 
         <form onSubmit={handleSubmit} className="profile-form">
+          <div className="form-group">
+            <label htmlFor="companyDisplayName">
+              {t("profilePage.companyDisplayName")}
+            </label>
+            <input
+              type="text"
+              id="companyDisplayName"
+              value={companyDisplayName}
+              onChange={(e) => setCompanyDisplayName(e.target.value)}
+              placeholder={t("login.companyDisplayNamePlaceholder")}
+            />
+          </div>
+
           <div className="form-group">
             <label htmlFor="companyName">{t("profilePage.companyName")}</label>
             <input
