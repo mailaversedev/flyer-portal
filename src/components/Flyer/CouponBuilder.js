@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Upload, Calendar, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import "./CouponBuilder.css";
@@ -209,23 +209,12 @@ const DigitalCoupon = ({
 const CouponBuilder = ({ data, onUpdate }) => {
   const { t } = useTranslation();
   const couponData = data?.coupon || {};
-  const [formData, setFormData] = useState({
-    couponType: couponData.couponType || "",
-    couponFile: couponData.couponFile || null,
-    qrCodeImage: couponData.qrCodeImage || null,
-    barcodeImage: couponData.barcodeImage || null,
-    termsConditions: couponData.termsConditions || "",
-    expiredDate: couponData.expiredDate || "",
-    discountValue: couponData.discountValue || "",
-    itemDescription: couponData.itemDescription || "",
-  });
 
   const handleInputChange = (field, value) => {
     const updatedData = {
-      ...formData,
+      ...couponData,
       [field]: value,
     };
-    setFormData(updatedData);
     if (onUpdate) {
       onUpdate({ coupon: updatedData });
     }
@@ -267,7 +256,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
               <label className="form-label">{t("couponBuilder.couponType")}</label>
               <select
                 className="form-select"
-                value={formData.couponType}
+                value={couponData.couponType || ""}
                 onChange={(e) =>
                   handleInputChange("couponType", e.target.value)
                 }
@@ -280,11 +269,11 @@ const CouponBuilder = ({ data, onUpdate }) => {
               </select>
             </div>
 
-            {(formData.couponType === "percentage" ||
-              formData.couponType === "fixed") && (
+            {(couponData.couponType === "percentage" ||
+              couponData.couponType === "fixed") && (
               <div className="form-group">
                 <label className="form-label">
-                  {formData.couponType === "percentage"
+                  {couponData.couponType === "percentage"
                     ? t("couponBuilder.discountPercentage")
                     : t("couponBuilder.discountAmount")}
                 </label>
@@ -292,15 +281,15 @@ const CouponBuilder = ({ data, onUpdate }) => {
                   type="number"
                   className="form-input"
                   placeholder={
-                    formData.couponType === "percentage"
+                    couponData.couponType === "percentage"
                         ? t("couponBuilder.enterPercentage")
                         : t("couponBuilder.enterAmount")
                   }
-                  value={formData.discountValue || ""}
+                  value={couponData.discountValue || ""}
                   onChange={(e) =>
                     handleInputChange("discountValue", e.target.value)
                   }
-                  disabled={!!formData.couponFile}
+                  disabled={!!couponData.couponFile}
                 />
               </div>
             )}
@@ -311,11 +300,11 @@ const CouponBuilder = ({ data, onUpdate }) => {
                 type="text"
                 className="form-input"
                 placeholder={t("couponBuilder.enterItemDescription")}
-                value={formData.itemDescription || ""}
+                value={couponData.itemDescription || ""}
                 onChange={(e) =>
                   handleInputChange("itemDescription", e.target.value)
                 }
-                disabled={!!formData.couponFile}
+                disabled={!!couponData.couponFile}
               />
             </div>
 
@@ -336,14 +325,14 @@ const CouponBuilder = ({ data, onUpdate }) => {
                   }
                 >
                   <span>
-                    {formData.couponFile ? t("couponBuilder.fileSelected") : t("couponBuilder.selectFile")}
+                    {couponData.couponFile ? t("couponBuilder.fileSelected") : t("couponBuilder.selectFile")}
                   </span>
                   <Upload size={16} />
                 </button>
-                {formData.couponFile && (
+                {couponData.couponFile && (
                   <div className="preview-container">
                     <img
-                      src={formData.couponFile}
+                      src={couponData.couponFile}
                       alt="Preview"
                       className="file-preview"
                     />
@@ -374,16 +363,16 @@ const CouponBuilder = ({ data, onUpdate }) => {
                   type="button"
                 >
                   <span>
-                    {formData.qrCodeImage
+                    {couponData.qrCodeImage
                       ? t("couponBuilder.qrSelected")
                       : t("couponBuilder.selectQr")}
                   </span>
                   <Upload size={16} />
                 </button>
-                {formData.qrCodeImage && (
+                {couponData.qrCodeImage && (
                   <div className="preview-container">
                     <img
-                      src={formData.qrCodeImage}
+                      src={couponData.qrCodeImage}
                       alt="QR Preview"
                       className="file-preview"
                     />
@@ -417,16 +406,16 @@ const CouponBuilder = ({ data, onUpdate }) => {
                   type="button"
                 >
                   <span>
-                    {formData.barcodeImage
+                    {couponData.barcodeImage
                       ? t("couponBuilder.barcodeSelected")
                       : t("couponBuilder.selectBarcode")}
                   </span>
                   <Upload size={16} />
                 </button>
-                {formData.barcodeImage && (
+                {couponData.barcodeImage && (
                   <div className="preview-container">
                     <img
-                      src={formData.barcodeImage}
+                      src={couponData.barcodeImage}
                       alt="Barcode Preview"
                       className="file-preview"
                     />
@@ -447,7 +436,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
               <textarea
                 className="form-textarea"
                 placeholder={t("qrGeneration.pleaseEnter")}
-                value={formData.termsConditions}
+                value={couponData.termsConditions || ""}
                 onChange={(e) =>
                   handleInputChange("termsConditions", e.target.value)
                 }
@@ -461,7 +450,7 @@ const CouponBuilder = ({ data, onUpdate }) => {
                 <input
                   type="date"
                   className="form-input date-input"
-                  value={formData.expiredDate}
+                  value={couponData.expiredDate || ""}
                   onChange={(e) =>
                     handleInputChange("expiredDate", e.target.value)
                   }
@@ -488,10 +477,10 @@ const CouponBuilder = ({ data, onUpdate }) => {
             >
               <DigitalCoupon
                 companyIcon={data?.companyIcon || ""}
-                value={formData.discountValue}
-                description={formData.itemDescription}
-                expire={formData.expiredDate}
-                couponType={formData.couponType}
+                value={couponData.discountValue}
+                description={couponData.itemDescription}
+                expire={couponData.expiredDate}
+                couponType={couponData.couponType}
               />
               <div
                 style={{

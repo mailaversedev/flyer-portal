@@ -81,6 +81,7 @@ const Dashboard = () => {
 
           return {
             id: flyer.id,
+            flyerType: flyer.type,
             thumbnail: flyer?.coverPhoto || "📄",
             adTitle: flyer.header || `Promotion ${flyer.id.substr(0, 6)}`,
             status: flyer.status === "active" ? "Live" : "Completed",

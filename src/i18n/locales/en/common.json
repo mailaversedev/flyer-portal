@@ -16,6 +16,7 @@
   "header": {
     "flyerTypes": "Types of Flyer Distribution",
     "createFlyer": "Create Your Flyer",
+    "editFlyer": "Edit Flyer",
     "editProfile": "Edit Profile",
     "notifications": "Notifications"
   },
@@ -124,6 +125,10 @@
     "back": "Back",
     "next": "Next",
     "create": "Create",
+    "saveChanges": "Save Changes",
+    "updating": "Saving...",
+    "loadingFlyer": "Loading flyer...",
+    "assetLocked": "Uploaded assets, coupon settings, and budget are read-only during editing.",
     "proceedToCoupon": "Proceed to Coupon Builder",
     "noCoupon": "No Coupon this time",
     "content": "Content",

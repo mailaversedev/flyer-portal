@@ -16,6 +16,7 @@
   "header": {
     "flyerTypes": "傳單派發類型",
     "createFlyer": "建立傳單",
+    "editFlyer": "編輯傳單",
     "editProfile": "編輯資料",
     "notifications": "通知"
   },
@@ -124,6 +125,10 @@
     "back": "返回",
     "next": "下一步",
     "create": "建立",
+    "saveChanges": "儲存變更",
+    "updating": "儲存中...",
+    "loadingFlyer": "正在載入傳單...",
+    "assetLocked": "編輯模式下不能修改已上傳素材、優惠券設定及預算。",
     "proceedToCoupon": "前往優惠券建立器",
     "noCoupon": "今次不使用優惠券",
     "content": "內容",

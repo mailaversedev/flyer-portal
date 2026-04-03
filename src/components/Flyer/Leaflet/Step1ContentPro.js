@@ -38,7 +38,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Expose validation function to parent via ref
   useImperativeHandle(ref, () => ({
     validateRequiredFields,
   }));
@@ -94,12 +93,12 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         const filePromises = files.map((file) => {
           return new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onload = (e) =>
+            reader.onload = (loadEvent) =>
               resolve({
                 file,
                 name: file.name,
                 size: file.size,
-                preview: e.target.result,
+                preview: loadEvent.target.result,
               });
             reader.readAsDataURL(file);
           });
@@ -116,14 +115,14 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         const file = files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = (e) => {
+          reader.onload = (loadEvent) => {
             const updatedData = {
               ...data,
               [field]: {
                 file,
                 name: file.name,
                 size: file.size,
-                preview: e.target.result,
+                preview: loadEvent.target.result,
               },
             };
             onUpdate(updatedData);
@@ -132,6 +131,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         }
       }
     };
+
     input.click();
   };
 
@@ -139,7 +139,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
     if (field === "productPhoto" && index !== null) {
       const updatedData = {
         ...data,
-        [field]: data[field].filter((_, i) => i !== index),
+        [field]: data[field].filter((_, itemIndex) => itemIndex !== index),
       };
       onUpdate(updatedData);
     } else {
@@ -202,7 +202,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   return (
     <div className="step1-content">
       <div className="form-grid">
-        {/* Product Name - REQUIRED */}
         <div className="form-group full-width">
           <label className="form-label">{t("leafletPro.productName")}</label>
           <input
@@ -217,7 +216,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           )}
         </div>
 
-        {/* Aspect Ratio */}
         <div className="form-group">
           <label className="form-label">{t("leafletPro.aspectRatio")}</label>
           <div className="select-wrapper">
@@ -240,7 +238,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           )}
         </div>
 
-        {/* Resolution */}
         <div className="form-group">
           <label className="form-label">{t("leafletPro.resolution")}</label>
           <div className="select-wrapper">
@@ -257,11 +254,8 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           </div>
         </div>
 
-        {/* Reference Image / Campaign Moodboard */}
         <div className="form-group full-width">
-          <label className="form-label">
-            {t("leafletPro.moodboard")}
-          </label>
+          <label className="form-label">{t("leafletPro.moodboard")}</label>
           {data.referenceFlyer ? (
             <SingleImageDisplay
               imageObj={data.referenceFlyer}
@@ -305,7 +299,23 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           )}
         </div>
 
-        {/* Brand & Styling Section */}
+        <div className="form-group">
+          <label className="form-label">{t("leafletStandard.selectDesign")}</label>
+          <div className="select-wrapper">
+            <select
+              className="form-select"
+              value={data.designStyle}
+              onChange={(e) => handleInputChange("designStyle", e.target.value)}
+            >
+              <option value="">{t("qrGeneration.pleaseSelect")}</option>
+              <option value="modern">{t("leafletStandard.modern")}</option>
+              <option value="classic">{t("leafletStandard.classic")}</option>
+              <option value="minimalist">{t("leafletStandard.minimalist")}</option>
+            </select>
+            <ChevronRight className="select-icon" size={16} />
+          </div>
+        </div>
+
         <ColorInputField
           label={t("leafletPro.primaryColor")}
           field="primaryColor"
@@ -344,7 +354,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           />
         </div>
 
-        {/* Upload Logo */}
         <div className="form-group full-width">
           <label className="form-label">{t("leafletPro.uploadLogo")}</label>
           {data.logoImage ? (
@@ -378,9 +387,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
               />
               <div
                 className="file-select"
-                onClick={() =>
-                  document.getElementById("logoImageInput").click()
-                }
+                onClick={() => document.getElementById("logoImageInput").click()}
               >
                 <span>{t("leafletPro.selectLogoFile")}</span>
                 <ChevronRight size={16} />
@@ -389,16 +396,13 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           )}
         </div>
 
-        {/* Logo Position */}
         <div className="form-group">
           <label className="form-label">{t("leafletPro.logoPosition")}</label>
           <div className="select-wrapper">
             <select
               className="form-select"
               value={data.logoPosition || "natural placement"}
-              onChange={(e) =>
-                handleInputChange("logoPosition", e.target.value)
-              }
+              onChange={(e) => handleInputChange("logoPosition", e.target.value)}
             >
               {logoPositions.map((pos) => (
                 <option key={pos.value} value={pos.value}>
@@ -415,7 +419,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
         <h3 className="section-title">{t("leafletPro.copyContent")}</h3>
 
         <div className="form-grid">
-          {/* Copy Line (Header) */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletPro.copyLine")}</label>
             <input
@@ -436,9 +439,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
               <select
                 className="form-select"
                 value={data.copyPosition || "natural placement"}
-                onChange={(e) =>
-                  handleInputChange("copyPosition", e.target.value)
-                }
+                onChange={(e) => handleInputChange("copyPosition", e.target.value)}
               >
                 {logoPositions.map((pos) => (
                   <option key={pos.value} value={pos.value}>
@@ -450,7 +451,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             </div>
           </div>
 
-          {/* Ad Content */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletPro.adContent")}</label>
             <textarea
@@ -465,7 +465,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             )}
           </div>
 
-          {/* Body Copy */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletPro.bodyCopy")}</label>
             <textarea
@@ -497,7 +496,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             </div>
           </div>
 
-          {/* Query_Context / Flyer Prompts */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletPro.prompts")}</label>
             <textarea
@@ -505,16 +503,13 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
               placeholder={t("leafletPro.promptsPlaceholder")}
               rows={6}
               value={data.flyerPrompts}
-              onChange={(e) =>
-                handleInputChange("flyerPrompts", e.target.value)
-              }
+              onChange={(e) => handleInputChange("flyerPrompts", e.target.value)}
             />
             {errors.flyerPrompts && (
               <span className="error-message">{errors.flyerPrompts}</span>
             )}
           </div>
 
-          {/* Upload Product Photo */}
           <div className="form-group full-width">
             <label className="form-label">
               {t("leafletPro.uploadProduct")}{" "}
@@ -530,7 +525,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             <ThumbnailRow images={data.productPhoto} field="productPhoto" />
           </div>
 
-          {/* Tag */}
           <div className="form-group">
             <label className="form-label">{t("leafletPro.tagOptional")}</label>
             <div className="tag-input-container">
@@ -567,5 +561,18 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
     </div>
   );
 });
+
+Step1ContentPro.validateRequiredFields = (data, setErrorsCallback = null) => {
+  const errors = getProLeafletValidationErrors(data);
+
+  if (setErrorsCallback) {
+    setErrorsCallback(errors);
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
 
 export default Step1ContentPro;

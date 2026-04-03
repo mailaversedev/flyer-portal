@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Download, Minus, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -16,15 +16,18 @@ const TargetBudget = ({
   isDirectUpload = false,
 }) => {
   const { t, i18n } = useTranslation();
-  const [formData, setFormData] = useState({
-    district: data?.district || "",
-    propertyEstate: data?.propertyEstate || "",
-    targetedGroup: data?.targetedGroup || "",
-    aiTargeted: data?.aiTargeted || false,
-    noSpecific: data?.noSpecific || false,
-    budget: data?.budget || DEFAULT_BUDGET,
-    paymentMethod: data?.paymentMethod || "",
-  });
+  const formData = {
+    district: data?.targetBudget?.district || data?.district || "",
+    propertyEstate:
+      data?.targetBudget?.propertyEstate || data?.propertyEstate || "",
+    targetedGroup:
+      data?.targetBudget?.targetedGroup || data?.targetedGroup || "",
+    aiTargeted: data?.targetBudget?.aiTargeted || data?.aiTargeted || false,
+    noSpecific: data?.targetBudget?.noSpecific || data?.noSpecific || false,
+    budget: data?.targetBudget?.budget || data?.budget || DEFAULT_BUDGET,
+    paymentMethod:
+      data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
+  };
 
   const [previewZoom, setPreviewZoom] = useState(100);
   const [districtOptions, setDistrictOptions] = useState([]);
@@ -115,7 +118,6 @@ const TargetBudget = ({
       ...formData,
       [field]: value,
     };
-    setFormData(updatedData);
     if (onUpdate) {
       onUpdate({
         ...data,
@@ -138,7 +140,6 @@ const TargetBudget = ({
       ...formData,
       [field]: checked,
     };
-    setFormData(updatedData);
     if (onUpdate) {
       onUpdate({
         ...data,
@@ -152,7 +153,6 @@ const TargetBudget = ({
       ...formData,
       budget: Math.max(MIN_BUDGET, Math.min(MAX_BUDGET, value)),
     };
-    setFormData(updatedData);
     if (onUpdate) {
       onUpdate({
         ...data,

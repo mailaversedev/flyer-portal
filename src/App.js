@@ -41,6 +41,14 @@ function App() {
                     />
                     <Route path="/flyer/create/qr" element={<QRGeneration />} />
                     <Route
+                      path="/flyer/edit/leaflet/:flyerId"
+                      element={<LeafletCreation />}
+                    />
+                    <Route
+                      path="/flyer/edit/qr/:flyerId"
+                      element={<QRGeneration />}
+                    />
+                    <Route
                       path="/wallet"
                       element={<div>{t("walletPage.title")}</div>}
                     />

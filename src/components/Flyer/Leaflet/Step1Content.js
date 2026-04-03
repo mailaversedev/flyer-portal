@@ -17,13 +17,11 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Expose validation function to parent via ref
   useImperativeHandle(ref, () => ({
     validateRequiredFields,
   }));
 
   const handleInputChange = (field, value) => {
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -63,7 +61,6 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
     input.type = "file";
     input.accept = "image/*";
 
-    // Only product photos support multiple selection
     if (field === "productPhoto") {
       input.multiple = true;
     }
@@ -72,16 +69,15 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
       const files = Array.from(event.target.files);
 
       if (field === "productPhoto") {
-        // Handle multiple files for product photos
         const filePromises = files.map((file) => {
           return new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onload = (e) =>
+            reader.onload = (loadEvent) =>
               resolve({
                 file,
                 name: file.name,
                 size: file.size,
-                preview: e.target.result,
+                preview: loadEvent.target.result,
               });
             reader.readAsDataURL(file);
           });
@@ -95,18 +91,17 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
           onUpdate(updatedData);
         });
       } else {
-        // Handle single file for reference flyer and background photo
         const file = files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = (e) => {
+          reader.onload = (loadEvent) => {
             const updatedData = {
               ...data,
               [field]: {
                 file,
                 name: file.name,
                 size: file.size,
-                preview: e.target.result,
+                preview: loadEvent.target.result,
               },
             };
             onUpdate(updatedData);
@@ -120,14 +115,12 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
 
   const handleRemoveImage = (field, index = null) => {
     if (field === "productPhoto" && index !== null) {
-      // Remove specific product photo
       const updatedData = {
         ...data,
-        [field]: data[field].filter((_, i) => i !== index),
+        [field]: data[field].filter((_, itemIndex) => itemIndex !== index),
       };
       onUpdate(updatedData);
     } else {
-      // Remove single image (reference flyer or background photo)
       const updatedData = {
         ...data,
         [field]: null,
@@ -187,7 +180,6 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
   return (
     <div className="step1-content">
       <div className="form-grid">
-        {/* Aspect Ratio */}
         <div className="form-group">
           <label className="form-label">
             {t("leafletStandard.aspectRatio")}
@@ -211,7 +203,6 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
           )}
         </div>
 
-        {/* Select Ad Type */}
         <div className="form-group">
           <label className="form-label">{t("leafletStandard.selectAdType")}</label>
           <div className="select-wrapper">
@@ -227,16 +218,11 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
-          {errors.adType && (
-            <span className="error-message">{errors.adType}</span>
-          )}
+          {errors.adType && <span className="error-message">{errors.adType}</span>}
         </div>
 
-        {/* Upload Reference Flyer Photo */}
         <div className="form-group full-width">
-          <label className="form-label">
-            {t("leafletStandard.uploadReference")}
-          </label>
+          <label className="form-label">{t("leafletStandard.uploadReference")}</label>
           {data.referenceFlyer ? (
             <SingleImageDisplay
               imageObj={data.referenceFlyer}
@@ -268,9 +254,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               />
               <div
                 className="upload-area"
-                onClick={() =>
-                  document.getElementById("referenceFlyerInput").click()
-                }
+                onClick={() => document.getElementById("referenceFlyerInput").click()}
                 tabIndex={0}
                 role="button"
               >
@@ -280,7 +264,6 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
           )}
         </div>
 
-        {/* Select Design Style */}
         <div className="form-group">
           <label className="form-label">{t("leafletStandard.selectDesign")}</label>
           <div className="select-wrapper">
@@ -306,11 +289,8 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
           onChange={handleInputChange}
         />
 
-        {/* Upload Background Photo */}
         <div className="form-group full-width">
-          <label className="form-label">
-            {t("leafletStandard.uploadBackground")}
-          </label>
+          <label className="form-label">{t("leafletStandard.uploadBackground")}</label>
           {data.backgroundPhoto ? (
             <SingleImageDisplay
               imageObj={data.backgroundPhoto}
@@ -342,9 +322,7 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               />
               <div
                 className="upload-area"
-                onClick={() =>
-                  document.getElementById("backgroundPhotoInput").click()
-                }
+                onClick={() => document.getElementById("backgroundPhotoInput").click()}
                 tabIndex={0}
                 role="button"
               >
@@ -355,12 +333,10 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
         </div>
       </div>
 
-      {/* Input Your Customised Content */}
       <div className="content-section">
         <h3 className="section-title">{t("leafletStandard.contentTitle")}</h3>
 
         <div className="form-grid">
-          {/* Header */}
           <div className="form-group">
             <label className="form-label">{t("leafletStandard.header")}</label>
             <input
@@ -370,12 +346,9 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               value={data.header}
               onChange={(e) => handleInputChange("header", e.target.value)}
             />
-            {errors.header && (
-              <span className="error-message">{errors.header}</span>
-            )}
+            {errors.header && <span className="error-message">{errors.header}</span>}
           </div>
 
-          {/* Subheader */}
           <div className="form-group">
             <label className="form-label">{t("leafletStandard.subheader")}</label>
             <input
@@ -387,7 +360,6 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
             />
           </div>
 
-          {/* Ad Content */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletStandard.adContent")}</label>
             <textarea
@@ -397,12 +369,9 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               value={data.adContent}
               onChange={(e) => handleInputChange("adContent", e.target.value)}
             />
-            {errors.adContent && (
-              <span className="error-message">{errors.adContent}</span>
-            )}
+            {errors.adContent && <span className="error-message">{errors.adContent}</span>}
           </div>
 
-          {/* Prompts of Your Flyer */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletStandard.prompts")}</label>
             <textarea
@@ -410,16 +379,13 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               placeholder={t("leafletStandard.promptsPlaceholder")}
               rows={6}
               value={data.flyerPrompts}
-              onChange={(e) =>
-                handleInputChange("flyerPrompts", e.target.value)
-              }
+              onChange={(e) => handleInputChange("flyerPrompts", e.target.value)}
             />
             {errors.flyerPrompts && (
               <span className="error-message">{errors.flyerPrompts}</span>
             )}
           </div>
 
-          {/* Promotion Message/Slogan */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletStandard.promotionMessage")}</label>
             <textarea
@@ -427,32 +393,24 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               placeholder={t("qrGeneration.pleaseEnter")}
               rows={3}
               value={data.promotionMessage}
-              onChange={(e) =>
-                handleInputChange("promotionMessage", e.target.value)
-              }
+              onChange={(e) => handleInputChange("promotionMessage", e.target.value)}
             />
             {errors.promotionMessage && (
               <span className="error-message">{errors.promotionMessage}</span>
             )}
           </div>
 
-          {/* Upload Product Photo */}
           <div className="form-group full-width">
             <label className="form-label">
-              {t("leafletStandard.uploadProduct")}{" "}
-              <span className="counter">{data.productPhoto.length}/5</span>
+              {t("leafletStandard.uploadProduct")} <span className="counter">{data.productPhoto.length}/5</span>
             </label>
-            <div
-              className="file-select"
-              onClick={() => handleFileUpload("productPhoto")}
-            >
+            <div className="file-select" onClick={() => handleFileUpload("productPhoto")}>
               <span>{t("leafletStandard.selectFile")}</span>
               <ChevronRight size={16} />
             </div>
             <ThumbnailRow images={data.productPhoto} field="productPhoto" />
           </div>
 
-          {/* Product Descriptions */}
           <div className="form-group full-width">
             <label className="form-label">{t("leafletStandard.productDescriptions")}</label>
             <input
@@ -460,18 +418,13 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
               className={`form-input ${errors.productDescriptions ? "error" : ""}`}
               placeholder={t("qrGeneration.pleaseEnter")}
               value={data.productDescriptions}
-              onChange={(e) =>
-                handleInputChange("productDescriptions", e.target.value)
-              }
+              onChange={(e) => handleInputChange("productDescriptions", e.target.value)}
             />
             {errors.productDescriptions && (
-              <span className="error-message">
-                {errors.productDescriptions}
-              </span>
+              <span className="error-message">{errors.productDescriptions}</span>
             )}
           </div>
 
-          {/* Tag */}
           <div className="form-group">
             <label className="form-label">{t("leafletStandard.tagOptional")}</label>
             <div className="tag-input-container">
@@ -509,11 +462,9 @@ const Step1Content = forwardRef(({ data, onUpdate }, ref) => {
   );
 });
 
-// Export validation function for parent component to use (keeping for backward compatibility)
 Step1Content.validateRequiredFields = (data, setErrorsCallback = null) => {
   const errors = getStandardLeafletValidationErrors(data);
 
-  // Set errors in component state if callback provided
   if (setErrorsCallback) {
     setErrorsCallback(errors);
   }

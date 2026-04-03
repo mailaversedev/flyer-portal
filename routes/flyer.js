@@ -242,6 +242,117 @@ router.post("/flyer", authenticateToken, async (req, res) => {
   }
 });
 
+// PUT /api/flyer/:flyerId - Update flyer details
+router.put("/flyer/:flyerId", authenticateToken, async (req, res) => {
+  try {
+    const { flyerId } = req.params;
+    const { data = {} } = req.body || {};
+
+    if (!flyerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing flyerId",
+      });
+    }
+
+    const flyerRef = db.collection("flyers").doc(flyerId);
+    const now = new Date().toISOString();
+
+    await db.runTransaction(async (transaction) => {
+      const flyerDoc = await transaction.get(flyerRef);
+
+      if (!flyerDoc.exists) {
+        throw new Error("__FLYER_NOT_FOUND__");
+      }
+
+      const existingFlyer = flyerDoc.data() || {};
+
+      if (
+        existingFlyer.companyId &&
+        existingFlyer.companyId !== req.user.companyId
+      ) {
+        throw new Error("__FORBIDDEN__");
+      }
+
+      const editableFieldsByType = {
+        leaflet: [
+          "header",
+          "subheader",
+          "adContent",
+          "promotionMessage",
+          "productDescriptions",
+          "tags",
+        ],
+        query: [],
+        qr: [
+          "adType",
+          "location",
+          "website",
+          "startingDate",
+          "header",
+          "productDescriptions",
+          "promotionMessage",
+        ],
+      };
+
+      const editableFields = editableFieldsByType[existingFlyer.type] || [];
+      const filteredData = Object.fromEntries(
+        Object.entries(data).filter(([key]) => editableFields.includes(key)),
+      );
+
+      if (Object.keys(filteredData).length === 0) {
+        throw new Error("__NO_EDITABLE_FIELDS__");
+      }
+
+      const flyerUpdate = {
+        ...filteredData,
+        updatedAt: now,
+      };
+
+      transaction.set(flyerRef, flyerUpdate, { merge: true });
+    });
+
+    const updatedFlyerDoc = await flyerRef.get();
+
+    res.status(200).json({
+      success: true,
+      message: "Flyer updated successfully",
+      data: {
+        id: updatedFlyerDoc.id,
+        ...updatedFlyerDoc.data(),
+      },
+    });
+  } catch (error) {
+    if (error.message === "__FLYER_NOT_FOUND__") {
+      return res.status(404).json({
+        success: false,
+        message: "Flyer not found",
+      });
+    }
+
+    if (error.message === "__FORBIDDEN__") {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to update this flyer",
+      });
+    }
+
+    if (error.message === "__NO_EDITABLE_FIELDS__") {
+      return res.status(400).json({
+        success: false,
+        message: "No editable flyer fields were provided",
+      });
+    }
+
+    console.error("Error updating flyer:", error);
+    res.status(400).json({
+      success: false,
+      message: "Failed to update flyer",
+      error: error.message,
+    });
+  }
+});
+
 // GET /api/company/:companyId - Get single company by ID
 router.get("/company/:companyId", async (req, res) => {
   try {
@@ -289,7 +400,7 @@ router.get("/company/:companyId", async (req, res) => {
 });
 
 // GET /api/flyer/:flyerId - Get single flyer by ID
-router.get("/flyer/:flyerId", async (req, res) => {
+router.get("/flyer/:flyerId", authenticateToken, async (req, res) => {
   try {
     const { flyerId } = req.params;
 
@@ -308,9 +419,18 @@ router.get("/flyer/:flyerId", async (req, res) => {
       });
     }
 
+    const flyerData = flyerDoc.data() || {};
+
+    if (flyerData.companyId && flyerData.companyId !== req.user.companyId) {
+      return res.status(404).json({
+        success: false,
+        message: "Flyer not found",
+      });
+    }
+
     const flyer = {
       id: flyerDoc.id,
-      ...flyerDoc.data(),
+      ...flyerData,
     };
 
     try {

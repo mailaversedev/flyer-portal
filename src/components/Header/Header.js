@@ -72,6 +72,10 @@ const Header = () => {
           return t("header.createFlyer");
         }
 
+        if (location.pathname.startsWith("/flyer/edit")) {
+          return t("header.editFlyer");
+        }
+
         return t("common.dashboard");
     }
   };

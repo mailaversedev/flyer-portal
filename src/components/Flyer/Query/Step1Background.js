@@ -5,14 +5,14 @@ import "./Step1Background.css";
 
 const Step1Background = ({ data, onUpdate }) => {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState({
+  const formData = {
     coverPhoto: data.coverPhoto || null,
     adCategory: data.adCategory || "",
     header: data.header || "",
     adContent: data.adContent || "",
     tags: data.tags || [],
     ...data,
-  });
+  };
 
   const [newTag, setNewTag] = useState("");
 
@@ -21,7 +21,6 @@ const Step1Background = ({ data, onUpdate }) => {
       ...formData,
       [field]: value,
     };
-    setFormData(updatedData);
     onUpdate(updatedData);
   };
 

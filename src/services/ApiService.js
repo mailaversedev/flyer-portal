@@ -184,6 +184,20 @@ class ApiService {
       body: JSON.stringify(flyerData),
     });
   }
+
+  // PUT /api/flyer/:flyerId - Update flyer details
+  static async updateFlyer(flyerId, flyerData) {
+    return this.makeRequest(`/api/flyer/${flyerId}`, {
+      method: "PUT",
+      body: JSON.stringify({ data: flyerData }),
+    });
+  }
+
+  // GET /api/flyer/:flyerId - Get single flyer by ID
+  static async getFlyerById(flyerId) {
+    return this.makeRequest(`/api/flyer/${flyerId}`);
+  }
+
   // GET /api/flyers - Get all flyers
   static async getFlyers(
     limit = 100,

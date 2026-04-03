@@ -5,7 +5,7 @@ import "./Step2Survey.css";
 
 const Step2Survey = ({ data, onUpdate }) => {
   const { t } = useTranslation();
-  const [questions, setQuestions] = useState(
+  const questions =
     data.questions || [
       {
         id: 1,
@@ -13,8 +13,7 @@ const Step2Survey = ({ data, onUpdate }) => {
         question: "",
         answers: [""],
       },
-    ],
-  );
+    ];
 
   const [selectedQuestion, setSelectedQuestion] = useState(1);
 
@@ -26,7 +25,6 @@ const Step2Survey = ({ data, onUpdate }) => {
       answers: [""],
     };
     const updatedQuestions = [...questions, newQuestion];
-    setQuestions(updatedQuestions);
     setSelectedQuestion(newQuestion.id);
     onUpdate({ questions: updatedQuestions });
   };
@@ -35,7 +33,6 @@ const Step2Survey = ({ data, onUpdate }) => {
     const updatedQuestions = questions.map((q) =>
       q.id === questionId ? { ...q, [field]: value } : q,
     );
-    setQuestions(updatedQuestions);
     onUpdate({ questions: updatedQuestions });
   };
 
@@ -48,7 +45,6 @@ const Step2Survey = ({ data, onUpdate }) => {
       }
       return q;
     });
-    setQuestions(updatedQuestions);
     onUpdate({ questions: updatedQuestions });
   };
 
@@ -59,7 +55,6 @@ const Step2Survey = ({ data, onUpdate }) => {
       }
       return q;
     });
-    setQuestions(updatedQuestions);
     onUpdate({ questions: updatedQuestions });
   };
 
@@ -76,7 +71,6 @@ const Step2Survey = ({ data, onUpdate }) => {
       id: index + 1,
     }));
 
-    setQuestions(reindexedQuestions);
     onUpdate({ questions: reindexedQuestions });
 
     // If the removed question was selected, select the first question
@@ -104,7 +98,6 @@ const Step2Survey = ({ data, onUpdate }) => {
       }
       return q;
     });
-    setQuestions(updatedQuestions);
     onUpdate({ questions: updatedQuestions });
   };
 
