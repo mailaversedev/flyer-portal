@@ -314,6 +314,19 @@ const CouponBuilder = ({ data, onUpdate }) => {
             </div>
 
             <div className="form-group">
+              <label className="form-label">{t("couponBuilder.promotionCode")}</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder={t("couponBuilder.enterPromotionCode")}
+                value={couponData.promotionCode || ""}
+                onChange={(e) =>
+                  handleInputChange("promotionCode", e.target.value)
+                }
+              />
+            </div>
+
+            <div className="form-group">
               <label className="form-label">{t("couponBuilder.upload")}</label>
               <div className="upload-container">
                 <input

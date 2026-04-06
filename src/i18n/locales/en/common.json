@@ -290,6 +290,8 @@
     "enterAmount": "Enter amount",
     "itemDescription": "Item Description",
     "enterItemDescription": "Enter item description",
+    "promotionCode": "Promotion Code (Optional)",
+    "enterPromotionCode": "Enter promotion code",
     "upload": "Upload",
     "fileSelected": "File Selected",
     "selectFile": "Select file",

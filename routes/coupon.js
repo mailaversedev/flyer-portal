@@ -88,6 +88,7 @@ router.post("/claim", async (req, res) => {
       expiredDate: coupon.expiredDate || "",
       discountValue: coupon.discountValue || "",
       itemDescription: coupon.itemDescription || "",
+      promotionCode: coupon.promotionCode || "",
 
       status: "active", // active, used, expired
       claimedAt: new Date().toISOString(),

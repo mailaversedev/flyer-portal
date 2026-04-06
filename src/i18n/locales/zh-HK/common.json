@@ -290,6 +290,8 @@
     "enterAmount": "輸入金額",
     "itemDescription": "商品描述",
     "enterItemDescription": "輸入商品描述",
+    "promotionCode": "優惠碼（選填）",
+    "enterPromotionCode": "輸入優惠碼",
     "upload": "上傳",
     "fileSelected": "已選擇檔案",
     "selectFile": "選擇檔案",
