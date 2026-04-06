@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Step1Background from "../../../components/Flyer/Query/Step1Background";
 import Step2Survey from "../../../components/Flyer/Query/Step2Survey";
-import TargetBudget from "../../../components/Flyer/TargetBudget";
+import TargetBudget, {
+  validateTargetBudgetStep,
+} from "../../../components/Flyer/TargetBudget";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -37,7 +39,27 @@ const QueryCreation = () => {
   const [loading, setLoading] = useState("");
   const navigate = useNavigate();
 
+  const ensureTargetBudgetValid = () => {
+    const validation = validateTargetBudgetStep({
+      data: queryData,
+      t,
+    });
+
+    if (!validation.isValid) {
+      alert(
+        `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   const handleNext = () => {
+    if (currentStep === 3 && !ensureTargetBudgetValid()) {
+      return;
+    }
+
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
@@ -53,6 +75,10 @@ const QueryCreation = () => {
 
   const handleComplete = async () => {
     try {
+      if (currentStep === 3 && !ensureTargetBudgetValid()) {
+        return;
+      }
+
       console.log("Creating query flyer...", queryData);
       setLoading(t("queryCreation.creatingWait"));
 

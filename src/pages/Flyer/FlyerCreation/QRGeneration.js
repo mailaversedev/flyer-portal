@@ -4,7 +4,9 @@ import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
 
-import TargetBudget from "../../../components/Flyer/TargetBudget";
+import TargetBudget, {
+  validateTargetBudgetStep,
+} from "../../../components/Flyer/TargetBudget";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
 import "./QRGeneration.css";
@@ -209,6 +211,17 @@ const QRGeneration = () => {
 
   const handleNext = () => {
     if (currentStep === 2) {
+      const validation = validateTargetBudgetStep({
+        data: qrData,
+        t,
+      });
+      if (!validation.isValid) {
+        alert(
+          `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
+        );
+        return;
+      }
+
       setCurrentStep(3);
     }
   };
@@ -219,6 +232,17 @@ const QRGeneration = () => {
 
   const handleCreate = async () => {
     try {
+      const validation = validateTargetBudgetStep({
+        data: qrData,
+        t,
+      });
+      if (!validation.isValid) {
+        alert(
+          `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
+        );
+        return;
+      }
+
       setLoading(t("qrGeneration.creatingWait"));
 
       const uploadedFileUrls = await ApiService.uploadFilesFromData(qrData);

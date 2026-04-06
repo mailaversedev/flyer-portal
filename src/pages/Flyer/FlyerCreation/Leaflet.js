@@ -5,7 +5,9 @@ import { useLocation, useNavigate, useParams } from "react-router";
 
 import Step1Content from "../../../components/Flyer/Leaflet/Step1Content";
 import Step1ContentPro from "../../../components/Flyer/Leaflet/Step1ContentPro";
-import TargetBudget from "../../../components/Flyer/TargetBudget";
+import TargetBudget, {
+  validateTargetBudgetStep,
+} from "../../../components/Flyer/TargetBudget";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
 import "../../../components/Flyer/Leaflet/Step1Content.css";
@@ -272,6 +274,18 @@ const LeafletCreation = () => {
     }
 
     if (currentStep === 2) {
+      const validation = validateTargetBudgetStep({
+        data: leafletData,
+        isDirectUpload: location.state?.isDirectUpload,
+        t,
+      });
+      if (!validation.isValid) {
+        alert(
+          `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
+        );
+        return;
+      }
+
       setCurrentStep(3);
     }
   };

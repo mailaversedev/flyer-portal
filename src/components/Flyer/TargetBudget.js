@@ -9,6 +9,51 @@ const MIN_BUDGET = 1000;
 const MAX_BUDGET = 50000;
 const DEFAULT_BUDGET = 5000;
 
+export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) => {
+  const formData = {
+    district: data?.targetBudget?.district || data?.district || "",
+    propertyEstate:
+      data?.targetBudget?.propertyEstate || data?.propertyEstate || "",
+    targetedGroup:
+      data?.targetBudget?.targetedGroup || data?.targetedGroup || "",
+    budget: data?.targetBudget?.budget || data?.budget || DEFAULT_BUDGET,
+    paymentMethod:
+      data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
+  };
+
+  const missingFields = [];
+
+  if (isDirectUpload) {
+    if (!data?.header?.trim()) {
+      missingFields.push(t("targetBudget.header"));
+    }
+    if (!(data?.adContent || "").trim()) {
+      missingFields.push(t("targetBudget.adContent"));
+    }
+  }
+
+  if (!formData.district.trim()) {
+    missingFields.push(t("targetBudget.district"));
+  }
+  if (!formData.propertyEstate.trim()) {
+    missingFields.push(t("targetBudget.buildingName"));
+  }
+  if (!formData.targetedGroup.trim()) {
+    missingFields.push(t("targetBudget.targetedGroup"));
+  }
+  if (!formData.paymentMethod.trim()) {
+    missingFields.push(t("targetBudget.payment"));
+  }
+  if (!formData.budget || formData.budget < MIN_BUDGET) {
+    missingFields.push(t("targetBudget.budgetHkd"));
+  }
+
+  return {
+    isValid: missingFields.length === 0,
+    missingFields,
+  };
+};
+
 const TargetBudget = ({
   data,
   onUpdate,
@@ -199,6 +244,7 @@ const TargetBudget = ({
                   onChange={(e) =>
                     handleContentChange("header", e.target.value)
                   }
+                  required
                 />
               </div>
               <div className="form-group">
@@ -207,10 +253,11 @@ const TargetBudget = ({
                   className="form-input"
                   placeholder={t("targetBudget.adContentPlaceholder")}
                   rows={3}
-                  value={data.adContents || ""}
+                  value={data.adContent || ""}
                   onChange={(e) =>
-                    handleContentChange("adContents", e.target.value)
+                    handleContentChange("adContent", e.target.value)
                   }
+                  required
                   style={{
                     height: "auto",
                     paddingTop: "8px",
@@ -230,6 +277,7 @@ const TargetBudget = ({
                 className="form-select"
                 value={formData.district}
                 onChange={(e) => handleInputChange("district", e.target.value)}
+                required
               >
                 <option value="">{t("qrGeneration.pleaseSelect")}</option>
                 {districtOptions.map((district, idx) => (
@@ -270,6 +318,7 @@ const TargetBudget = ({
                 }
                 disabled={isLoadingBuildings || !formData.district}
                 style={{ width: "100%" }}
+                required
               >
                 <option value="">
                   {isLoadingBuildings
@@ -298,6 +347,7 @@ const TargetBudget = ({
               onChange={(e) =>
                 handleInputChange("targetedGroup", e.target.value)
               }
+              required
             />
 
             <div className="checkbox-options">
@@ -353,6 +403,7 @@ const TargetBudget = ({
                 value={formData.budget}
                 onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
                 className="budget-slider"
+                required
               />
               <div className="budget-display">
                 <span className="budget-amount">
@@ -393,6 +444,7 @@ const TargetBudget = ({
                     handleInputChange("paymentMethod", e.target.value)
                   }
                   style={{ width: "auto", marginRight: "8px" }}
+                  required
                 />
                 <span className="checkbox-text">
                   {t("targetBudget.creditCard")}
@@ -416,6 +468,7 @@ const TargetBudget = ({
                     handleInputChange("paymentMethod", e.target.value)
                   }
                   style={{ width: "auto", marginRight: "8px" }}
+                  required
                 />
                 <span className="checkbox-text">{t("targetBudget.bankTransfer")}</span>
               </label>
@@ -437,6 +490,7 @@ const TargetBudget = ({
                     handleInputChange("paymentMethod", e.target.value)
                   }
                   style={{ width: "auto", marginRight: "8px" }}
+                  required
                 />
                 <span className="checkbox-text">{t("targetBudget.fps")}</span>
               </label>
