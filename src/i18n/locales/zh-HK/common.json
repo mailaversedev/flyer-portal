@@ -1,6 +1,7 @@
 {
   "common": {
     "dashboard": "主頁",
+    "coupons": "優惠券",
     "marketplace": "市集",
     "flyer": "傳單",
     "wallet": "錢包",
@@ -78,6 +79,24 @@
   },
   "walletPage": {
     "title": "錢包頁面"
+  },
+  "couponLibraryPage": {
+    "title": "優惠券",
+    "subtitle": "查看所有由你的傳單建立並可重用的優惠券。",
+    "loading": "正在載入優惠券...",
+    "empty": "尚未建立任何優惠券。",
+    "type": "類型",
+    "offer": "優惠",
+    "description": "描述",
+    "promotionCode": "優惠碼",
+    "expiryDate": "到期日",
+    "assets": "素材",
+    "terms": "條款及細則",
+    "none": "沒有",
+    "noExpiry": "沒有到期日",
+    "couponFile": "優惠券檔案",
+    "qrCode": "QR Code",
+    "barcode": "條碼"
   },
   "flyerPage": {
     "title": "傳單派發類型",
@@ -279,6 +298,12 @@
     "itemDescriptionFallback": "商品描述",
     "offerValidUntil": "優惠有效至 {{date}}",
     "title": "優惠券建立器",
+    "savedCoupons": "重用現有優惠券",
+    "createNewCoupon": "建立新優惠券",
+    "loadingSavedCoupons": "正在載入已儲存優惠券...",
+    "libraryLoadError": "載入已儲存優惠券失敗",
+    "savedCouponFallback": "已儲存優惠券",
+    "libraryOptionWithDate": "{{title}}（到期日 {{date}}）",
     "couponType": "選擇優惠券種類",
     "percentageDiscount": "百分比折扣",
     "fixedDiscount": "固定金額折扣",

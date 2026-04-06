@@ -1,7 +1,13 @@
 import React from "react";
 import { NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, ShoppingBag, FileText, Wallet } from "lucide-react";
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  FileText,
+  Wallet,
+  Percent,
+} from "lucide-react";
 import "./Sidebar.css";
 
 const Sidebar = () => {
@@ -18,6 +24,11 @@ const Sidebar = () => {
       name: t("common.marketplace"),
       path: "/marketplace",
       icon: ShoppingBag,
+    },
+    {
+      name: t("common.coupons"),
+      path: "/coupons",
+      icon: Percent,
     },
     {
       name: t("common.flyer"),

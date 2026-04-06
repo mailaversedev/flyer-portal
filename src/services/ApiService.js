@@ -215,6 +215,12 @@ class ApiService {
     }
     return this.makeRequest(`/api/flyers?${queryString}`);
   }
+
+  // GET /api/company/me/coupons - Get reusable coupons for the current company
+  static async getCompanyCouponLibrary() {
+    return this.makeRequest("/api/company/me/coupons");
+  }
+
   // POST /api/file - Upload file/image
   static async uploadFile(file, category = "general") {
     const formData = new FormData();

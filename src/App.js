@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { useTranslation } from "react-i18next";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard/Dashboard";
+import Coupons from "./pages/Coupons/Coupons";
 import Marketplace from "./pages/Marketplace/Marketplace";
 import Flyer from "./pages/Flyer/Flyer";
 import LeafletCreation from "./pages/Flyer/FlyerCreation/Leaflet";
@@ -29,6 +30,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/coupons" element={<Coupons />} />
                     <Route path="/marketplace" element={<Marketplace />} />
                     <Route path="/flyer" element={<Flyer />} />
                     <Route

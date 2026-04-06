@@ -1,0 +1,119 @@
+.coupon-library-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.coupon-library-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.coupon-library-title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.coupon-library-subtitle {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.coupon-library-table-card {
+  background: #2a3447;
+  border: 1px solid #3a4553;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.coupon-library-table-container {
+  overflow-x: auto;
+}
+
+.coupon-library-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.coupon-library-table th {
+  background: #374151;
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #e5e7eb;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #4b5563;
+  white-space: nowrap;
+}
+
+.coupon-library-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #3a4553;
+  color: #e5e7eb;
+  vertical-align: top;
+}
+
+.coupon-library-table tbody tr:hover {
+  background: #374151;
+}
+
+.coupon-library-description,
+.coupon-library-terms {
+  min-width: 220px;
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coupon-library-assets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 150px;
+}
+
+.coupon-library-asset-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.18);
+  color: #c7d2fe;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.coupon-library-state {
+  padding: 40px 24px;
+  color: #cbd5e1;
+  text-align: center;
+}
+
+.coupon-library-error {
+  color: #fca5a5;
+}
+
+@media (max-width: 768px) {
+  .coupon-library-page {
+    gap: 20px;
+  }
+
+  .coupon-library-title {
+    font-size: 24px;
+  }
+
+  .coupon-library-description,
+  .coupon-library-terms {
+    min-width: 180px;
+    max-width: 240px;
+  }
+}

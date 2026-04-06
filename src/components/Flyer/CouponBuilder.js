@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Upload, Calendar, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+import ApiService from "../../services/ApiService";
+
 import "./CouponBuilder.css";
 
 const DigitalCoupon = ({
@@ -210,6 +213,44 @@ const CouponBuilder = ({ data, onUpdate }) => {
   const { t } = useTranslation();
   const couponData = data?.coupon || {};
   const hasCustomCouponPreview = Boolean(couponData.couponFile);
+  const [savedCoupons, setSavedCoupons] = useState([]);
+  const [selectedCouponId, setSelectedCouponId] = useState("");
+  const [isLoadingCoupons, setIsLoadingCoupons] = useState(false);
+  const [couponLoadError, setCouponLoadError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSavedCoupons = async () => {
+      setIsLoadingCoupons(true);
+      setCouponLoadError("");
+
+      try {
+        const response = await ApiService.getCompanyCouponLibrary();
+        if (!isMounted) {
+          return;
+        }
+
+        setSavedCoupons(Array.isArray(response?.data) ? response.data : []);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setCouponLoadError(error.message || t("couponBuilder.libraryLoadError"));
+      } finally {
+        if (isMounted) {
+          setIsLoadingCoupons(false);
+        }
+      }
+    };
+
+    loadSavedCoupons();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
 
   const handleInputChange = (field, value) => {
     const updatedData = {
@@ -219,6 +260,66 @@ const CouponBuilder = ({ data, onUpdate }) => {
     if (onUpdate) {
       onUpdate({ coupon: updatedData });
     }
+  };
+
+  const handleSavedCouponSelect = (event) => {
+    const { value } = event.target;
+    setSelectedCouponId(value);
+
+    if (!value) {
+      return;
+    }
+
+    const selectedCoupon = savedCoupons.find((coupon) => coupon.id === value);
+    if (!selectedCoupon) {
+      return;
+    }
+
+    if (onUpdate) {
+      onUpdate({
+        coupon: {
+          ...couponData,
+          couponType: selectedCoupon.couponType || "",
+          couponFile: selectedCoupon.couponFile || null,
+          qrCodeImage: selectedCoupon.qrCodeImage || null,
+          barcodeImage: selectedCoupon.barcodeImage || null,
+          termsConditions: selectedCoupon.termsConditions || "",
+          expiredDate: selectedCoupon.expiredDate || "",
+          discountValue: selectedCoupon.discountValue || "",
+          itemDescription: selectedCoupon.itemDescription || "",
+          promotionCode: selectedCoupon.promotionCode || "",
+        },
+      });
+    }
+  };
+
+  const getSavedCouponLabel = (coupon) => {
+    if (!coupon) {
+      return "";
+    }
+
+    let heading = coupon.itemDescription || "";
+
+    if (!heading) {
+      if (coupon.couponType === "percentage" && coupon.discountValue) {
+        heading = `${coupon.discountValue}% ${t("couponBuilder.off")}`;
+      } else if (coupon.couponType === "fixed" && coupon.discountValue) {
+        heading = `$${coupon.discountValue}`;
+      } else if (coupon.couponType === "buy_one_get_one") {
+        heading = t("couponBuilder.buyOneGetOne");
+      } else if (coupon.couponType === "free") {
+        heading = t("couponBuilder.free");
+      }
+    }
+
+    const suffix = coupon.expiredDate
+      ? t("couponBuilder.libraryOptionWithDate", {
+          title: heading || t("couponBuilder.savedCouponFallback"),
+          date: coupon.expiredDate,
+        })
+      : heading || t("couponBuilder.savedCouponFallback");
+
+    return suffix;
   };
 
   const handleFileUpload = (event) => {
@@ -257,6 +358,31 @@ const CouponBuilder = ({ data, onUpdate }) => {
           <h2 className="section-title">{t("couponBuilder.title")}</h2>
 
           <div className="form-section">
+            <div className="form-group">
+              <label className="form-label">{t("couponBuilder.savedCoupons")}</label>
+              <select
+                className="form-select"
+                value={selectedCouponId}
+                onChange={handleSavedCouponSelect}
+                disabled={isLoadingCoupons}
+              >
+                <option value="">{t("couponBuilder.createNewCoupon")}</option>
+                {savedCoupons.map((coupon) => (
+                  <option key={coupon.id} value={coupon.id}>
+                    {getSavedCouponLabel(coupon)}
+                  </option>
+                ))}
+              </select>
+              {isLoadingCoupons && (
+                <div className="field-helper-text">
+                  {t("couponBuilder.loadingSavedCoupons")}
+                </div>
+              )}
+              {!isLoadingCoupons && couponLoadError && (
+                <div className="field-helper-text error">{couponLoadError}</div>
+              )}
+            </div>
+
             <div className="form-group">
               <label className="form-label">{t("couponBuilder.couponType")}</label>
               <select

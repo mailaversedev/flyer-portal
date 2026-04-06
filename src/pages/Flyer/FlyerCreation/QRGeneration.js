@@ -245,10 +245,26 @@ const QRGeneration = () => {
 
       setLoading(t("qrGeneration.creatingWait"));
 
-      const uploadedFileUrls = await ApiService.uploadFilesFromData(qrData);
+      const uploadedFileUrls = await ApiService.uploadFilesFromData({
+        coverPhoto: qrData.coverPhoto,
+        couponFile: qrData.coupon?.couponFile,
+        qrCodeImage: qrData.coupon?.qrCodeImage,
+        barcodeImage: qrData.coupon?.barcodeImage,
+      });
       const finalQrData = {
         ...qrData,
-        ...uploadedFileUrls,
+        coverPhoto: uploadedFileUrls.coverPhoto || qrData.coverPhoto,
+        coupon: qrData.coupon
+          ? {
+              ...qrData.coupon,
+              couponFile:
+                uploadedFileUrls.couponFile || qrData.coupon.couponFile,
+              qrCodeImage:
+                uploadedFileUrls.qrCodeImage || qrData.coupon.qrCodeImage,
+              barcodeImage:
+                uploadedFileUrls.barcodeImage || qrData.coupon.barcodeImage,
+            }
+          : qrData.coupon,
       };
 
       const response = await ApiService.createFlyer({

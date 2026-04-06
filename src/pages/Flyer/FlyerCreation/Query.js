@@ -82,14 +82,27 @@ const QueryCreation = () => {
       console.log("Creating query flyer...", queryData);
       setLoading(t("queryCreation.creatingWait"));
 
-      // Upload only file fields and get their URLs
-      const uploadedFileUrls = await ApiService.uploadFilesFromData(queryData);
-      console.log("Files uploaded, URLs:", uploadedFileUrls);
+      const uploadedFileUrls = await ApiService.uploadFilesFromData({
+        coverPhoto: queryData.coverPhoto,
+        couponFile: queryData.coupon?.couponFile,
+        qrCodeImage: queryData.coupon?.qrCodeImage,
+        barcodeImage: queryData.coupon?.barcodeImage,
+      });
 
-      // Merge uploaded URLs with original data
       const finalQueryData = {
-        ...queryData, // All original data
-        ...uploadedFileUrls, // Override with uploaded file URLs
+        ...queryData,
+        coverPhoto: uploadedFileUrls.coverPhoto || queryData.coverPhoto,
+        coupon: queryData.coupon
+          ? {
+              ...queryData.coupon,
+              couponFile:
+                uploadedFileUrls.couponFile || queryData.coupon.couponFile,
+              qrCodeImage:
+                uploadedFileUrls.qrCodeImage || queryData.coupon.qrCodeImage,
+              barcodeImage:
+                uploadedFileUrls.barcodeImage || queryData.coupon.barcodeImage,
+            }
+          : queryData.coupon,
       };
 
       // Create the final flyer using the API

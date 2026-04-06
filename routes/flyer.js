@@ -8,6 +8,11 @@ const {
   cleanupExpiredFlyerJobs,
   scheduleFlyerJob,
 } = require("../services/flyerJobService");
+const {
+  isCompanyCouponAvailable,
+  mapCompanyCouponDoc,
+  syncCompanyCouponLibraryEntry,
+} = require("../services/companyCouponLibrary");
 
 const router = express.Router();
 const db = admin.firestore();
@@ -163,6 +168,16 @@ router.post("/flyer", authenticateToken, async (req, res) => {
 
       // Create Flyer
       transaction.set(flyerRef, flyerData);
+
+      if (flyerData.companyId) {
+        await syncCompanyCouponLibraryEntry({
+          db,
+          companyId: flyerData.companyId,
+          flyerId: flyerRef.id,
+          flyerData,
+          transaction,
+        });
+      }
 
       // Create Lottery Event
       const lotteryRef = db.collection("lottery").doc(flyerRef.id);
@@ -410,6 +425,84 @@ router.get("/company/:companyId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch company",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/company/me/coupons - Get reusable coupons for the authenticated company
+router.get("/company/me/coupons", authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Company ID is required",
+      });
+    }
+
+    const snapshot = await db
+      .collection("companies")
+      .doc(companyId)
+      .collection("coupons")
+      .orderBy("updatedAt", "desc")
+      .get();
+
+    res.status(200).json({
+      success: true,
+      data: snapshot.docs.map((doc) => mapCompanyCouponDoc(doc)),
+    });
+  } catch (error) {
+    console.error("Error fetching company coupons:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch company coupons",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/company/:companyId/coupons - Get public company coupon library
+router.get("/company/:companyId/coupons", async (req, res) => {
+  try {
+    const { companyId } = req.params;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing companyId",
+      });
+    }
+
+    const companyDoc = await db.collection("companies").doc(companyId).get();
+    if (!companyDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    const snapshot = await db
+      .collection("companies")
+      .doc(companyId)
+      .collection("coupons")
+      .orderBy("updatedAt", "desc")
+      .get();
+
+    const coupons = snapshot.docs
+      .map((doc) => mapCompanyCouponDoc(doc))
+      .filter((coupon) => isCompanyCouponAvailable(coupon));
+
+    res.status(200).json({
+      success: true,
+      data: coupons,
+    });
+  } catch (error) {
+    console.error("Error fetching company coupon library:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch company coupons",
       error: error.message,
     });
   }

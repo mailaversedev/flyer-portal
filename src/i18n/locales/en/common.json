@@ -1,6 +1,7 @@
 {
   "common": {
     "dashboard": "Dashboard",
+    "coupons": "Coupons",
     "marketplace": "Marketplace",
     "flyer": "Flyer",
     "wallet": "Wallet",
@@ -78,6 +79,24 @@
   },
   "walletPage": {
     "title": "Wallet Page"
+  },
+  "couponLibraryPage": {
+    "title": "Coupons",
+    "subtitle": "Review all reusable coupons created from your flyers.",
+    "loading": "Loading coupons...",
+    "empty": "No coupons created yet.",
+    "type": "Type",
+    "offer": "Offer",
+    "description": "Description",
+    "promotionCode": "Promotion Code",
+    "expiryDate": "Expiry Date",
+    "assets": "Assets",
+    "terms": "Terms & Conditions",
+    "none": "None",
+    "noExpiry": "No expiry",
+    "couponFile": "Coupon File",
+    "qrCode": "QR Code",
+    "barcode": "Barcode"
   },
   "flyerPage": {
     "title": "Types of Flyer Distribution",
@@ -279,6 +298,12 @@
     "itemDescriptionFallback": "Item Description",
     "offerValidUntil": "Offer valid until {{date}}",
     "title": "Coupon Builder",
+    "savedCoupons": "Reuse Existing Coupon",
+    "createNewCoupon": "Create new coupon",
+    "loadingSavedCoupons": "Loading saved coupons...",
+    "libraryLoadError": "Failed to load saved coupons",
+    "savedCouponFallback": "Saved coupon",
+    "libraryOptionWithDate": "{{title}} (expires {{date}})",
     "couponType": "Select Types of Coupon",
     "percentageDiscount": "Percentage Discount",
     "fixedDiscount": "Fixed Amount Discount",
