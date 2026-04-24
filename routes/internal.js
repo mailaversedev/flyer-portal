@@ -261,7 +261,14 @@ router.get("/buildings", authenticateToken, async (req, res) => {
 
     // Use native fetch (Node 18+)
     const response = await fetch(url);
-    const data = await response.json();
+    const rawBody = await response.text();
+
+    if (response.status !== 200) {
+      console.error("[buildings] Upstream status:", response.status, response.statusText);
+      console.error("[buildings] Upstream body:", rawBody);
+    }
+
+    const data = rawBody ? JSON.parse(rawBody) : null;
 
     res.status(200).json({
       success: true,
