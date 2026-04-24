@@ -32,15 +32,6 @@ export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) =>
     }
   }
 
-  if (!formData.district.trim()) {
-    missingFields.push(t("targetBudget.district"));
-  }
-  if (!formData.propertyEstate.trim()) {
-    missingFields.push(t("targetBudget.buildingName"));
-  }
-  if (!formData.targetedGroup.trim()) {
-    missingFields.push(t("targetBudget.targetedGroup"));
-  }
   if (!formData.paymentMethod.trim()) {
     missingFields.push(t("targetBudget.payment"));
   }
