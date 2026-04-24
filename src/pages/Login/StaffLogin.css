@@ -1,9 +1,12 @@
 .staff-login-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
+  align-items: flex-start;
+  min-height: 100vh;
   width: 100%;
+  padding: 96px 24px 32px;
+  box-sizing: border-box;
+  overflow-y: auto;
   background-color: #1a1f37;
   color: white;
   position: relative;
@@ -12,6 +15,7 @@
 .login-card {
   background-color: #2d3359; /* Slightly lighter than background */
   padding: 2rem;
+  margin: 0 auto;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 100%;
@@ -40,6 +44,10 @@
 }
 
 @media (max-width: 640px) {
+  .staff-login-container {
+    padding: 88px 16px 24px;
+  }
+
   .page-locale-switcher {
     top: 16px;
     right: 16px;
@@ -57,8 +65,7 @@
   }
 
   .login-card {
-    margin: 0 16px;
-    max-width: calc(100% - 32px);
+    max-width: 100%;
   }
 }
 
