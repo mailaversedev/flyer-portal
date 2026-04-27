@@ -8,6 +8,7 @@ import {
   Wallet,
   Percent,
   Shield,
+  Gift,
 } from "lucide-react";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./Sidebar.css";
@@ -16,43 +17,52 @@ const Sidebar = () => {
   const { t } = useTranslation();
   const showSuperAdminItem = isSuperAdmin();
 
-  const navigationItems = [
-    {
-      name: t("common.dashboard"),
-      path: "/dashboard",
-      icon: LayoutDashboard,
-      active: true,
-    },
-    {
-      name: t("common.marketplace"),
-      path: "/marketplace",
-      icon: ShoppingBag,
-    },
-    {
-      name: t("common.coupons"),
-      path: "/coupons",
-      icon: Percent,
-    },
-    {
-      name: t("common.flyer"),
-      path: "/flyer",
-      icon: FileText,
-    },
-    {
-      name: t("common.wallet"),
-      path: "/wallet",
-      icon: Wallet,
-    },
-    ...(showSuperAdminItem
-      ? [
-          {
-            name: t("common.platformAdmin"),
-            path: "/platform-admin",
-            icon: Shield,
-          },
-        ]
-      : []),
-  ];
+  const navigationItems = showSuperAdminItem
+    ? [
+        {
+          name: t("common.platformAdmin"),
+          path: "/platform-admin",
+          icon: Shield,
+        },
+        {
+          name: t("common.vouchers"),
+          path: "/platform-vouchers",
+          icon: Gift,
+        },
+        {
+          name: t("common.flyer"),
+          path: "/flyer",
+          icon: FileText,
+        },
+      ]
+    : [
+        {
+          name: t("common.dashboard"),
+          path: "/dashboard",
+          icon: LayoutDashboard,
+          active: true,
+        },
+        {
+          name: t("common.marketplace"),
+          path: "/marketplace",
+          icon: ShoppingBag,
+        },
+        {
+          name: t("common.coupons"),
+          path: "/coupons",
+          icon: Percent,
+        },
+        {
+          name: t("common.flyer"),
+          path: "/flyer",
+          icon: FileText,
+        },
+        {
+          name: t("common.wallet"),
+          path: "/wallet",
+          icon: Wallet,
+        },
+      ];
 
   return (
     <div className="sidebar">

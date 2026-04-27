@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router";
 import { useTranslation } from "react-i18next";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -12,8 +12,26 @@ import QRGeneration from "./pages/Flyer/FlyerCreation/QRGeneration";
 import StaffLogin from "./pages/Login/StaffLogin";
 import Profile from "./pages/Profile/Profile";
 import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
+import PlatformVouchers from "./pages/PlatformVouchers/PlatformVouchers";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+import { isSuperAdmin } from "./utils/AuthUtil";
 import "./App.css";
+
+const SuperAdminRedirect = ({ children }) => {
+  if (isSuperAdmin()) {
+    return <Navigate to="/platform-admin" replace />;
+  }
+
+  return children;
+};
+
+const DefaultHome = () => {
+  if (isSuperAdmin()) {
+    return <Navigate to="/platform-admin" replace />;
+  }
+
+  return <Dashboard />;
+};
 
 function App() {
   const { t } = useTranslation();
@@ -29,10 +47,31 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/coupons" element={<Coupons />} />
-                    <Route path="/marketplace" element={<Marketplace />} />
+                    <Route path="/" element={<DefaultHome />} />
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <SuperAdminRedirect>
+                          <Dashboard />
+                        </SuperAdminRedirect>
+                      }
+                    />
+                    <Route
+                      path="/coupons"
+                      element={
+                        <SuperAdminRedirect>
+                          <Coupons />
+                        </SuperAdminRedirect>
+                      }
+                    />
+                    <Route
+                      path="/marketplace"
+                      element={
+                        <SuperAdminRedirect>
+                          <Marketplace />
+                        </SuperAdminRedirect>
+                      }
+                    />
                     <Route path="/flyer" element={<Flyer />} />
                     <Route
                       path="/flyer/create/leaflet"
@@ -53,9 +92,14 @@ function App() {
                     />
                     <Route
                       path="/wallet"
-                      element={<div>{t("walletPage.title")}</div>}
+                      element={
+                        <SuperAdminRedirect>
+                          <div>{t("walletPage.title")}</div>
+                        </SuperAdminRedirect>
+                      }
                     />
                     <Route path="/platform-admin" element={<PlatformAdmin />} />
+                    <Route path="/platform-vouchers" element={<PlatformVouchers />} />
                     <Route path="/profile" element={<Profile />} />
                   </Routes>
                 </Layout>

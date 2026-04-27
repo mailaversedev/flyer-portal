@@ -228,6 +228,19 @@ class ApiService {
     );
   }
 
+  static async getAdminVouchers(limit = 100, direction = "desc") {
+    return this.makeRequest(
+      `/api/admin/vouchers?limit=${limit}&direction=${direction}`,
+    );
+  }
+
+  static async createAdminVoucher(voucherData) {
+    return this.makeRequest("/api/admin/vouchers", {
+      method: "POST",
+      body: JSON.stringify(voucherData),
+    });
+  }
+
   static async getAdminFlyers(limit = 100, direction = "desc") {
     return this.makeRequest(
       `/api/admin/flyers?limit=${limit}&direction=${direction}`,

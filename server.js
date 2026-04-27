@@ -23,6 +23,7 @@ const internalRoutes = require("./routes/internal");
 const couponRoutes = require("./routes/coupon");
 const metadataRoutes = require("./routes/metadata");
 const adminRoutes = require("./routes/admin");
+const voucherRoutes = require("./routes/voucher");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +41,7 @@ app.use("/api/internal", internalRoutes); // /api/internal
 app.use("/api", fileRoutes); // /api/file
 app.use("/api/lottery", lotteryRoutes); // /api/lottery
 app.use("/api", metadataRoutes); // /api/industries
+app.use("/api", voucherRoutes.router); // /api/vouchers
 
 // Protected Routes
 app.use("/api/admin", adminRoutes);

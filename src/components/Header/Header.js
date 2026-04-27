@@ -76,6 +76,8 @@ const Header = () => {
         return t("common.wallet");
       case "/platform-admin":
         return t("common.platformAdmin");
+      case "/platform-vouchers":
+        return t("common.vouchers");
       default:
         if (location.pathname.startsWith("/flyer/create")) {
           return t("header.createFlyer");
