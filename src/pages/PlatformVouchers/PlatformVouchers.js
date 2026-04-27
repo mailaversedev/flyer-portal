@@ -190,7 +190,7 @@ const PlatformVouchers = () => {
 
       const response = await ApiService.createAdminVoucher({
         merchant: formData.merchant.trim(),
-        merchantIcon: merchantIconUrl,
+        merchantIcon: merchantIconUrl ?? "",
         value: formData.value.trim(),
         cost: formData.cost,
         expiryDate: formData.expiryDate,
@@ -257,7 +257,6 @@ const PlatformVouchers = () => {
                   onChange={(event) =>
                     setMerchantIconFile(event.target.files?.[0] || null)
                   }
-                  required
                 />
               </label>
               <label>

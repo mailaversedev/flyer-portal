@@ -4,7 +4,7 @@
 
 .platform-vouchers-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 360px);
   gap: 24px;
   align-items: start;
 }
@@ -13,6 +13,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  max-width: 360px;
 }
 
 .platform-vouchers-form-card,
@@ -67,7 +68,7 @@
 
 .platform-vouchers-preview-surface--editor {
   margin-top: 20px;
-  min-height: 420px;
+  min-height: 340px;
 }
 
 .platform-vouchers-preview-surface--list {
