@@ -1,0 +1,50 @@
+.platform-admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.platform-admin-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.platform-admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  background: #2a3447;
+  border: 1px solid #3a4553;
+  border-radius: 16px;
+}
+
+.platform-admin-label {
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.platform-admin-value {
+  color: #ffffff;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.platform-admin-empty-cell {
+  padding: 20px;
+  text-align: center;
+}
+
+.platform-admin-text-cell {
+  max-width: 220px;
+  white-space: normal;
+}
+
+.table-loading {
+  padding: 24px;
+  color: #e5e7eb;
+}

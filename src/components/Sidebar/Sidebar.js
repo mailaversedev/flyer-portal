@@ -7,11 +7,14 @@ import {
   FileText,
   Wallet,
   Percent,
+  Shield,
 } from "lucide-react";
+import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./Sidebar.css";
 
 const Sidebar = () => {
   const { t } = useTranslation();
+  const showSuperAdminItem = isSuperAdmin();
 
   const navigationItems = [
     {
@@ -40,6 +43,15 @@ const Sidebar = () => {
       path: "/wallet",
       icon: Wallet,
     },
+    ...(showSuperAdminItem
+      ? [
+          {
+            name: t("common.platformAdmin"),
+            path: "/platform-admin",
+            icon: Shield,
+          },
+        ]
+      : []),
   ];
 
   return (

@@ -9,6 +9,7 @@ import i18n, {
   clearPendingLocale,
   normalizeLocale,
 } from "../../i18n";
+import { getStoredUser } from "../../utils/AuthUtil";
 
 import "./Header.css";
 
@@ -17,12 +18,15 @@ const Header = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [company, setCompany] = useState(null);
+  const [user, setUser] = useState(() => getStoredUser());
   const [selectedLocale, setSelectedLocale] = useState(
     normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
   );
 
   useEffect(() => {
     const handleStorageChange = () => {
+      setUser(getStoredUser());
+
       const storedCompany = localStorage.getItem("company");
       if (storedCompany) {
         try {
@@ -32,6 +36,9 @@ const Header = () => {
         } catch (e) {
           console.error("Failed to parse company info", e);
         }
+      } else {
+        setCompany(null);
+        ApiService.setCurrentCompany(null);
       }
     };
 
@@ -67,6 +74,8 @@ const Header = () => {
         return t("common.profile");
       case "/wallet":
         return t("common.wallet");
+      case "/platform-admin":
+        return t("common.platformAdmin");
       default:
         if (location.pathname.startsWith("/flyer/create")) {
           return t("header.createFlyer");
@@ -79,6 +88,9 @@ const Header = () => {
         return t("common.dashboard");
     }
   };
+
+  const accountLabel = company?.name || user?.displayName || user?.username || null;
+  const canOpenProfile = Boolean(company);
 
   const handleLocaleChange = async (event) => {
     const locale = event.target.value;
@@ -137,18 +149,18 @@ const Header = () => {
           <Bell size={20} />
         </button>
 
-        {company && (
+        {accountLabel && (
           <div 
             className="user-info" 
-            onClick={() => navigate("/profile")}
-            style={{ cursor: "pointer" }}
-            title={t("header.editProfile")}
+            onClick={canOpenProfile ? () => navigate("/profile") : undefined}
+            style={{ cursor: canOpenProfile ? "pointer" : "default" }}
+            title={canOpenProfile ? t("header.editProfile") : accountLabel}
           >
             <div className="user-avatar">
-              {company.icon ? (
+              {company?.icon ? (
                 <img
                   src={company.icon}
-                  alt={company.name}
+                  alt={accountLabel}
                   style={{
                     width: 28,
                     height: 28,
@@ -166,10 +178,10 @@ const Header = () => {
                     borderRadius: "50%",
                     backgroundColor: "#ccc",
                   }}
-                ></div>
+                />
               )}
             </div>
-            <span className="user-name">{company.name}</span>
+            <span className="user-name">{accountLabel}</span>
           </div>
         )}
 

@@ -11,6 +11,7 @@ import QueryCreation from "./pages/Flyer/FlyerCreation/Query";
 import QRGeneration from "./pages/Flyer/FlyerCreation/QRGeneration";
 import StaffLogin from "./pages/Login/StaffLogin";
 import Profile from "./pages/Profile/Profile";
+import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import "./App.css";
 
@@ -54,6 +55,7 @@ function App() {
                       path="/wallet"
                       element={<div>{t("walletPage.title")}</div>}
                     />
+                    <Route path="/platform-admin" element={<PlatformAdmin />} />
                     <Route path="/profile" element={<Profile />} />
                   </Routes>
                 </Layout>

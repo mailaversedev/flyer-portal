@@ -33,6 +33,7 @@
     "eject": "react-scripts eject",
     "server": "node server.js",
     "worker": "node worker.js",
+    "create:super-admin": "node setup/createSuperAdmin.js",
     "build:serve": "npm run build && npm run server"
   },
   "eslintConfig": {

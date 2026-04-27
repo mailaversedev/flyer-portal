@@ -216,6 +216,24 @@ class ApiService {
     return this.makeRequest(`/api/flyers?${queryString}`);
   }
 
+  static async getAdminUsers(limit = 100, direction = "desc") {
+    return this.makeRequest(
+      `/api/admin/users?limit=${limit}&direction=${direction}`,
+    );
+  }
+
+  static async getAdminCompanies(limit = 100, direction = "desc") {
+    return this.makeRequest(
+      `/api/admin/companies?limit=${limit}&direction=${direction}`,
+    );
+  }
+
+  static async getAdminFlyers(limit = 100, direction = "desc") {
+    return this.makeRequest(
+      `/api/admin/flyers?limit=${limit}&direction=${direction}`,
+    );
+  }
+
   // GET /api/company/me/coupons - Get reusable coupons for the current company
   static async getCompanyCouponLibrary() {
     return this.makeRequest("/api/company/me/coupons");

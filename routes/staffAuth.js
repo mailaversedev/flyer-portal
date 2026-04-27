@@ -17,6 +17,8 @@ const JWT_OPTIONS = {
   audience: "flyer-portal-staff",
 };
 
+const ALLOWED_STAFF_ROLES = new Set(["staff", "admin"]);
+
 // POST /register - Register a new staff user
 // Mounted at /api/auth/staff/register
 router.post("/register", async (req, res) => {
@@ -34,6 +36,7 @@ router.post("/register", async (req, res) => {
       companyNature,
       locale,
     } = req.body;
+    const requestedRole = typeof role === "string" ? role.trim() : "staff";
 
     // Validate required fields
     if (!username || !displayName || !password) {
@@ -48,6 +51,13 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Password must be at least 6 characters long",
+      });
+    }
+
+    if (!ALLOWED_STAFF_ROLES.has(requestedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid staff role",
       });
     }
 
@@ -98,7 +108,7 @@ router.post("/register", async (req, res) => {
         username: username,
         displayName: displayName,
         password: hashedPassword,
-        role: role || "staff",
+        role: requestedRole,
         companyId: companyId, // Link to company if created
         profile: {
           locale: locale || "en",

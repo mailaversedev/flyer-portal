@@ -47,6 +47,43 @@ Starts the Node.js API server from `server.js`.
 
 Starts the flyer job background worker from `worker.js`.
 
+## Super Admin Registration
+
+Super admin accounts should not be created through the public company onboarding form or the staff registration API.
+
+Use the setup script instead.
+
+Requirements:
+
+- `GOOGLE_APPLICATION_CREDENTIALS` points to a service account JSON file with Firestore access
+- dependencies are installed with `npm install`
+
+Run:
+
+```bash
+npm run create:super-admin -- \
+  --username platform-root \
+  --displayName "Platform Root" \
+  --password "change-this-password" \
+  --locale en
+```
+
+The script creates a `staffs` document with:
+
+- `role: "super-admin"`
+- `companyId: null`
+- `profile.locale` from `--locale` or `en`
+
+You can also provide values through environment variables:
+
+```bash
+SUPER_ADMIN_USERNAME=platform-root \
+SUPER_ADMIN_DISPLAY_NAME="Platform Root" \
+SUPER_ADMIN_PASSWORD="change-this-password" \
+SUPER_ADMIN_LOCALE=en \
+npm run create:super-admin
+```
+
 ## Heroku background jobs
 
 Flyer jobs are queued in Firestore and should be processed by a dedicated Heroku worker dyno.
