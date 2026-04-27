@@ -119,6 +119,8 @@
     "previewSubtitle": "預覽與手機應用程式中的禮券卡版面一致。",
     "listTitle": "禮券清單",
     "listSubtitle": "查看目前對用戶開放的禮券。",
+    "openCreate": "建立禮券",
+    "backToList": "返回禮券列表",
     "previewMerchant": "商戶名稱",
     "cashVoucher": "現金禮券",
     "merchant": "商戶",

@@ -24,6 +24,13 @@
   padding: 24px;
 }
 
+.platform-vouchers-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .platform-vouchers-header h2 {
   margin: 0;
   color: #fff;
@@ -52,12 +59,19 @@
 }
 
 .platform-vouchers-preview-surface {
-  margin-top: 20px;
-  min-height: 420px;
   border-radius: 16px;
   padding: 16px;
   display: flex;
   flex-direction: column;
+}
+
+.platform-vouchers-preview-surface--editor {
+  margin-top: 20px;
+  min-height: 420px;
+}
+
+.platform-vouchers-preview-surface--list {
+  min-height: 320px;
 }
 
 .platform-vouchers-preview-top {
@@ -144,33 +158,35 @@
   font-weight: 700;
 }
 
-.platform-vouchers-preview-meta {
+.platform-vouchers-card-grid {
   margin-top: 20px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
 }
 
-.platform-vouchers-preview-meta div {
-  padding: 14px;
+.platform-vouchers-cash-card {
+  min-width: 0;
+}
+
+.platform-vouchers-primary-button,
+.platform-vouchers-secondary-button {
+  border: none;
   border-radius: 12px;
-  background: #1f2937;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.platform-vouchers-preview-meta span {
-  color: #9ca3af;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+.platform-vouchers-primary-button {
+  background: #2563eb;
 }
 
-.platform-vouchers-preview-meta strong {
-  color: #ffffff;
-  font-size: 15px;
-  word-break: break-word;
+.platform-vouchers-secondary-button {
+  background: #374151;
 }
 
 .platform-vouchers-form {
@@ -229,46 +245,17 @@
   color: #e5e7eb;
 }
 
-.platform-vouchers-table-wrapper {
-  margin-top: 20px;
-  overflow-x: auto;
-}
-
-.platform-vouchers-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.platform-vouchers-table th,
-.platform-vouchers-table td {
-  padding: 12px;
-  border-bottom: 1px solid #3a4553;
-  text-align: left;
-  color: #e5e7eb;
-  white-space: nowrap;
-}
-
-.platform-vouchers-table th {
-  color: #9ca3af;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.platform-vouchers-table-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  object-fit: cover;
-  background: #ffffff;
-}
-
 @media (max-width: 1120px) {
   .platform-vouchers-grid {
     grid-template-columns: 1fr;
   }
 
-  .platform-vouchers-preview-meta {
+  .platform-vouchers-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .platform-vouchers-card-grid {
     grid-template-columns: 1fr;
   }
 }

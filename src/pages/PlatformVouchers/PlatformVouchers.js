@@ -38,6 +38,7 @@ const PlatformVouchers = () => {
   const [merchantIconFile, setMerchantIconFile] = useState(null);
   const [qrCodeFile, setQrCodeFile] = useState(null);
   const [merchantIconPreviewUrl, setMerchantIconPreviewUrl] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -84,6 +85,64 @@ const PlatformVouchers = () => {
   const previewValue = formData.value.trim() || "100";
   const previewCost = formData.cost.trim() || "50000";
   const previewExpiryDate = formatDate(formData.expiryDate) || "-";
+
+  const renderVoucherCard = (voucher, options = {}) => {
+    const { key, variant = "list" } = options;
+    const colors = Array.isArray(voucher.colors) && voucher.colors.length >= 2
+      ? voucher.colors
+      : [DEFAULT_FORM.primaryColor, DEFAULT_FORM.secondaryColor];
+    const merchant = voucher.merchant?.trim() || t("voucherAdminPage.previewMerchant");
+    const validity = voucher.validity || formatDate(voucher.expiryDate) || "-";
+    const surfaceClassName =
+      variant === "editor"
+        ? "platform-vouchers-preview-surface platform-vouchers-preview-surface--editor"
+        : "platform-vouchers-preview-surface platform-vouchers-preview-surface--list";
+
+    return (
+      <article key={key} className="platform-vouchers-cash-card">
+        <div
+          className={surfaceClassName}
+          style={{
+            background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`,
+          }}
+        >
+          <div className="platform-vouchers-preview-top">
+            <div className="platform-vouchers-preview-icon-shell">
+              {voucher.merchantIcon ? (
+                <img
+                  src={voucher.merchantIcon}
+                  alt={merchant}
+                  className="platform-vouchers-preview-icon"
+                />
+              ) : (
+                <span className="platform-vouchers-preview-icon-fallback">
+                  {merchant.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span className="platform-vouchers-preview-merchant">{merchant}</span>
+          </div>
+
+          <div className="platform-vouchers-preview-title">
+            {t("voucherAdminPage.cashVoucher")}
+          </div>
+
+          <div className="platform-vouchers-preview-bottom">
+            <div className="platform-vouchers-preview-price-row">
+              <span className="platform-vouchers-preview-currency">$</span>
+              <span className="platform-vouchers-preview-value">{voucher.value}</span>
+            </div>
+            <div className="platform-vouchers-preview-validity">
+              {t("voucherAdminPage.validUntil", { date: validity })}
+            </div>
+            <button type="button" className="platform-vouchers-preview-cta">
+              {t("voucherAdminPage.previewCta", { count: voucher.cost })}
+            </button>
+          </div>
+        </div>
+      </article>
+    );
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -151,6 +210,7 @@ const PlatformVouchers = () => {
       setMerchantIconFile(null);
       setQrCodeFile(null);
       await loadVouchers();
+      setIsCreating(false);
     } catch (submitError) {
       console.error("Failed to create voucher", submitError);
       setError(submitError.message || t("voucherAdminPage.createError"));
@@ -161,199 +221,154 @@ const PlatformVouchers = () => {
 
   return (
     <div className="platform-vouchers-page">
-      <div className="platform-vouchers-grid">
-        <section className="platform-vouchers-form-card">
-          <div className="platform-vouchers-header">
-            <h2>{t("voucherAdminPage.createTitle")}</h2>
-            <p>{t("voucherAdminPage.createSubtitle")}</p>
+      {isCreating ? (
+        <div className="platform-vouchers-grid">
+          <section className="platform-vouchers-form-card">
+            <div className="platform-vouchers-header-row">
+              <div className="platform-vouchers-header">
+                <h2>{t("voucherAdminPage.createTitle")}</h2>
+                <p>{t("voucherAdminPage.createSubtitle")}</p>
+              </div>
+              <button
+                type="button"
+                className="platform-vouchers-secondary-button"
+                onClick={() => {
+                  setError("");
+                  setIsCreating(false);
+                }}
+              >
+                {t("voucherAdminPage.backToList")}
+              </button>
+            </div>
+
+            {error ? <div className="platform-vouchers-message error">{error}</div> : null}
+            {success ? <div className="platform-vouchers-message success">{success}</div> : null}
+
+            <form className="platform-vouchers-form" onSubmit={handleSubmit}>
+              <label className="full-width">
+                <span>{t("voucherAdminPage.merchant")}</span>
+                <input name="merchant" value={formData.merchant} onChange={handleChange} required />
+              </label>
+              <label className="full-width">
+                <span>{t("voucherAdminPage.merchantIcon")}</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={(event) =>
+                    setMerchantIconFile(event.target.files?.[0] || null)
+                  }
+                  required
+                />
+              </label>
+              <label>
+                <span>{t("voucherAdminPage.value")}</span>
+                <input name="value" value={formData.value} onChange={handleChange} required />
+              </label>
+              <label>
+                <span>{t("voucherAdminPage.cost")}</span>
+                <input name="cost" type="number" min="1" value={formData.cost} onChange={handleChange} required />
+              </label>
+              <label>
+                <span>{t("voucherAdminPage.expiryDate")}</span>
+                <input name="expiryDate" type="date" value={formData.expiryDate} onChange={handleChange} required />
+              </label>
+              <label>
+                <span>{t("voucherAdminPage.totalNumber")}</span>
+                <input name="totalNumber" type="number" min="1" value={formData.totalNumber} onChange={handleChange} required />
+              </label>
+              <label className="full-width">
+                <span>{t("voucherAdminPage.promotionCode")}</span>
+                <input name="promotionCode" value={formData.promotionCode} onChange={handleChange} />
+              </label>
+              <label>
+                <span>{t("voucherAdminPage.primaryColor")}</span>
+                <input name="primaryColor" type="color" value={formData.primaryColor} onChange={handleChange} />
+              </label>
+              <label>
+                <span>{t("voucherAdminPage.secondaryColor")}</span>
+                <input name="secondaryColor" type="color" value={formData.secondaryColor} onChange={handleChange} />
+              </label>
+              <label className="full-width">
+                <span>{t("voucherAdminPage.qrCode")}</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) => setQrCodeFile(event.target.files?.[0] || null)}
+                />
+              </label>
+              <label className="full-width">
+                <span>{t("voucherAdminPage.terms")}</span>
+                <textarea name="terms" rows="5" value={formData.terms} onChange={handleChange} required />
+              </label>
+              <button type="submit" className="platform-vouchers-submit" disabled={submitting}>
+                {submitting ? t("voucherAdminPage.submitting") : t("voucherAdminPage.submit")}
+              </button>
+            </form>
+          </section>
+
+          <div className="platform-vouchers-side-column">
+            <section className="platform-vouchers-preview-card">
+              <div className="platform-vouchers-header">
+                <h2>{t("voucherAdminPage.previewTitle")}</h2>
+                <p>{t("voucherAdminPage.previewSubtitle")}</p>
+              </div>
+
+              {renderVoucherCard(
+                {
+                  merchant: previewMerchant,
+                  merchantIcon: merchantIconPreviewUrl,
+                  value: previewValue,
+                  cost: previewCost,
+                  validity: previewExpiryDate,
+                  colors: [formData.primaryColor, formData.secondaryColor],
+                },
+                { variant: "editor" },
+              )}
+            </section>
+          </div>
+        </div>
+      ) : (
+        <section className="platform-vouchers-list-card">
+          <div className="platform-vouchers-header-row">
+            <div className="platform-vouchers-header">
+              <h2>{t("voucherAdminPage.listTitle")}</h2>
+              <p>{t("voucherAdminPage.listSubtitle")}</p>
+            </div>
+            <button
+              type="button"
+              className="platform-vouchers-primary-button"
+              onClick={() => {
+                setError("");
+                setSuccess("");
+                setIsCreating(true);
+              }}
+            >
+              {t("voucherAdminPage.openCreate")}
+            </button>
           </div>
 
           {error ? <div className="platform-vouchers-message error">{error}</div> : null}
           {success ? <div className="platform-vouchers-message success">{success}</div> : null}
 
-          <form className="platform-vouchers-form" onSubmit={handleSubmit}>
-            <label className="full-width">
-              <span>{t("voucherAdminPage.merchant")}</span>
-              <input name="merchant" value={formData.merchant} onChange={handleChange} required />
-            </label>
-            <label className="full-width">
-              <span>{t("voucherAdminPage.merchantIcon")}</span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                onChange={(event) =>
-                  setMerchantIconFile(event.target.files?.[0] || null)
-                }
-                required
-              />
-            </label>
-            <label>
-              <span>{t("voucherAdminPage.value")}</span>
-              <input name="value" value={formData.value} onChange={handleChange} required />
-            </label>
-            <label>
-              <span>{t("voucherAdminPage.cost")}</span>
-              <input name="cost" type="number" min="1" value={formData.cost} onChange={handleChange} required />
-            </label>
-            <label>
-              <span>{t("voucherAdminPage.expiryDate")}</span>
-              <input name="expiryDate" type="date" value={formData.expiryDate} onChange={handleChange} required />
-            </label>
-            <label>
-              <span>{t("voucherAdminPage.totalNumber")}</span>
-              <input name="totalNumber" type="number" min="1" value={formData.totalNumber} onChange={handleChange} required />
-            </label>
-            <label className="full-width">
-              <span>{t("voucherAdminPage.promotionCode")}</span>
-              <input name="promotionCode" value={formData.promotionCode} onChange={handleChange} />
-            </label>
-            <label>
-              <span>{t("voucherAdminPage.primaryColor")}</span>
-              <input name="primaryColor" type="color" value={formData.primaryColor} onChange={handleChange} />
-            </label>
-            <label>
-              <span>{t("voucherAdminPage.secondaryColor")}</span>
-              <input name="secondaryColor" type="color" value={formData.secondaryColor} onChange={handleChange} />
-            </label>
-            <label className="full-width">
-              <span>{t("voucherAdminPage.qrCode")}</span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={(event) => setQrCodeFile(event.target.files?.[0] || null)}
-              />
-            </label>
-            <label className="full-width">
-              <span>{t("voucherAdminPage.terms")}</span>
-              <textarea name="terms" rows="5" value={formData.terms} onChange={handleChange} required />
-            </label>
-            <button type="submit" className="platform-vouchers-submit" disabled={submitting}>
-              {submitting ? t("voucherAdminPage.submitting") : t("voucherAdminPage.submit")}
-            </button>
-          </form>
+          {loading ? (
+            <div className="platform-vouchers-state">{t("voucherAdminPage.loading")}</div>
+          ) : vouchers.length === 0 ? (
+            <div className="platform-vouchers-state">{t("voucherAdminPage.empty")}</div>
+          ) : (
+            <div className="platform-vouchers-card-grid">
+              {vouchers.map((voucher) =>
+                renderVoucherCard(
+                  {
+                    ...voucher,
+                    validity: formatDate(voucher.expiryDate),
+                  },
+                  { key: voucher.id, variant: "list" },
+                ),
+              )}
+            </div>
+          )}
         </section>
-
-        <div className="platform-vouchers-side-column">
-          <section className="platform-vouchers-preview-card">
-            <div className="platform-vouchers-header">
-              <h2>{t("voucherAdminPage.previewTitle")}</h2>
-              <p>{t("voucherAdminPage.previewSubtitle")}</p>
-            </div>
-
-            <div
-              className="platform-vouchers-preview-surface"
-              style={{
-                background: `linear-gradient(135deg, ${formData.primaryColor}, ${formData.secondaryColor})`,
-              }}
-            >
-              <div className="platform-vouchers-preview-top">
-                <div className="platform-vouchers-preview-icon-shell">
-                  {merchantIconPreviewUrl ? (
-                    <img
-                      src={merchantIconPreviewUrl}
-                      alt={previewMerchant}
-                      className="platform-vouchers-preview-icon"
-                    />
-                  ) : (
-                    <span className="platform-vouchers-preview-icon-fallback">
-                      {previewMerchant.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <span className="platform-vouchers-preview-merchant">
-                  {previewMerchant}
-                </span>
-              </div>
-
-              <div className="platform-vouchers-preview-title">
-                {t("voucherAdminPage.cashVoucher")}
-              </div>
-
-              <div className="platform-vouchers-preview-bottom">
-                <div className="platform-vouchers-preview-price-row">
-                  <span className="platform-vouchers-preview-currency">$</span>
-                  <span className="platform-vouchers-preview-value">{previewValue}</span>
-                </div>
-                <div className="platform-vouchers-preview-validity">
-                  {t("voucherAdminPage.validUntil", { date: previewExpiryDate })}
-                </div>
-                <button type="button" className="platform-vouchers-preview-cta">
-                  {t("voucherAdminPage.previewCta", { count: previewCost })}
-                </button>
-              </div>
-            </div>
-
-            <div className="platform-vouchers-preview-meta">
-              <div>
-                <span>{t("voucherAdminPage.totalNumber")}</span>
-                <strong>{formData.totalNumber.trim() || "-"}</strong>
-              </div>
-              <div>
-                <span>{t("voucherAdminPage.promotionCode")}</span>
-                <strong>{formData.promotionCode.trim() || "-"}</strong>
-              </div>
-              <div>
-                <span>{t("voucherAdminPage.qrCode")}</span>
-                <strong>{qrCodeFile ? t("voucherAdminPage.qrAvailable") : "-"}</strong>
-              </div>
-            </div>
-          </section>
-
-          <section className="platform-vouchers-list-card">
-            <div className="platform-vouchers-header">
-              <h2>{t("voucherAdminPage.listTitle")}</h2>
-              <p>{t("voucherAdminPage.listSubtitle")}</p>
-            </div>
-
-            {loading ? (
-              <div className="platform-vouchers-state">{t("voucherAdminPage.loading")}</div>
-            ) : vouchers.length === 0 ? (
-              <div className="platform-vouchers-state">{t("voucherAdminPage.empty")}</div>
-            ) : (
-              <div className="platform-vouchers-table-wrapper">
-                <table className="platform-vouchers-table">
-                  <thead>
-                    <tr>
-                      <th>{t("voucherAdminPage.merchantIcon")}</th>
-                      <th>{t("voucherAdminPage.merchant")}</th>
-                      <th>{t("voucherAdminPage.value")}</th>
-                      <th>{t("voucherAdminPage.cost")}</th>
-                      <th>{t("voucherAdminPage.expiryDate")}</th>
-                      <th>{t("voucherAdminPage.totalNumber")}</th>
-                      <th>{t("voucherAdminPage.promotionCode")}</th>
-                      <th>{t("voucherAdminPage.qrCode")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vouchers.map((voucher) => (
-                      <tr key={voucher.id}>
-                        <td>
-                          {voucher.merchantIcon ? (
-                            <img
-                              src={voucher.merchantIcon}
-                              alt={voucher.merchant}
-                              className="platform-vouchers-table-icon"
-                            />
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td>{voucher.merchant}</td>
-                        <td>{voucher.value}</td>
-                        <td>{voucher.cost}</td>
-                        <td>{formatDate(voucher.expiryDate)}</td>
-                        <td>{voucher.totalNumber}</td>
-                        <td>{voucher.promotionCode || "-"}</td>
-                        <td>{voucher.qrCode ? t("voucherAdminPage.qrAvailable") : "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
