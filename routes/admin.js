@@ -173,12 +173,11 @@ router.post("/vouchers", async (req, res) => {
     if (
       !normalizedValue ||
       !normalizedMerchant ||
-      !normalizedMerchantIcon ||
       !normalizedTerms
     ) {
       return res.status(400).json({
         success: false,
-        message: "Value, merchant, merchant icon, and terms are required",
+        message: "Value, merchant, and terms are required",
       });
     }
 
