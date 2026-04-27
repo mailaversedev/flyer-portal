@@ -115,8 +115,12 @@
   "voucherAdminPage": {
     "createTitle": "Create Voucher",
     "createSubtitle": "Publish redeemable platform vouchers for the mobile app.",
+    "previewTitle": "Live Preview",
+    "previewSubtitle": "Matches the voucher card layout shown in the mobile app.",
     "listTitle": "Voucher Inventory",
     "listSubtitle": "Review the vouchers currently exposed to users.",
+    "previewMerchant": "Merchant Name",
+    "cashVoucher": "Cash Voucher",
     "merchant": "Merchant",
     "merchantIcon": "Merchant Icon",
     "value": "Voucher Value",
@@ -137,7 +141,9 @@
     "loadError": "Failed to load vouchers.",
     "uploadError": "Failed to upload QR code.",
     "uploadMerchantIconError": "Failed to upload merchant icon.",
-    "qrAvailable": "Uploaded"
+    "qrAvailable": "Uploaded",
+    "validUntil": "Valid until {{date}}",
+    "previewCta": "{{count}} TOKENS"
   },
   "couponLibraryPage": {
     "title": "Coupons",

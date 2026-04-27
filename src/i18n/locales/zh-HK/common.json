@@ -115,8 +115,12 @@
   "voucherAdminPage": {
     "createTitle": "建立禮券",
     "createSubtitle": "發佈可供手機應用程式兌換的平台禮券。",
+    "previewTitle": "即時預覽",
+    "previewSubtitle": "預覽與手機應用程式中的禮券卡版面一致。",
     "listTitle": "禮券清單",
     "listSubtitle": "查看目前對用戶開放的禮券。",
+    "previewMerchant": "商戶名稱",
+    "cashVoucher": "現金禮券",
     "merchant": "商戶",
     "merchantIcon": "商戶圖示",
     "value": "禮券面值",
@@ -137,7 +141,9 @@
     "loadError": "載入禮券失敗。",
     "uploadError": "上傳 QR Code 失敗。",
     "uploadMerchantIconError": "上傳商戶圖示失敗。",
-    "qrAvailable": "已上傳"
+    "qrAvailable": "已上傳",
+    "validUntil": "有效至 {{date}}",
+    "previewCta": "{{count}} 代幣"
   },
   "couponLibraryPage": {
     "title": "優惠券",
