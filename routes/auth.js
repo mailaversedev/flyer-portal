@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
 
 const router = express.Router();
 const db = admin.firestore();
@@ -13,6 +14,110 @@ const JWT_OPTIONS = {
   expiresIn: "24h",
   issuer: "flyer-portal",
   audience: "flyer-portal-users",
+};
+
+const RESET_OTP_COLLECTION = "passwordResetOtps";
+
+const normalizeEmail = (value = "") => value.trim().toLowerCase();
+
+const isValidEmail = (value = "") => /\S+@\S+\.\S+/.test(value);
+
+const generateOtp = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
+
+const createMailTransport = () =>
+  nodemailer.createTransport({
+    host: "mail.privateemail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: "hi@mailaverse.io",
+      pass: process.env.MAILAVERSE_SMTP_PASSWORD,
+    },
+  });
+
+const sendPasswordResetEmail = async (email, otp) => {
+  const transporter = createMailTransport();
+
+  await transporter.sendMail({
+    from: "hi@mailaverse.io",
+    to: email,
+    subject: "[Mailaverse] Your Password Reset Code",
+    text: `Your password reset code is: ${otp}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; padding: 32px 0;">
+        <div style="max-width: 420px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 32px 28px 24px 28px;">
+          <div style="text-align: center; margin-bottom: 18px;">
+            <img src='https://mailaverse.io/logo192.png' alt='Mailaverse Logo' style='width: 48px; height: 48px; margin-bottom: 8px;' />
+            <h2 style="margin: 0; color: #1a1a1a; font-size: 1.4rem; font-weight: 600;">Mailaverse Password Reset</h2>
+          </div>
+          <p style="font-size: 1.05rem; color: #333; margin-bottom: 18px; text-align: center;">Use the following code to reset your password:</p>
+          <div style="text-align: center; margin-bottom: 24px;">
+            <span style="display: inline-block; font-size: 2.1rem; letter-spacing: 0.18em; color: #2d7ff9; background: #f0f6ff; border-radius: 8px; padding: 12px 32px; font-weight: bold; border: 1px solid #e0e7ef;">${otp}</span>
+          </div>
+          <p style="font-size: 0.98rem; color: #666; text-align: center; margin-bottom: 0;">This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+          <div style="margin-top: 32px; text-align: center; color: #b0b0b0; font-size: 0.92rem;">&copy; ${new Date().getFullYear()} Mailaverse</div>
+        </div>
+      </div>
+    `,
+  });
+};
+
+const findUserByEmail = async (email) => {
+  const directQuery = await db
+    .collection("users")
+    .where("email", "==", email)
+    .limit(1)
+    .get();
+
+  if (!directQuery.empty) {
+    return directQuery.docs[0];
+  }
+
+  const profileQuery = await db
+    .collection("users")
+    .where("profile.email", "==", email)
+    .limit(1)
+    .get();
+
+  return profileQuery.empty ? null : profileQuery.docs[0];
+};
+
+const storePasswordResetOtp = async (email, otp) => {
+  await db.collection(RESET_OTP_COLLECTION).doc(email).set({
+    otp,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+    used: false,
+    createdAt: new Date().toISOString(),
+  });
+};
+
+const consumePasswordResetOtp = async (email, otp) => {
+  const otpRef = db.collection(RESET_OTP_COLLECTION).doc(email);
+  const otpDoc = await otpRef.get();
+
+  if (!otpDoc.exists) {
+    throw new Error("OTP not found");
+  }
+
+  const data = otpDoc.data();
+
+  if (data.used) {
+    throw new Error("OTP already used");
+  }
+
+  if (Date.now() > data.expiresAt) {
+    throw new Error("OTP expired");
+  }
+
+  if (data.otp !== otp) {
+    throw new Error("Invalid OTP");
+  }
+
+  await otpRef.update({
+    used: true,
+    usedAt: new Date().toISOString(),
+  });
 };
 
 // JWT Middleware for protected routes (optional usage)
@@ -43,13 +148,22 @@ const authenticateToken = (req, res, next) => {
 // POST /api/auth/register - Register a new user
 router.post("/register", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, email } = req.body;
+    const normalizedUsername = username?.trim();
+    const normalizedEmail = normalizeEmail(email);
 
     // Validate required fields
-    if (!username || !password) {
+    if (!normalizedUsername || !password || !normalizedEmail) {
       return res.status(400).json({
         success: false,
-        message: "Username and password are required",
+        message: "Username, email, and password are required",
+      });
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid email address is required",
       });
     }
 
@@ -64,7 +178,7 @@ router.post("/register", async (req, res) => {
     // Check if user already exists
     const existingUserQuery = await db
       .collection("users")
-      .where("username", "==", username)
+      .where("username", "==", normalizedUsername)
       .limit(1)
       .get();
 
@@ -75,13 +189,23 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    const existingEmailUser = await findUserByEmail(normalizedEmail);
+
+    if (existingEmailUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+
     // Hash the password
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create user data
     const userData = {
-      username: username,
+      username: normalizedUsername,
+      email: normalizedEmail,
       password: hashedPassword,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -100,6 +224,7 @@ router.post("/register", async (req, res) => {
       const walletData = {
         userId: userRef.id,
         username: userData.username,
+        email: userData.email,
         balance: 0,
         currency: "TOKEN", // Default currency - you can modify this
         createdAt: timestamp,
@@ -139,6 +264,121 @@ router.post("/register", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error during registration",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/auth/request-password-reset - Request a password reset OTP
+router.post("/request-password-reset", async (req, res) => {
+  try {
+    const normalizedEmail = normalizeEmail(req.body?.email);
+
+    if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid email address is required",
+      });
+    }
+
+    const userDoc = await findUserByEmail(normalizedEmail);
+
+    if (!userDoc || userDoc.data()?.isActive === false) {
+      return res.status(200).json({
+        success: true,
+        message:
+          "If an account exists for this email, a password reset code has been sent.",
+      });
+    }
+
+    const otp = generateOtp();
+    await storePasswordResetOtp(normalizedEmail, otp);
+    await sendPasswordResetEmail(normalizedEmail, otp);
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists for this email, a password reset code has been sent.",
+    });
+  } catch (error) {
+    console.error("Error requesting password reset:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error during password reset request",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/auth/reset-password - Reset password with email OTP
+router.post("/reset-password", async (req, res) => {
+  try {
+    const normalizedEmail = normalizeEmail(req.body?.email);
+    const otp = req.body?.otp?.toString().trim();
+    const newPassword = req.body?.newPassword;
+
+    if (!normalizedEmail || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, OTP, and new password are required",
+      });
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid email address is required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    await consumePasswordResetOtp(normalizedEmail, otp);
+
+    const userDoc = await findUserByEmail(normalizedEmail);
+
+    if (!userDoc || userDoc.data()?.isActive === false) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await db.collection("users").doc(userDoc.id).update({
+      password: hashedPassword,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    const clientSafeErrors = new Set([
+      "OTP not found",
+      "OTP already used",
+      "OTP expired",
+      "Invalid OTP",
+    ]);
+
+    if (clientSafeErrors.has(error.message)) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    console.error("Error resetting password:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error during password reset",
       error: error.message,
     });
   }
