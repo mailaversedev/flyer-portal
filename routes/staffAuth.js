@@ -11,6 +11,10 @@ const db = admin.firestore();
 // JWT Secret - In production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || "flyer-portal-secret-key-2024";
 
+const normalizeEmail = (value = "") => value.trim().toLowerCase();
+
+const isValidEmail = (value = "") => /\S+@\S+\.\S+/.test(value);
+
 const JWT_OPTIONS = {
   expiresIn: "12h", // Staff tokens might have different expiry
   issuer: "flyer-portal",
@@ -25,6 +29,7 @@ router.post("/register", async (req, res) => {
   try {
     const {
       username,
+      email,
       displayName,
       password,
       companyDisplayName,
@@ -37,12 +42,20 @@ router.post("/register", async (req, res) => {
       locale,
     } = req.body;
     const requestedRole = typeof role === "string" ? role.trim() : "staff";
+    const normalizedEmail = normalizeEmail(email);
 
     // Validate required fields
-    if (!username || !displayName || !password) {
+    if (!username || !normalizedEmail || !displayName || !password) {
       return res.status(400).json({
         success: false,
-        message: "Username, display name, and password are required",
+        message: "Username, email, display name, and password are required",
+      });
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid email address is required",
       });
     }
 
@@ -72,6 +85,19 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "Staff username already exists",
+      });
+    }
+
+    const existingStaffEmailQuery = await db
+      .collection("staffs")
+      .where("email", "==", normalizedEmail)
+      .limit(1)
+      .get();
+
+    if (!existingStaffEmailQuery.empty) {
+      return res.status(409).json({
+        success: false,
+        message: "Staff email already exists",
       });
     }
 
@@ -106,6 +132,7 @@ router.post("/register", async (req, res) => {
       const staffRef = db.collection("staffs").doc();
       const staffData = {
         username: username,
+        email: normalizedEmail,
         displayName: displayName,
         password: hashedPassword,
         role: requestedRole,
@@ -132,6 +159,7 @@ router.post("/register", async (req, res) => {
     const responseData = {
       id: result.staffId,
       username: result.staffData.username,
+      email: result.staffData.email,
       displayName: result.staffData.displayName,
       role: result.staffData.role,
       companyId: result.companyId,

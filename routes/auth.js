@@ -70,21 +70,12 @@ const findUserByEmail = async (email) => {
     .limit(1)
     .get();
 
-  if (!directQuery.empty) {
-    return directQuery.docs[0];
-  }
-
-  const profileQuery = await db
-    .collection("users")
-    .where("profile.email", "==", email)
-    .limit(1)
-    .get();
-
-  return profileQuery.empty ? null : profileQuery.docs[0];
+  return directQuery.empty ? null : directQuery.docs[0];
 };
 
 const storePasswordResetOtp = async (email, otp) => {
   await db.collection(RESET_OTP_COLLECTION).doc(email).set({
+    email,
     otp,
     expiresAt: Date.now() + 10 * 60 * 1000,
     used: false,

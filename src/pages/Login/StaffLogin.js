@@ -9,6 +9,7 @@ const StaffLogin = () => {
   const { t } = useTranslation();
   const [isRegistering, setIsRegistering] = useState(false);
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [companyDisplayName, setCompanyDisplayName] = useState("");
@@ -83,6 +84,7 @@ const StaffLogin = () => {
 
         response = await ApiService.registerStaff({
           username,
+          email,
           password,
           displayName,
           companyDisplayName,
@@ -207,6 +209,18 @@ const StaffLogin = () => {
 
           {isRegistering && (
             <>
+              <div className="form-group">
+                <label htmlFor="email">{t("login.email")}</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("login.enterEmail")}
+                  required
+                />
+              </div>
+
               <div className="form-group">
                 <label htmlFor="displayName">{t("login.displayName")}</label>
                 <input
