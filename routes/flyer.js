@@ -210,7 +210,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     // The actual wallet distribution will now happen asynchronously in the flyer job background worker.
     const distributionAmount = Math.max(
       0,
-      Math.floor(pool * eventUsagePercent * eventCostPercent),
+      Math.floor(pool * (1 - eventUsagePercent) * (1 - eventCostPercent)),
     );
 
     let amountPerUser = 0;
