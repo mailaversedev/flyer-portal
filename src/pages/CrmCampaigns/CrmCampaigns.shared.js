@@ -220,7 +220,6 @@ export function CrmCampaignHero({ onCreateCampaign, onRefresh }) {
   return (
     <div className="crm-campaigns-hero">
       <div>
-        <p className="crm-campaigns-eyebrow">Super Admin CRM</p>
         <h1>CRM Email Campaigns</h1>
         <p className="crm-campaigns-subtitle">
           Review created campaigns first, then open the composer when you are
