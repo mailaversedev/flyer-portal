@@ -5,6 +5,7 @@
     "marketplace": "市集",
     "flyer": "傳單",
     "vouchers": "禮券",
+    "crmCampaigns": "CRM 電郵活動",
     "wallet": "錢包",
     "platformAdmin": "平台管理",
     "profile": "公司資料",
@@ -17,7 +18,7 @@
     "logout": "登出"
   },
   "header": {
-    "flyerTypes": "傳單派發類型",
+    "flyerTypes": "建立電子傳單",
     "createFlyer": "建立傳單",
     "editFlyer": "編輯傳單",
     "editProfile": "編輯資料",

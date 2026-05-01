@@ -12,8 +12,10 @@ import QRGeneration from "./pages/Flyer/FlyerCreation/QRGeneration";
 import StaffLogin from "./pages/Login/StaffLogin";
 import Profile from "./pages/Profile/Profile";
 import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
-import PlatformVouchers from "./pages/PlatformVouchers/PlatformVouchers";
-import CrmCampaigns from "./pages/CrmCampaigns/CrmCampaigns";
+import PlatformVouchersListPage from "./pages/PlatformVouchers/PlatformVouchersListPage";
+import PlatformVouchersCreatePage from "./pages/PlatformVouchers/PlatformVouchersCreatePage";
+import CrmCampaignListPage from "./pages/CrmCampaigns/CrmCampaignListPage";
+import CrmCampaignCreatePage from "./pages/CrmCampaigns/CrmCampaignCreatePage";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import { isSuperAdmin } from "./utils/AuthUtil";
 import "./App.css";
@@ -100,8 +102,10 @@ function App() {
                       }
                     />
                     <Route path="/platform-admin" element={<PlatformAdmin />} />
-                    <Route path="/platform-vouchers" element={<PlatformVouchers />} />
-                    <Route path="/crm-campaigns" element={<CrmCampaigns />} />
+                    <Route path="/platform-vouchers" element={<PlatformVouchersListPage />} />
+                    <Route path="/platform-vouchers/create" element={<PlatformVouchersCreatePage />} />
+                    <Route path="/crm-campaigns" element={<CrmCampaignListPage />} />
+                    <Route path="/crm-campaigns/create" element={<CrmCampaignCreatePage />} />
                     <Route path="/profile" element={<Profile />} />
                   </Routes>
                 </Layout>

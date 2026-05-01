@@ -77,7 +77,11 @@ const Header = () => {
       case "/platform-admin":
         return t("common.platformAdmin");
       case "/platform-vouchers":
+      case "/platform-vouchers/create":
         return t("common.vouchers");
+      case "/crm-campaigns":
+      case "/crm-campaigns/create":
+        return t("common.crmCampaigns");
       default:
         if (location.pathname.startsWith("/flyer/create")) {
           return t("header.createFlyer");

@@ -5,6 +5,7 @@
     "marketplace": "Marketplace",
     "flyer": "Flyer",
     "vouchers": "Vouchers",
+    "crmCampaigns": "CRM Campaigns",
     "wallet": "Wallet",
     "platformAdmin": "Platform Admin",
     "profile": "Company Profile",
@@ -17,9 +18,9 @@
     "logout": "Logout"
   },
   "header": {
-    "flyerTypes": "Types of Flyer Distribution",
-    "createFlyer": "Create Your Flyer",
-    "editFlyer": "Edit Flyer",
+    "flyerTypes": "Create Your Flyer",
+    "createFlyer": "Create Your Leaflet",
+    "editFlyer": "Edit Leaflet",
     "editProfile": "Edit Profile",
     "notifications": "Notifications"
   },

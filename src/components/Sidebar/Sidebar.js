@@ -31,7 +31,7 @@ const Sidebar = () => {
           icon: Gift,
         },
         {
-          name: "CRM Campaigns",
+          name: t("common.crmCampaigns"),
           path: "/crm-campaigns",
           icon: Mail,
         },
