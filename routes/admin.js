@@ -17,6 +17,7 @@ const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
 const CRM_EMAIL_SUBJECT_MAX_LENGTH = 160;
 const CRM_EMAIL_HTML_MAX_LENGTH = 200000;
+const SIMPLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const requireSuperAdmin = (req, res, next) => {
   if (req.user?.role !== "super-admin") {
@@ -109,6 +110,7 @@ router.post("/crm-email-campaigns", async (req, res) => {
   try {
     const subject = normalizeString(req.body?.subject);
     const html = `${req.body?.html || ""}`.trim();
+    const testRecipientEmail = normalizeString(req.body?.testRecipientEmail).toLowerCase();
 
     if (!subject) {
       return res.status(400).json({
@@ -138,9 +140,17 @@ router.post("/crm-email-campaigns", async (req, res) => {
       });
     }
 
+    if (testRecipientEmail && !SIMPLE_EMAIL_RE.test(testRecipientEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Test recipient email must be a valid email address",
+      });
+    }
+
     const campaign = await enqueueCrmEmailCampaign({
       subject,
       html,
+      testRecipientEmail,
       createdBy: {
         id: req.user?.userId || req.user?.id || "",
         username: req.user?.username || "",
@@ -150,7 +160,9 @@ router.post("/crm-email-campaigns", async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "CRM email campaign queued successfully",
+      message: testRecipientEmail
+        ? "CRM test email queued successfully"
+        : "CRM email campaign queued successfully",
       data: campaign,
     });
   } catch (error) {

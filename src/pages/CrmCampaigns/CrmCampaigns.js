@@ -1,20 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router";
 import {
+  Bold,
+  Copy,
+  Eraser,
   Eye,
+  Italic,
+  Link as LinkIcon,
   List,
   ListOrdered,
   LoaderCircle,
   Mail,
+  Plus,
+  Quote,
   RefreshCcw,
   Send,
   Underline,
-  Italic,
-  Bold,
-  Link as LinkIcon,
-  Quote,
-  Eraser,
-  Copy,
 } from "lucide-react";
 
 import ApiService from "../../services/ApiService";
@@ -36,10 +37,19 @@ const DEFAULT_TEMPLATE = `
   </section>
 `;
 
+const EMPTY_PREVIEW_TEMPLATE = `
+  <section style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 48px 24px; color: #111827; text-align: center;">
+    <h1 style="margin: 0 0 12px; font-size: 28px; line-height: 1.2;">Select a campaign</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #4b5563;">Choose an existing campaign below or open the composer to build a new one.</p>
+  </section>
+`;
+
 const EMPTY_SUMMARY = {
   totalContacts: 0,
   eligibleEmailContacts: 0,
 };
+
+const SIMPLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const formatDateTime = (value) => {
   if (!value) {
@@ -125,8 +135,11 @@ const CrmCampaigns = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [testRecipientEmail, setTestRecipientEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [testSubmitting, setTestSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -230,6 +243,44 @@ const CrmCampaigns = () => {
     return <Navigate to="/platform-admin" replace />;
   }
 
+  const resetDraft = () => {
+    setSubject("");
+    setHtml(DEFAULT_TEMPLATE.trim());
+    setTestRecipientEmail("");
+    setError("");
+    setSuccess("");
+  };
+
+  const validateDraft = ({ requireTestRecipient = false } = {}) => {
+    const trimmedSubject = subject.trim();
+    const trimmedTestRecipientEmail = testRecipientEmail.trim().toLowerCase();
+
+    if (!trimmedSubject) {
+      setError("Email subject is required.");
+      return null;
+    }
+
+    if (!stripHtml(html)) {
+      setError("Email content is required.");
+      return null;
+    }
+
+    if (requireTestRecipient && !trimmedTestRecipientEmail) {
+      setError("A test recipient email is required.");
+      return null;
+    }
+
+    if (trimmedTestRecipientEmail && !SIMPLE_EMAIL_RE.test(trimmedTestRecipientEmail)) {
+      setError("Test recipient email must be a valid email address.");
+      return null;
+    }
+
+    return {
+      trimmedSubject,
+      trimmedTestRecipientEmail,
+    };
+  };
+
   const applyEditorCommand = (command, value = null) => {
     if (!editorRef.current) {
       return;
@@ -265,21 +316,15 @@ const CrmCampaigns = () => {
     setError("");
     setSuccess("");
 
-    const trimmedSubject = subject.trim();
-    if (!trimmedSubject) {
-      setError("Email subject is required.");
-      return;
-    }
-
-    if (!stripHtml(html)) {
-      setError("Email content is required.");
+    const draft = validateDraft();
+    if (!draft) {
       return;
     }
 
     try {
       setSubmitting(true);
       const response = await ApiService.createCrmEmailCampaign({
-        subject: trimmedSubject,
+        subject: draft.trimmedSubject,
         html,
       });
 
@@ -289,6 +334,7 @@ const CrmCampaigns = () => {
 
       setSuccess("CRM email campaign queued successfully.");
       setSelectedCampaignId(response.data.id);
+      setIsComposerOpen(false);
       await Promise.all([
         loadDashboard(),
         loadSelectedCampaign(response.data.id),
@@ -301,12 +347,133 @@ const CrmCampaigns = () => {
     }
   };
 
+  const handleSendTestEmail = async () => {
+    setError("");
+    setSuccess("");
+
+    const draft = validateDraft({ requireTestRecipient: true });
+    if (!draft) {
+      return;
+    }
+
+    try {
+      setTestSubmitting(true);
+      const response = await ApiService.createCrmEmailCampaign({
+        subject: draft.trimmedSubject,
+        html,
+        testRecipientEmail: draft.trimmedTestRecipientEmail,
+      });
+
+      if (!response?.success || !response?.data) {
+        throw new Error(response?.message || "Failed to queue CRM test email.");
+      }
+
+      setSuccess(`CRM test email queued for ${draft.trimmedTestRecipientEmail}.`);
+      setSelectedCampaignId(response.data.id);
+      setIsComposerOpen(false);
+      await Promise.all([
+        loadDashboard(),
+        loadSelectedCampaign(response.data.id),
+      ]);
+    } catch (submitError) {
+      console.error("Failed to queue CRM test email", submitError);
+      setError(submitError.message || "Failed to queue CRM test email.");
+    } finally {
+      setTestSubmitting(false);
+    }
+  };
+
   const handleReuseCampaign = (campaign) => {
     setSubject(campaign.subject || "");
     setHtml(campaign.html || DEFAULT_TEMPLATE.trim());
+    setTestRecipientEmail(campaign.testRecipientEmail || "");
+    setIsComposerOpen(true);
     setSuccess(`Loaded "${campaign.subject || "Untitled campaign"}" into the editor.`);
     setError("");
   };
+
+  const previewSubject = isComposerOpen
+    ? subject.trim() || "Email subject preview"
+    : selectedCampaign?.subject?.trim() || "Select a campaign to preview";
+  const previewHtml = isComposerOpen
+    ? html
+    : selectedCampaign?.html || EMPTY_PREVIEW_TEMPLATE.trim();
+
+  const renderSelectedCampaignSection = ({
+    title = "Selected campaign",
+    description = "Poll delivery progress without leaving the composer.",
+  } = {}) => (
+    <section className="crm-campaigns-card crm-campaigns-selected-card">
+      <div className="crm-campaigns-section-header">
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+      </div>
+
+      {selectedCampaign ? (
+        <div className="crm-campaigns-selected-content">
+          <div className="crm-campaigns-selected-row">
+            <span>Subject</span>
+            <strong>{selectedCampaign.subject || "Untitled campaign"}</strong>
+          </div>
+          <div className="crm-campaigns-selected-row">
+            <span>Status</span>
+            <span className={`crm-campaigns-status crm-campaigns-status--${getStatusTone(selectedCampaign.status)}`}>
+              {getStatusLabel(selectedCampaign.status)}
+            </span>
+          </div>
+          <div className="crm-campaigns-selected-row">
+            <span>Type</span>
+            <strong>{selectedCampaign.mode === "test" ? "Test email" : "Bulk campaign"}</strong>
+          </div>
+          {selectedCampaign.testRecipientEmail ? (
+            <div className="crm-campaigns-selected-row">
+              <span>Test recipient</span>
+              <strong>{selectedCampaign.testRecipientEmail}</strong>
+            </div>
+          ) : null}
+          <div className="crm-campaigns-selected-grid">
+            <div>
+              <span>Total</span>
+              <strong>{selectedCampaign.totalRecipients || 0}</strong>
+            </div>
+            <div>
+              <span>Sent</span>
+              <strong>{selectedCampaign.sentCount || 0}</strong>
+            </div>
+            <div>
+              <span>Failed</span>
+              <strong>{selectedCampaign.failedCount || 0}</strong>
+            </div>
+            <div>
+              <span>Pending</span>
+              <strong>{selectedCampaign.pendingCount || 0}</strong>
+            </div>
+          </div>
+          <div className="crm-campaigns-selected-row">
+            <span>Created</span>
+            <strong>{formatDateTime(selectedCampaign.createdAt)}</strong>
+          </div>
+          <div className="crm-campaigns-selected-row">
+            <span>Completed</span>
+            <strong>{formatDateTime(selectedCampaign.completedAt)}</strong>
+          </div>
+          <div className="crm-campaigns-selected-row">
+            <span>Created by</span>
+            <strong>{selectedCampaign.createdBy?.username || "-"}</strong>
+          </div>
+          {selectedCampaign.lastError ? (
+            <div className="crm-campaigns-inline-alert">
+              Last error: {selectedCampaign.lastError}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="crm-campaigns-empty-state">Select a campaign to inspect its status.</div>
+      )}
+    </section>
+  );
 
   const renderCampaignCard = (campaign) => {
     const isSelected = campaign.id === selectedCampaignId;
@@ -329,6 +496,15 @@ const CrmCampaigns = () => {
             <span className={`crm-campaigns-status crm-campaigns-status--${getStatusTone(campaign.status)}`}>
               {getStatusLabel(campaign.status)}
             </span>
+          </div>
+
+          <div className="crm-campaigns-list-meta">
+            <span className="crm-campaigns-list-mode">
+              {campaign.mode === "test" ? "Test email" : "Bulk campaign"}
+            </span>
+            {campaign.testRecipientEmail ? (
+              <span className="crm-campaigns-list-recipient">{campaign.testRecipientEmail}</span>
+            ) : null}
           </div>
 
           <div className="crm-campaigns-list-stats">
@@ -358,19 +534,32 @@ const CrmCampaigns = () => {
           <p className="crm-campaigns-eyebrow">Super Admin CRM</p>
           <h1>CRM Email Campaigns</h1>
           <p className="crm-campaigns-subtitle">
-            Compose promotional email HTML, preview the final output, queue the
-            campaign, and monitor delivery progress from one screen.
+            Review created campaigns first, then open the composer when you are
+            ready to draft a new bulk email or queue a single-recipient test.
           </p>
         </div>
 
-        <button
-          type="button"
-          className="crm-campaigns-secondary-button"
-          onClick={() => loadDashboard()}
-        >
-          <RefreshCcw size={16} />
-          Refresh
-        </button>
+        <div className="crm-campaigns-hero-actions">
+          <button
+            type="button"
+            className="crm-campaigns-secondary-button"
+            onClick={() => loadDashboard()}
+          >
+            <RefreshCcw size={16} />
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="crm-campaigns-primary-button"
+            onClick={() => {
+              resetDraft();
+              setIsComposerOpen(true);
+            }}
+          >
+            <Plus size={16} />
+            Create new campaign
+          </button>
+        </div>
       </div>
 
       <div className="crm-campaigns-summary-grid">
@@ -392,174 +581,155 @@ const CrmCampaigns = () => {
       {success ? <div className="crm-campaigns-message success">{success}</div> : null}
 
       <div className="crm-campaigns-grid">
-        <section className="crm-campaigns-card crm-campaigns-composer-card">
-          <div className="crm-campaigns-section-header">
-            <div>
-              <h2>Compose campaign</h2>
-              <p>Use the rich editor to produce the HTML that will be sent to recipients.</p>
+        {isComposerOpen ? (
+          <section className="crm-campaigns-card crm-campaigns-composer-card">
+            <div className="crm-campaigns-section-header">
+              <div>
+                <h2>Compose campaign</h2>
+                <p>Use the rich editor to produce the HTML for a bulk campaign or a single-recipient test email.</p>
+              </div>
             </div>
-          </div>
 
-          <form className="crm-campaigns-form" onSubmit={handleSubmit}>
-            <label className="crm-campaigns-field">
-              <span>Subject</span>
-              <input
-                type="text"
-                value={subject}
-                onChange={(event) => setSubject(event.target.value)}
-                placeholder="Example: April promotion for Mailaverse customers"
-                maxLength={160}
-                required
-              />
-            </label>
+            <form className="crm-campaigns-form" onSubmit={handleSubmit}>
+              <label className="crm-campaigns-field">
+                <span>Subject</span>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
+                  placeholder="Example: April promotion for Mailaverse customers"
+                  maxLength={160}
+                  required
+                />
+              </label>
 
-            <div className="crm-campaigns-editor-shell">
-              <div className="crm-campaigns-toolbar">
-                <select defaultValue="" onChange={handleFormatBlock}>
-                  <option value="">Format</option>
-                  <option value="p">Paragraph</option>
-                  <option value="h1">Heading 1</option>
-                  <option value="h2">Heading 2</option>
-                  <option value="blockquote">Quote</option>
-                </select>
-                <button type="button" onClick={() => applyEditorCommand("bold")} aria-label="Bold">
-                  <Bold size={16} />
-                </button>
-                <button type="button" onClick={() => applyEditorCommand("italic")} aria-label="Italic">
-                  <Italic size={16} />
-                </button>
-                <button type="button" onClick={() => applyEditorCommand("underline")} aria-label="Underline">
-                  <Underline size={16} />
-                </button>
-                <button type="button" onClick={() => applyEditorCommand("insertUnorderedList")} aria-label="Bullet list">
-                  <List size={16} />
-                </button>
-                <button type="button" onClick={() => applyEditorCommand("insertOrderedList")} aria-label="Numbered list">
-                  <ListOrdered size={16} />
-                </button>
-                <button type="button" onClick={() => applyEditorCommand("formatBlock", "blockquote")} aria-label="Quote">
-                  <Quote size={16} />
-                </button>
-                <button type="button" onClick={handleInsertLink} aria-label="Insert link">
-                  <LinkIcon size={16} />
-                </button>
-                <button type="button" onClick={() => applyEditorCommand("removeFormat")} aria-label="Clear formatting">
-                  <Eraser size={16} />
-                </button>
+              <label className="crm-campaigns-field">
+                <span>Test recipient</span>
+                <div className="crm-campaigns-inline-field-row">
+                  <input
+                    type="email"
+                    value={testRecipientEmail}
+                    onChange={(event) => setTestRecipientEmail(event.target.value)}
+                    placeholder="example@domain.com"
+                  />
+                  <button
+                    type="button"
+                    className="crm-campaigns-ghost-button"
+                    onClick={handleSendTestEmail}
+                    disabled={testSubmitting || submitting || loading}
+                  >
+                    {testSubmitting ? <LoaderCircle size={16} className="crm-campaigns-spin" /> : <Mail size={16} />}
+                    {testSubmitting ? "Queueing test..." : "Send test"}
+                  </button>
+                </div>
+              </label>
+
+              <div className="crm-campaigns-editor-shell">
+                <div className="crm-campaigns-toolbar">
+                  <select defaultValue="" onChange={handleFormatBlock}>
+                    <option value="">Format</option>
+                    <option value="p">Paragraph</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="blockquote">Quote</option>
+                  </select>
+                  <button type="button" onClick={() => applyEditorCommand("bold")} aria-label="Bold">
+                    <Bold size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyEditorCommand("italic")} aria-label="Italic">
+                    <Italic size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyEditorCommand("underline")} aria-label="Underline">
+                    <Underline size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyEditorCommand("insertUnorderedList")} aria-label="Bullet list">
+                    <List size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyEditorCommand("insertOrderedList")} aria-label="Numbered list">
+                    <ListOrdered size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyEditorCommand("formatBlock", "blockquote")} aria-label="Quote">
+                    <Quote size={16} />
+                  </button>
+                  <button type="button" onClick={handleInsertLink} aria-label="Insert link">
+                    <LinkIcon size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyEditorCommand("removeFormat")} aria-label="Clear formatting">
+                    <Eraser size={16} />
+                  </button>
+                </div>
+
+                <div
+                  ref={editorRef}
+                  className="crm-campaigns-editor"
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={(event) => setHtml(event.currentTarget.innerHTML)}
+                />
               </div>
 
-              <div
-                ref={editorRef}
-                className="crm-campaigns-editor"
-                contentEditable
-                suppressContentEditableWarning
-                onInput={(event) => setHtml(event.currentTarget.innerHTML)}
-              />
-            </div>
-
-            <div className="crm-campaigns-form-actions">
-              <button
-                type="button"
-                className="crm-campaigns-secondary-button"
-                onClick={() => {
-                  setSubject("");
-                  setHtml(DEFAULT_TEMPLATE.trim());
-                  setSuccess("");
-                  setError("");
-                }}
-              >
-                Reset draft
-              </button>
-              <button type="submit" className="crm-campaigns-primary-button" disabled={submitting || loading}>
-                {submitting ? <LoaderCircle size={16} className="crm-campaigns-spin" /> : <Send size={16} />}
-                {submitting ? "Queueing..." : "Queue campaign"}
-              </button>
-            </div>
-          </form>
-        </section>
+              <div className="crm-campaigns-form-actions">
+                <div className="crm-campaigns-form-action-group">
+                  <button
+                    type="button"
+                    className="crm-campaigns-secondary-button"
+                    onClick={() => {
+                      setIsComposerOpen(false);
+                      setError("");
+                      setSuccess("");
+                    }}
+                  >
+                    Back to campaigns
+                  </button>
+                  <button
+                    type="button"
+                    className="crm-campaigns-secondary-button"
+                    onClick={resetDraft}
+                  >
+                    Reset draft
+                  </button>
+                </div>
+                <button type="submit" className="crm-campaigns-primary-button" disabled={submitting || testSubmitting || loading}>
+                  {submitting ? <LoaderCircle size={16} className="crm-campaigns-spin" /> : <Send size={16} />}
+                  {submitting ? "Queueing..." : "Queue campaign"}
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : (
+          renderSelectedCampaignSection({
+            title: "Created campaign",
+            description: "Open the composer only when you want to draft a new message. The selected created campaign stays front and center by default.",
+          })
+        )}
 
         <div className="crm-campaigns-side-column">
           <section className="crm-campaigns-card crm-campaigns-preview-card">
             <div className="crm-campaigns-section-header">
               <div>
                 <h2>Preview</h2>
-                <p>The preview uses the HTML that will be sent by the backend.</p>
+                <p>
+                  {isComposerOpen
+                    ? "The preview uses the draft HTML that will be sent by the backend."
+                    : "The preview uses the currently selected created campaign."}
+                </p>
               </div>
               <Eye size={18} />
             </div>
 
             <div className="crm-campaigns-preview-subject">
               <Mail size={16} />
-              <span>{subject.trim() || "Email subject preview"}</span>
+              <span>{previewSubject}</span>
             </div>
 
             <iframe
               title="CRM campaign preview"
               className="crm-campaigns-preview-frame"
-              srcDoc={buildPreviewDocument(html)}
+              srcDoc={buildPreviewDocument(previewHtml)}
             />
           </section>
 
-          <section className="crm-campaigns-card crm-campaigns-selected-card">
-            <div className="crm-campaigns-section-header">
-              <div>
-                <h2>Selected campaign</h2>
-                <p>Poll delivery progress without leaving the composer.</p>
-              </div>
-            </div>
-
-            {selectedCampaign ? (
-              <div className="crm-campaigns-selected-content">
-                <div className="crm-campaigns-selected-row">
-                  <span>Subject</span>
-                  <strong>{selectedCampaign.subject || "Untitled campaign"}</strong>
-                </div>
-                <div className="crm-campaigns-selected-row">
-                  <span>Status</span>
-                  <span className={`crm-campaigns-status crm-campaigns-status--${getStatusTone(selectedCampaign.status)}`}>
-                    {getStatusLabel(selectedCampaign.status)}
-                  </span>
-                </div>
-                <div className="crm-campaigns-selected-grid">
-                  <div>
-                    <span>Total</span>
-                    <strong>{selectedCampaign.totalRecipients || 0}</strong>
-                  </div>
-                  <div>
-                    <span>Sent</span>
-                    <strong>{selectedCampaign.sentCount || 0}</strong>
-                  </div>
-                  <div>
-                    <span>Failed</span>
-                    <strong>{selectedCampaign.failedCount || 0}</strong>
-                  </div>
-                  <div>
-                    <span>Pending</span>
-                    <strong>{selectedCampaign.pendingCount || 0}</strong>
-                  </div>
-                </div>
-                <div className="crm-campaigns-selected-row">
-                  <span>Created</span>
-                  <strong>{formatDateTime(selectedCampaign.createdAt)}</strong>
-                </div>
-                <div className="crm-campaigns-selected-row">
-                  <span>Completed</span>
-                  <strong>{formatDateTime(selectedCampaign.completedAt)}</strong>
-                </div>
-                <div className="crm-campaigns-selected-row">
-                  <span>Created by</span>
-                  <strong>{selectedCampaign.createdBy?.username || "-"}</strong>
-                </div>
-                {selectedCampaign.lastError ? (
-                  <div className="crm-campaigns-inline-alert">
-                    Last error: {selectedCampaign.lastError}
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="crm-campaigns-empty-state">Select a campaign to inspect its status.</div>
-            )}
-          </section>
+          {isComposerOpen ? renderSelectedCampaignSection() : null}
         </div>
       </div>
 

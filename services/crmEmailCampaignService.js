@@ -22,6 +22,10 @@ const CRM_EMAIL_JOB_LEASE_MS = Math.max(
   Number(process.env.CRM_EMAIL_JOB_LEASE_MS) || 10 * 60 * 1000,
 );
 
+function normalizeRecipientEmail(email) {
+  return `${email || ""}`.trim().toLowerCase();
+}
+
 function getCurrentIsoTimestamp() {
   return new Date().toISOString();
 }
@@ -44,6 +48,7 @@ function serializeCampaign(doc) {
   return {
     id: doc.id,
     subject: data.subject || "",
+    mode: data.mode || "campaign",
     status: data.status || "queued",
     totalRecipients: Number(data.totalRecipients) || 0,
     pendingCount: Number(data.pendingCount) || 0,
@@ -56,6 +61,7 @@ function serializeCampaign(doc) {
     completedAt: data.completedAt || null,
     lastError: data.lastError || "",
     createdBy: data.createdBy || null,
+    testRecipientEmail: data.testRecipientEmail || "",
     html: data.html || "",
   };
 }
@@ -109,7 +115,20 @@ async function getCrmEmailCampaign(campaignId) {
   return serializeCampaign(campaignDoc);
 }
 
-async function buildRecipientList() {
+async function buildRecipientList({ testRecipientEmail = "" } = {}) {
+  const normalizedTestRecipientEmail = normalizeRecipientEmail(testRecipientEmail);
+
+  if (normalizedTestRecipientEmail) {
+    return [
+      {
+        email: normalizedTestRecipientEmail,
+        name: "",
+        sourceContactId: null,
+        isTestRecipient: true,
+      },
+    ];
+  }
+
   const snapshot = await db
     .collection(CRM_CONTACTS_COLLECTION)
     .where("channels.email", "==", true)
@@ -119,7 +138,7 @@ async function buildRecipientList() {
 
   snapshot.docs.forEach((doc) => {
     const data = doc.data() || {};
-    const email = `${data.email || ""}`.trim().toLowerCase();
+    const email = normalizeRecipientEmail(data.email);
 
     if (!email || deduped.has(email)) {
       return;
@@ -147,8 +166,16 @@ async function commitWriteBatch(operations) {
   await batch.commit();
 }
 
-async function enqueueCrmEmailCampaign({ subject, html, createdBy = null }) {
-  const recipients = await buildRecipientList();
+async function enqueueCrmEmailCampaign({
+  subject,
+  html,
+  createdBy = null,
+  testRecipientEmail = "",
+}) {
+  const normalizedTestRecipientEmail = normalizeRecipientEmail(testRecipientEmail);
+  const recipients = await buildRecipientList({
+    testRecipientEmail: normalizedTestRecipientEmail,
+  });
 
   if (recipients.length === 0) {
     throw new Error("No CRM contacts with a valid email address are available");
@@ -156,10 +183,12 @@ async function enqueueCrmEmailCampaign({ subject, html, createdBy = null }) {
 
   const timestamp = getCurrentIsoTimestamp();
   const campaignRef = db.collection(CRM_EMAIL_CAMPAIGNS_COLLECTION).doc();
+  const mode = normalizedTestRecipientEmail ? "test" : "campaign";
 
   await campaignRef.set({
     subject,
     html,
+    mode,
     htmlTextPreview: htmlToText(html).slice(0, 240),
     status: "queued",
     totalRecipients: recipients.length,
@@ -170,6 +199,9 @@ async function enqueueCrmEmailCampaign({ subject, html, createdBy = null }) {
     updatedAt: timestamp,
     queuedAt: timestamp,
     createdBy,
+    ...(normalizedTestRecipientEmail
+      ? { testRecipientEmail: normalizedTestRecipientEmail }
+      : {}),
   });
 
   const operations = recipients.map((recipient) => ({
