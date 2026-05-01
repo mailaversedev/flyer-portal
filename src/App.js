@@ -13,6 +13,7 @@ import StaffLogin from "./pages/Login/StaffLogin";
 import Profile from "./pages/Profile/Profile";
 import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
 import PlatformVouchers from "./pages/PlatformVouchers/PlatformVouchers";
+import CrmCampaigns from "./pages/CrmCampaigns/CrmCampaigns";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import { isSuperAdmin } from "./utils/AuthUtil";
 import "./App.css";
@@ -100,6 +101,7 @@ function App() {
                     />
                     <Route path="/platform-admin" element={<PlatformAdmin />} />
                     <Route path="/platform-vouchers" element={<PlatformVouchers />} />
+                    <Route path="/crm-campaigns" element={<CrmCampaigns />} />
                     <Route path="/profile" element={<Profile />} />
                   </Routes>
                 </Layout>

@@ -3,6 +3,7 @@ import { NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
+  Mail,
   ShoppingBag,
   FileText,
   Wallet,
@@ -28,6 +29,11 @@ const Sidebar = () => {
           name: t("common.vouchers"),
           path: "/platform-vouchers",
           icon: Gift,
+        },
+        {
+          name: "CRM Campaigns",
+          path: "/crm-campaigns",
+          icon: Mail,
         },
         {
           name: t("common.flyer"),

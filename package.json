@@ -34,6 +34,7 @@
     "server": "node server.js",
     "worker": "node worker.js",
     "create:super-admin": "node setup/createSuperAdmin.js",
+    "import:crm-contacts": "python3 setup/importCrmContacts.py",
     "build:serve": "npm run build && npm run server"
   },
   "eslintConfig": {

@@ -2,7 +2,8 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
-const nodemailer = require("nodemailer");
+
+const { DEFAULT_FROM, createMailTransport } = require("../services/mailService");
 
 const router = express.Router();
 const db = admin.firestore();
@@ -25,22 +26,11 @@ const isValidEmail = (value = "") => /\S+@\S+\.\S+/.test(value);
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-const createMailTransport = () =>
-  nodemailer.createTransport({
-    host: "mail.privateemail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: "hi@mailaverse.io",
-      pass: process.env.MAILAVERSE_SMTP_PASSWORD,
-    },
-  });
-
 const sendPasswordResetEmail = async (email, otp) => {
   const transporter = createMailTransport();
 
   await transporter.sendMail({
-    from: "hi@mailaverse.io",
+    from: DEFAULT_FROM,
     to: email,
     subject: "[Mailaverse] Your Password Reset Code",
     text: `Your password reset code is: ${otp}`,

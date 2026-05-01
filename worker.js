@@ -13,6 +13,9 @@ const {
   processQueuedFlyerJobs,
   cleanupExpiredFlyerJobs,
 } = require("./services/flyerJobService");
+const {
+  processQueuedCrmEmailCampaigns,
+} = require("./services/crmEmailCampaignService");
 
 const POLL_INTERVAL_MS = Math.max(
   1000,
@@ -21,6 +24,10 @@ const POLL_INTERVAL_MS = Math.max(
 const MAX_JOBS_PER_CYCLE = Math.max(
   1,
   Math.min(20, Number(process.env.NOTIFICATION_WORKER_MAX_JOBS) || 3),
+);
+const MAX_EMAIL_CAMPAIGNS_PER_CYCLE = Math.max(
+  1,
+  Math.min(10, Number(process.env.CRM_EMAIL_WORKER_MAX_CAMPAIGNS) || 1),
 );
 const CLEANUP_BATCH_SIZE = Math.max(
   1,
@@ -40,6 +47,9 @@ function sleep(ms) {
 
 async function runCycle() {
   const processResult = await processQueuedFlyerJobs(MAX_JOBS_PER_CYCLE);
+  const emailProcessResult = await processQueuedCrmEmailCampaigns(
+    MAX_EMAIL_CAMPAIGNS_PER_CYCLE,
+  );
   let cleanupResult = { deleted: 0 };
 
   if (Date.now() >= nextCleanupAt) {
@@ -50,12 +60,17 @@ async function runCycle() {
   if (
     processResult.processed > 0 ||
     processResult.failed > 0 ||
+    emailProcessResult.processed > 0 ||
+    emailProcessResult.failed > 0 ||
     cleanupResult.deleted > 0
   ) {
     console.log("Flyer job worker cycle completed", {
-      processed: processResult.processed,
-      succeeded: processResult.succeeded,
-      failed: processResult.failed,
+      flyerProcessed: processResult.processed,
+      flyerSucceeded: processResult.succeeded,
+      flyerFailed: processResult.failed,
+      crmEmailProcessed: emailProcessResult.processed,
+      crmEmailSucceeded: emailProcessResult.succeeded,
+      crmEmailFailed: emailProcessResult.failed,
       deletedExpired: cleanupResult.deleted,
     });
   }
@@ -65,6 +80,7 @@ async function startWorker() {
   console.log("Flyer job worker started", {
     pollIntervalMs: POLL_INTERVAL_MS,
     maxJobsPerCycle: MAX_JOBS_PER_CYCLE,
+    maxEmailCampaignsPerCycle: MAX_EMAIL_CAMPAIGNS_PER_CYCLE,
     cleanupBatchSize: CLEANUP_BATCH_SIZE,
     cleanupIntervalMs: CLEANUP_INTERVAL_MS,
   });

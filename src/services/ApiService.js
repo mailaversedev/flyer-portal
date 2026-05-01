@@ -247,6 +247,25 @@ class ApiService {
     );
   }
 
+  static async getCrmContactSummary() {
+    return this.makeRequest("/api/admin/crm-contacts/summary");
+  }
+
+  static async getCrmEmailCampaigns(limit = 25) {
+    return this.makeRequest(`/api/admin/crm-email-campaigns?limit=${limit}`);
+  }
+
+  static async getCrmEmailCampaign(campaignId) {
+    return this.makeRequest(`/api/admin/crm-email-campaigns/${campaignId}`);
+  }
+
+  static async createCrmEmailCampaign(payload) {
+    return this.makeRequest("/api/admin/crm-email-campaigns", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   // GET /api/company/me/coupons - Get reusable coupons for the current company
   static async getCompanyCouponLibrary() {
     return this.makeRequest("/api/company/me/coupons");

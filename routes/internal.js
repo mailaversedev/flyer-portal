@@ -1,6 +1,6 @@
 const express = require("express");
 const admin = require("firebase-admin");
-const nodemailer = require("nodemailer");
+const { DEFAULT_FROM, createMailTransport } = require("../services/mailService");
 
 const { authenticateToken } = require("./auth");
 
@@ -33,19 +33,10 @@ router.post("/send-otp-email", async (req, res) => {
     createdAt: new Date().toISOString(),
   });
 
-  // Configure nodemailer SMTP transport
-  const transporter = nodemailer.createTransport({
-    host: "mail.privateemail.com",
-    port: 465,
-    secure: true, // SSL
-    auth: {
-      user: "hi@mailaverse.io",
-      pass: process.env.MAILAVERSE_SMTP_PASSWORD, // Set this in your environment
-    },
-  });
+  const transporter = createMailTransport();
 
   const mailOptions = {
-    from: "hi@mailaverse.io",
+    from: DEFAULT_FROM,
     to: email,
     subject: "[Mailaverse] Your OTP Verification Code",
     text: `Your OTP code is: ${otp}`,
