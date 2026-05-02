@@ -27,7 +27,6 @@ router.get("/profile", async (req, res) => {
         username: userData.username,
         displayName: userData.displayName,
         createdAt: userData.createdAt,
-        lastLoginAt: userData.lastLoginAt,
         isActive: userData.isActive,
         location: userData.location,
         profile: userData.profile || {},
