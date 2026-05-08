@@ -304,6 +304,8 @@
     "pleaseType": "請輸入",
     "aiTargeted": "使用 AI 目標群組",
     "noSpecific": "沒有指定",
+    "noReward": "不提供獎賞",
+    "noRewardHint": "此傳單將不提供代幣獎賞或抽獎機制。",
     "completeRequiredFields": "請填寫所有必填欄位：",
     "budgetHkd": "預算 (HK$)",
     "projectedAudience": "預計觸及人數",

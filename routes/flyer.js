@@ -16,6 +16,8 @@ const {
 
 const router = express.Router();
 const db = admin.firestore();
+const MAILAVERSE_COMPANY_NAME = "Mailaverse";
+const MAILAVERSE_COMPANY_ICON = "https://static.wixstatic.com/media/255d46_b08eb7f7e1134cd8b8d5758d0ab3d99e~mv2.png/v1/fill/w_61,h_55,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Mailaverse%20Logo.png";
 
 async function processFlyerJobsHandler(req, res) {
   try {
@@ -59,6 +61,8 @@ router.post("/notification-jobs/process", processFlyerJobsHandler);
 router.post("/flyer", authenticateToken, async (req, res) => {
   try {
     const { type, data } = req.body;
+    const isSuperAdmin = req.user?.role === "super-admin";
+    const noReward = isSuperAdmin && Boolean(data?.targetBudget?.noReward);
 
     // 1. Prepare Flyer Data
     // Generate ID first so we can use it in the transaction
@@ -68,12 +72,18 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       ...data,
       createdAt: new Date().toISOString(),
       status: "active",
+      noReward,
+      hideCompanyDetail: isSuperAdmin,
     };
-    flyerData.companyId = req.user.companyId;
+    flyerData.companyId = req.user.companyId || null;
 
     // Fetch company info to embed in flyer (denormalization)
     try {
-      if (flyerData.companyId) {
+      if (isSuperAdmin) {
+        flyerData.companyDisplayName = MAILAVERSE_COMPANY_NAME;
+        flyerData.companyName = MAILAVERSE_COMPANY_NAME;
+        flyerData.companyIcon = MAILAVERSE_COMPANY_ICON;
+      } else if (flyerData.companyId) {
         const companyDoc = await db
           .collection("companies")
           .doc(flyerData.companyId)
@@ -96,49 +106,51 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     }
 
     // 2. Prepare Lottery Data
-    const poolHkd = data?.targetBudget?.budget || 5000;
-    const {
-      pool,
-      spreadingCoefficient,
-      mailcoinHkdRate,
-      lotteryFactor,
-      eventCostPercent,
-      eventUsagePercent,
-      userReached,
-      finalPool,
-      maxUsers,
-      eventMoney,
-      lotteryMoney,
-    } = calculateLotteryMetricsFromHkd(poolHkd);
+    let pool = 0;
+    let eventCostPercent = 0;
+    let eventUsagePercent = 0;
+    let finalPool = 0;
+    let maxUsers = 0;
+    let lotteryEvent = null;
 
-    flyerData.lottery = {
-      lotteryMoney,
-      maxUsers,
-      userReached,
-      remaining: lotteryMoney,
-      claims: 0,
-      unit: "mailcoin",
-      mailcoinHkdRate,
-    };
+    if (!noReward) {
+      const poolHkd = data?.targetBudget?.budget || 5000;
+      const lotteryMetrics = calculateLotteryMetricsFromHkd(poolHkd);
+      pool = lotteryMetrics.pool;
+      eventCostPercent = lotteryMetrics.eventCostPercent;
+      eventUsagePercent = lotteryMetrics.eventUsagePercent;
+      finalPool = lotteryMetrics.finalPool;
+      maxUsers = lotteryMetrics.maxUsers;
 
-    const lotteryEvent = {
-      pool,
-      spreadingCoefficient,
-      lotteryFactor,
-      eventCostPercent,
-      eventUsagePercent,
-      userReached,
-      finalPool,
-      maxUsers,
-      eventMoney,
-      lotteryMoney,
-      claims: 0,
-      remaining: lotteryMoney,
-      unit: "mailcoin",
-      mailcoinHkdRate,
-      createdAt: new Date().toISOString(),
-      status: "active",
-    };
+      flyerData.lottery = {
+        lotteryMoney: lotteryMetrics.lotteryMoney,
+        maxUsers: lotteryMetrics.maxUsers,
+        userReached: lotteryMetrics.userReached,
+        remaining: lotteryMetrics.lotteryMoney,
+        claims: 0,
+        unit: "mailcoin",
+        mailcoinHkdRate: lotteryMetrics.mailcoinHkdRate,
+      };
+
+      lotteryEvent = {
+        pool: lotteryMetrics.pool,
+        spreadingCoefficient: lotteryMetrics.spreadingCoefficient,
+        lotteryFactor: lotteryMetrics.lotteryFactor,
+        eventCostPercent: lotteryMetrics.eventCostPercent,
+        eventUsagePercent: lotteryMetrics.eventUsagePercent,
+        userReached: lotteryMetrics.userReached,
+        finalPool: lotteryMetrics.finalPool,
+        maxUsers: lotteryMetrics.maxUsers,
+        eventMoney: lotteryMetrics.eventMoney,
+        lotteryMoney: lotteryMetrics.lotteryMoney,
+        claims: 0,
+        remaining: lotteryMetrics.lotteryMoney,
+        unit: "mailcoin",
+        mailcoinHkdRate: lotteryMetrics.mailcoinHkdRate,
+        createdAt: new Date().toISOString(),
+        status: "active",
+      };
+    }
 
     // 3. Prepare Stats Data (if applicable)
     let statsRef = null;
@@ -180,25 +192,34 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       }
 
       // Create Lottery Event
-      const lotteryRef = db.collection("lottery").doc(flyerRef.id);
-      transaction.set(lotteryRef, lotteryEvent);
+      if (lotteryEvent) {
+        const lotteryRef = db.collection("lottery").doc(flyerRef.id);
+        transaction.set(lotteryRef, lotteryEvent);
+      }
 
       // Update Stats (if applicable)
       if (statsRef) {
         if (statsDoc && statsDoc.exists) {
-          transaction.update(statsRef, {
+          const statsUpdate = {
             flyerCount: admin.firestore.FieldValue.increment(1),
-            totalClaimCount: admin.firestore.FieldValue.increment(maxUsers),
-            totalEventMoney: admin.firestore.FieldValue.increment(finalPool),
             updatedAt: new Date().toISOString(),
-          });
+          };
+
+          if (!noReward) {
+            statsUpdate.totalClaimCount =
+              admin.firestore.FieldValue.increment(maxUsers);
+            statsUpdate.totalEventMoney =
+              admin.firestore.FieldValue.increment(finalPool);
+          }
+
+          transaction.update(statsRef, statsUpdate);
         } else {
           transaction.set(statsRef, {
             year: statsYear,
             month: statsMonth,
             flyerCount: 1,
-            totalClaimCount: maxUsers,
-            totalEventMoney: finalPool,
+            totalClaimCount: noReward ? 0 : maxUsers,
+            totalEventMoney: noReward ? 0 : finalPool,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
@@ -208,10 +229,12 @@ router.post("/flyer", authenticateToken, async (req, res) => {
 
     // 5. Calculate distribution amount correctly using count() to avoid fetching all documents.
     // The actual wallet distribution will now happen asynchronously in the flyer job background worker.
-    const distributionAmount = Math.max(
-      0,
-      Math.floor(pool * (1 - eventUsagePercent) * (1 - eventCostPercent)),
-    );
+    const distributionAmount = noReward
+      ? 0
+      : Math.max(
+          0,
+          Math.floor(pool * (1 - eventUsagePercent) * (1 - eventCostPercent)),
+        );
 
     let amountPerUser = 0;
     if (distributionAmount > 0) {
@@ -251,6 +274,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
       console.error("Failed to schedule flyer job:", flyerJobError);
     });
   } catch (error) {
+    console.error("Error creating flyer:", error);
     res.status(400).json({
       success: false,
       message: "Failed to create flyer",

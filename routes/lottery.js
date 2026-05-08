@@ -84,6 +84,13 @@ router.get("/", authenticateToken, async (req, res) => {
     }
 
     const flyer = flyerDoc.data();
+    if (flyer?.noReward || !flyer?.lottery) {
+      return res.status(409).json({
+        success: false,
+        message: "Rewards are disabled for this flyer",
+      });
+    }
+
     // Use flyer fields or fallback to defaults
     const poolHkd = flyer?.targetBudget?.budget || 5000;
     const { pool, lotteryMoney, maxUsers, avgMoneyPerUser, mailcoinHkdRate } =

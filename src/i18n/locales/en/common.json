@@ -304,6 +304,8 @@
     "pleaseType": "Please type",
     "aiTargeted": "By AI Targeted Group",
     "noSpecific": "No Specific",
+    "noReward": "No reward",
+    "noRewardHint": "Disable token rewards and lottery mechanics for this flyer.",
     "completeRequiredFields": "Please complete all required fields:",
     "budgetHkd": "Budget (HK$)",
     "projectedAudience": "Projected Reached Audience",

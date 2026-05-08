@@ -3,6 +3,7 @@ import { Download, Minus, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
+import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./TargetBudget.css";
 
 const MIN_BUDGET = 1000;
@@ -19,6 +20,7 @@ export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) =>
     budget: data?.targetBudget?.budget || data?.budget || DEFAULT_BUDGET,
     paymentMethod:
       data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
+    noReward: Boolean(data?.targetBudget?.noReward || data?.noReward),
   };
 
   const missingFields = [];
@@ -32,11 +34,13 @@ export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) =>
     }
   }
 
-  if (!formData.paymentMethod.trim()) {
-    missingFields.push(t("targetBudget.payment"));
-  }
-  if (!formData.budget || formData.budget < MIN_BUDGET) {
-    missingFields.push(t("targetBudget.budgetHkd"));
+  if (!formData.noReward) {
+    if (!formData.paymentMethod.trim()) {
+      missingFields.push(t("targetBudget.payment"));
+    }
+    if (!formData.budget || formData.budget < MIN_BUDGET) {
+      missingFields.push(t("targetBudget.budgetHkd"));
+    }
   }
 
   return {
@@ -52,6 +56,7 @@ const TargetBudget = ({
   isDirectUpload = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const showNoRewardOption = isSuperAdmin();
   const formData = {
     district: data?.targetBudget?.district || data?.district || "",
     propertyEstate:
@@ -63,6 +68,7 @@ const TargetBudget = ({
     budget: data?.targetBudget?.budget || data?.budget || DEFAULT_BUDGET,
     paymentMethod:
       data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
+    noReward: Boolean(data?.targetBudget?.noReward || data?.noReward),
   };
 
   const [previewZoom, setPreviewZoom] = useState(100);
@@ -223,6 +229,38 @@ const TargetBudget = ({
         <div className="budget-form">
           <h3 className="section-title">{t("targetBudget.title")}</h3>
 
+          {showNoRewardOption && (
+            <div className="form-group">
+              <label
+                className="checkbox-label"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexDirection: "row",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.noReward}
+                  onChange={(e) =>
+                    handleCheckboxChange("noReward", e.target.checked)
+                  }
+                  style={{ width: "auto", marginRight: "8px" }}
+                />
+                <span className="checkbox-text">{t("targetBudget.noReward")}</span>
+              </label>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#64748b",
+                  marginTop: "6px",
+                }}
+              >
+                {t("targetBudget.noRewardHint")}
+              </div>
+            </div>
+          )}
+
           {isDirectUpload && (
             <>
               <div className="form-group">
@@ -382,111 +420,113 @@ const TargetBudget = ({
             </div>
           </div>
 
-          {/* Budget */}
-          <div className="form-group">
-            <label className="form-label">{t("targetBudget.budgetHkd")}</label>
-            <div className="budget-slider-container">
-              <input
-                type="range"
-                min={MIN_BUDGET}
-                max={MAX_BUDGET}
-                step="1000"
-                value={formData.budget}
-                onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
-                className="budget-slider"
-                required
-              />
-              <div className="budget-display">
-                <span className="budget-amount">
-                  {formatBudget(formData.budget)}
+          {!formData.noReward && (
+            <div className="form-group">
+              <label className="form-label">{t("targetBudget.budgetHkd")}</label>
+              <div className="budget-slider-container">
+                <input
+                  type="range"
+                  min={MIN_BUDGET}
+                  max={MAX_BUDGET}
+                  step="1000"
+                  value={formData.budget}
+                  onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
+                  className="budget-slider"
+                  required
+                />
+                <div className="budget-display">
+                  <span className="budget-amount">
+                    {formatBudget(formData.budget)}
+                  </span>
+                </div>
+              </div>
+              <div className="audience-projection">
+                <span className="projection-label">
+                  {t("targetBudget.projectedAudience")}
+                </span>
+                <span className="projection-value">
+                  {t("targetBudget.approximatePersons", {
+                    count: Math.floor(formData.budget / 0.845),
+                  })}
                 </span>
               </div>
             </div>
-            <div className="audience-projection">
-              <span className="projection-label">
-                {t("targetBudget.projectedAudience")}
-              </span>
-              <span className="projection-value">
-                {t("targetBudget.approximatePersons", {
-                  count: Math.floor(formData.budget / 0.845),
-                })}
-              </span>
+          )}
+
+          {!formData.noReward && (
+            <div className="form-group">
+              <label className="form-label">{t("targetBudget.payment")}</label>
+              <div className="payment-options">
+                <label
+                  className="checkbox-label"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: "row",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="credit-card"
+                    checked={formData.paymentMethod === "credit-card"}
+                    onChange={(e) =>
+                      handleInputChange("paymentMethod", e.target.value)
+                    }
+                    style={{ width: "auto", marginRight: "8px" }}
+                    required
+                  />
+                  <span className="checkbox-text">
+                    {t("targetBudget.creditCard")}
+                  </span>
+                </label>
+
+                <label
+                  className="checkbox-label"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: "row",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="bank-transfer"
+                    checked={formData.paymentMethod === "bank-transfer"}
+                    onChange={(e) =>
+                      handleInputChange("paymentMethod", e.target.value)
+                    }
+                    style={{ width: "auto", marginRight: "8px" }}
+                    required
+                  />
+                  <span className="checkbox-text">{t("targetBudget.bankTransfer")}</span>
+                </label>
+
+                <label
+                  className="checkbox-label"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: "row",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="fps"
+                    checked={formData.paymentMethod === "fps"}
+                    onChange={(e) =>
+                      handleInputChange("paymentMethod", e.target.value)
+                    }
+                    style={{ width: "auto", marginRight: "8px" }}
+                    required
+                  />
+                  <span className="checkbox-text">{t("targetBudget.fps")}</span>
+                </label>
+              </div>
             </div>
-          </div>
-
-          {/* Payment */}
-          <div className="form-group">
-            <label className="form-label">{t("targetBudget.payment")}</label>
-            <div className="payment-options">
-              <label
-                className="checkbox-label"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  flexDirection: "row",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="credit-card"
-                  checked={formData.paymentMethod === "credit-card"}
-                  onChange={(e) =>
-                    handleInputChange("paymentMethod", e.target.value)
-                  }
-                  style={{ width: "auto", marginRight: "8px" }}
-                  required
-                />
-                <span className="checkbox-text">
-                  {t("targetBudget.creditCard")}
-                </span>
-              </label>
-
-              <label
-                className="checkbox-label"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  flexDirection: "row",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="bank-transfer"
-                  checked={formData.paymentMethod === "bank-transfer"}
-                  onChange={(e) =>
-                    handleInputChange("paymentMethod", e.target.value)
-                  }
-                  style={{ width: "auto", marginRight: "8px" }}
-                  required
-                />
-                <span className="checkbox-text">{t("targetBudget.bankTransfer")}</span>
-              </label>
-
-              <label
-                className="checkbox-label"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  flexDirection: "row",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="fps"
-                  checked={formData.paymentMethod === "fps"}
-                  onChange={(e) =>
-                    handleInputChange("paymentMethod", e.target.value)
-                  }
-                  style={{ width: "auto", marginRight: "8px" }}
-                  required
-                />
-                <span className="checkbox-text">{t("targetBudget.fps")}</span>
-              </label>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Right Side - Flyer Preview */}
