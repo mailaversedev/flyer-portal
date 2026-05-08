@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 
 const router = express.Router();
 const db = admin.firestore();
+const ONBOARDING_GIFT_TOKENS = 50;
 
 // GET /profile - Get user profile
 router.get("/profile", async (req, res) => {
@@ -48,20 +49,88 @@ router.put("/profile", async (req, res) => {
     const { userId } = req.user;
     const { displayName, ...profileData } = req.body;
 
-    const updates = {
-      updatedAt: new Date().toISOString(),
-      profile: profileData,
-    };
+    const userRef = db.collection("users").doc(userId);
+    const timestamp = new Date().toISOString();
 
-    if (displayName) updates.displayName = displayName;
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
 
-    await db.collection("users").doc(userId).set(updates, { merge: true });
+      if (!userDoc.exists) {
+        throw new Error("__USER_NOT_FOUND__");
+      }
+
+      const updates = {
+        updatedAt: timestamp,
+        profile: profileData,
+      };
+
+      if (displayName) {
+        updates.displayName = displayName;
+      }
+
+      const walletQuery = db
+        .collection("wallets")
+        .where("userId", "==", userId)
+        .limit(1);
+      const walletSnapshot = await transaction.get(walletQuery);
+
+      if (walletSnapshot.empty) {
+        throw new Error("__WALLET_NOT_FOUND__");
+      }
+
+      const walletDoc = walletSnapshot.docs[0];
+      const walletRef = walletDoc.ref;
+      const walletData = walletDoc.data() || {};
+      const previousBalance = Number(walletData.balance) || 0;
+      const previousVersion = Number(walletData.version) || 0;
+      const updatedBalance = previousBalance + ONBOARDING_GIFT_TOKENS;
+
+      transaction.update(walletRef, {
+        balance: updatedBalance,
+        updatedAt: timestamp,
+        version: previousVersion + 1,
+      });
+
+      const transactionRef = db.collection("transactions").doc();
+      transaction.set(transactionRef, {
+        transactionId: transactionRef.id,
+        userId,
+        walletId: walletDoc.id,
+        type: "ADD",
+        amount: ONBOARDING_GIFT_TOKENS,
+        previousBalance,
+        newBalance: updatedBalance,
+        description: "Onboarding gift",
+        status: "COMPLETED",
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        metadata: {
+          source: "onboarding_gift",
+        },
+      });
+
+      transaction.set(userRef, updates, { merge: true });
+    });
 
     res.status(200).json({
       success: true,
       message: "User profile updated successfully",
     });
   } catch (error) {
+    if (error.message === "__USER_NOT_FOUND__") {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (error.message === "__WALLET_NOT_FOUND__") {
+      return res.status(409).json({
+        success: false,
+        message: "User wallet not found",
+      });
+    }
+
     console.error("Error updating user profile:", error);
     res.status(500).json({
       success: false,
