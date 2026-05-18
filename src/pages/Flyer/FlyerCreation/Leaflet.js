@@ -9,6 +9,7 @@ import TargetBudget, {
 } from "../../../components/Flyer/TargetBudget";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
+import { isSuperAdmin } from "../../../utils/AuthUtil";
 import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
@@ -203,6 +204,7 @@ const LeafletCreation = () => {
   const { t } = useTranslation();
   const { flyerId } = useParams();
   const isEditMode = Boolean(flyerId);
+  const isSuperAdminUser = isSuperAdmin();
   const [currentStep, setCurrentStep] = useState(1);
   const [leafletData, setLeafletData] = useState(DEFAULT_LEAFLET_DATA);
   const [loading, setLoading] = useState("");
@@ -215,10 +217,10 @@ const LeafletCreation = () => {
 
   const tokenCost = getLeafletTokenCost(leafletData.resolution);
   const availableTokens = Number(walletSummary?.balance) || 0;
-  const hasEnoughTokens = availableTokens >= tokenCost;
+  const hasEnoughTokens = isSuperAdminUser || availableTokens >= tokenCost;
 
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode || isSuperAdminUser) {
       return;
     }
 
@@ -229,7 +231,7 @@ const LeafletCreation = () => {
       }));
       setCurrentStep(2);
     }
-  }, [isEditMode, location.state]);
+  }, [isEditMode, isSuperAdminUser, location.state]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -281,7 +283,7 @@ const LeafletCreation = () => {
     };
 
     fetchWallet();
-  }, [isEditMode]);
+  }, [isEditMode, isSuperAdminUser]);
 
   const handleNext = async () => {
     if (currentStep === 1) {
@@ -289,7 +291,7 @@ const LeafletCreation = () => {
         return;
       }
 
-      if (walletSummary && !hasEnoughTokens) {
+      if (!isSuperAdminUser && walletSummary && !hasEnoughTokens) {
         alert(t("leafletCreation.tokenIndicatorLowBalance"));
         return;
       }
@@ -299,10 +301,14 @@ const LeafletCreation = () => {
       try {
         const response = await ApiService.generateLeaflet(leafletData);
         if (response.flyer_output_path) {
-          const billingResponse = await ApiService.consumeLeafletTokens({
-            resolution: leafletData.resolution,
-            flyerOutputPath: response.flyer_output_path,
-          });
+          let billingResponse = null;
+
+          if (!isSuperAdminUser) {
+            billingResponse = await ApiService.consumeLeafletTokens({
+              resolution: leafletData.resolution,
+              flyerOutputPath: response.flyer_output_path,
+            });
+          }
 
           setLeafletData((prev) => ({
             ...prev,
@@ -537,11 +543,17 @@ const LeafletCreation = () => {
                           resolution: leafletData.resolution || "2K",
                         })}
                       </strong>
-                      <span style={{ color: "#cbd5e1" }}>
-                        {t("leafletCreation.tokenIndicatorBalance", {
-                          count: availableTokens,
-                        })}
-                      </span>
+                      {isSuperAdminUser ? (
+                        <span style={{ color: "#cbd5e1" }}>
+                          {t("leafletCreation.tokenIndicatorSuperAdmin")}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#cbd5e1" }}>
+                          {t("leafletCreation.tokenIndicatorBalance", {
+                            count: availableTokens,
+                          })}
+                        </span>
+                      )}
                     </div>
 
                     <div
@@ -558,7 +570,9 @@ const LeafletCreation = () => {
                         fontWeight: 600,
                       }}
                     >
-                      {hasEnoughTokens
+                      {isSuperAdminUser
+                        ? t("leafletCreation.tokenIndicatorExempt")
+                        : hasEnoughTokens
                         ? t("leafletCreation.tokenIndicatorReady")
                         : t("leafletCreation.tokenIndicatorLowBalance")}
                     </div>
@@ -615,7 +629,7 @@ const LeafletCreation = () => {
                 <button
                   className="nav-button next-button"
                   onClick={handleNext}
-                  disabled={loading || (walletSummary && !hasEnoughTokens)}
+                  disabled={loading || (!isSuperAdminUser && walletSummary && !hasEnoughTokens)}
                 >
                   {loading ? t("leafletCreation.generating") : t("creation.next")}
                 </button>

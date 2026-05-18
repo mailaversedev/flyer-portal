@@ -65,6 +65,20 @@ router.post("/notification-jobs/process", processFlyerJobsHandler);
 
 router.post("/flyer/leaflet/consume-tokens", authenticateToken, async (req, res) => {
   try {
+    if (req.user?.role === "super-admin") {
+      return res.status(200).json({
+        success: true,
+        data: {
+          chargedTokens: 0,
+          pricing: null,
+          flyerOutputPath: `${req.body?.flyerOutputPath || ""}`.trim(),
+          previousBalance: null,
+          newBalance: null,
+          exempt: true,
+        },
+      });
+    }
+
     const companyId = req.user?.companyId;
     const flyerOutputPath = `${req.body?.flyerOutputPath || ""}`.trim();
 

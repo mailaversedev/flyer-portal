@@ -286,8 +286,10 @@
     "tokenIndicatorTitle": "代幣預算",
     "tokenIndicatorCost": "今次 {{resolution}} 生成會扣除 {{count}} 個代幣。",
     "tokenIndicatorBalance": "公司目前餘額：{{count}} 個代幣。",
+    "tokenIndicatorSuperAdmin": "超級管理員生成不會扣除任何代幣。",
     "tokenIndicatorReady": "可以生成",
-    "tokenIndicatorLowBalance": "代幣不足"
+    "tokenIndicatorLowBalance": "代幣不足",
+    "tokenIndicatorExempt": "免扣代幣"
   },
   "queryCreation": {
     "creatingWait": "正在建立傳單，請稍候...",

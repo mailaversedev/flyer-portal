@@ -288,8 +288,10 @@
     "tokenIndicatorCost_other": "This {{resolution}} generation will cost {{count}} tokens.",
     "tokenIndicatorBalance_one": "Current company balance: {{count}} token.",
     "tokenIndicatorBalance_other": "Current company balance: {{count}} tokens.",
+    "tokenIndicatorSuperAdmin": "Super admin generations do not deduct any tokens.",
     "tokenIndicatorReady": "Ready to generate",
-    "tokenIndicatorLowBalance": "More tokens needed"
+    "tokenIndicatorLowBalance": "More tokens needed",
+    "tokenIndicatorExempt": "Token exempt"
   },
   "queryCreation": {
     "creatingWait": "Creating flyer, please wait...",
