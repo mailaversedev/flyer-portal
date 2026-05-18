@@ -1,4 +1,5 @@
 const INITIAL_COMPANY_TOKENS = 10;
+const DAILY_FREE_GENERATIONS_PER_COMPANY = 3;
 
 const TOKEN_BUNDLES = [
   {
@@ -126,6 +127,7 @@ const getLeafletTokenCost = (resolution = "2K") => {
 };
 
 module.exports = {
+  DAILY_FREE_GENERATIONS_PER_COMPANY,
   INITIAL_COMPANY_TOKENS,
   TOKEN_BUNDLES,
   TOKEN_PRICING,

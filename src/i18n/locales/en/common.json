@@ -89,6 +89,7 @@
     "loadError": "Failed to load wallet data.",
     "balanceLabel": "Available Balance",
     "balanceHint": "Tokens are deducted only after a generation completes successfully.",
+    "freeAttemptsSummary": "{{remaining}} of {{total}} daily free generation attempts remaining today.",
     "offlineBillingTitle": "Offline Billing",
     "offlineBillingDescription": "Bundle purchases are fulfilled offline by the Mailaverse team. Contact support or your account manager to top up.",
     "starterCredit": "New company onboarding includes 10 starter tokens.",
@@ -288,10 +289,16 @@
     "tokenIndicatorCost_other": "This {{resolution}} generation will cost {{count}} tokens.",
     "tokenIndicatorBalance_one": "Current company balance: {{count}} token.",
     "tokenIndicatorBalance_other": "Current company balance: {{count}} tokens.",
+    "freeAttemptMessage_one": "{{count}} free generation attempt remains today.",
+    "freeAttemptMessage_other": "{{count}} free generation attempts remain today.",
+    "freeAttemptBalance_one": "Daily free attempts remaining: {{count}}.",
+    "freeAttemptBalance_other": "Daily free attempts remaining: {{count}}.",
     "tokenIndicatorSuperAdmin": "Super admin generations do not deduct any tokens.",
     "tokenIndicatorReady": "Ready to generate",
     "tokenIndicatorLowBalance": "More tokens needed",
-    "tokenIndicatorExempt": "Token exempt"
+    "tokenIndicatorExempt": "Token exempt",
+    "freeAttemptReady_one": "{{count}} free attempt available",
+    "freeAttemptReady_other": "{{count}} free attempts available"
   },
   "queryCreation": {
     "creatingWait": "Creating flyer, please wait...",

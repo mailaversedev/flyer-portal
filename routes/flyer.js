@@ -2,7 +2,10 @@ const express = require("express");
 const admin = require("firebase-admin");
 
 const { authenticateToken } = require("./auth");
-const { getLeafletTokenCost } = require("../config/billingConfig");
+const {
+  DAILY_FREE_GENERATIONS_PER_COMPANY,
+  getLeafletTokenCost,
+} = require("../config/billingConfig");
 const { calculateLotteryMetricsFromHkd } = require("../config/lotteryConfig");
 const {
   processQueuedFlyerJobs,
@@ -18,6 +21,7 @@ const {
   createCompanyWalletIfMissing,
   createCompanyWalletTransaction,
   ensureCompanyWalletInTransaction,
+  getCompanyDailyUsage,
 } = require("../services/companyWalletService");
 
 const router = express.Router();
@@ -113,9 +117,106 @@ router.post("/flyer/leaflet/consume-tokens", authenticateToken, async (req, res)
       companyDisplayName: companyData.companyDisplayName || "",
       initialBalance: 0,
     });
+    const todayUsage = await getCompanyDailyUsage(companyId);
+    const freeAttemptsUsed = Number(todayUsage.data?.freeGenerationAttemptsUsed) || 0;
+    const freeAttemptsRemaining = Math.max(
+      0,
+      DAILY_FREE_GENERATIONS_PER_COMPANY - freeAttemptsUsed,
+    );
+
+    if (freeAttemptsRemaining <= 0) {
+      const wallet = await createCompanyWalletIfMissing({
+        companyId,
+        companyName: companyData.name || "",
+        companyDisplayName: companyData.companyDisplayName || "",
+        initialBalance: 0,
+      });
+      const availableTokens = Number(wallet?.data?.balance) || 0;
+
+      if (availableTokens < pricing.tokens) {
+        return res.status(402).json({
+          success: false,
+          message: "Insufficient tokens to complete flyer generation",
+          data: {
+            requiredTokens: pricing.tokens,
+            availableTokens,
+            pricing,
+            dailyFreeAttemptsRemaining: freeAttemptsRemaining,
+          },
+        });
+      }
+    }
 
     const timestamp = new Date().toISOString();
     const billingResult = await db.runTransaction(async (transaction) => {
+      const dailyUsage = await getCompanyDailyUsage(companyId, { transaction });
+      const currentFreeAttemptsUsed =
+        Number(dailyUsage.data?.freeGenerationAttemptsUsed) || 0;
+      const currentFreeAttemptsRemaining = Math.max(
+        0,
+        DAILY_FREE_GENERATIONS_PER_COMPANY - currentFreeAttemptsUsed,
+      );
+
+      if (currentFreeAttemptsRemaining > 0) {
+        transaction.set(
+          dailyUsage.ref,
+          {
+            companyId,
+            dateKey: dailyUsage.dateKey,
+            freeGenerationAttemptsUsed: currentFreeAttemptsUsed + 1,
+            freeGenerationAttemptsLimit: DAILY_FREE_GENERATIONS_PER_COMPANY,
+            updatedAt: timestamp,
+            createdAt:
+              dailyUsage.data?.createdAt || timestamp,
+          },
+          { merge: true },
+        );
+
+        const wallet = await ensureCompanyWalletInTransaction({
+          transaction,
+          companyId,
+          companyName: companyData.name || "",
+          companyDisplayName: companyData.companyDisplayName || "",
+          initialBalance: 0,
+          timestamp,
+        });
+
+        createCompanyWalletTransaction({
+          transaction,
+          walletId: (wallet.ref || wallet.doc.ref).id,
+          companyId,
+          type: "FREE",
+          amount: 0,
+          previousBalance: Number(wallet.data.balance) || 0,
+          newBalance: Number(wallet.data.balance) || 0,
+          description: `${pricing.title} free daily attempt`,
+          timestamp,
+          metadata: {
+            source: "leaflet_generation_free_attempt",
+            resolution: pricing.resolution,
+            productCode: pricing.code,
+            flyerOutputPath,
+            freeAttemptsUsed: currentFreeAttemptsUsed + 1,
+            freeAttemptsRemaining: Math.max(
+              0,
+              DAILY_FREE_GENERATIONS_PER_COMPANY - (currentFreeAttemptsUsed + 1),
+            ),
+          },
+        });
+
+        return {
+          previousBalance: Number(wallet.data.balance) || 0,
+          newBalance: Number(wallet.data.balance) || 0,
+          chargedTokens: 0,
+          usedFreeAttempt: true,
+          dailyFreeAttemptsUsed: currentFreeAttemptsUsed + 1,
+          dailyFreeAttemptsRemaining: Math.max(
+            0,
+            DAILY_FREE_GENERATIONS_PER_COMPANY - (currentFreeAttemptsUsed + 1),
+          ),
+        };
+      }
+
       const currentWallet = await ensureCompanyWalletInTransaction({
         transaction,
         companyId,
@@ -169,13 +270,17 @@ router.post("/flyer/leaflet/consume-tokens", authenticateToken, async (req, res)
       return {
         previousBalance: currentBalance,
         newBalance,
+        chargedTokens: pricing.tokens,
+        usedFreeAttempt: false,
+        dailyFreeAttemptsUsed: currentFreeAttemptsUsed,
+        dailyFreeAttemptsRemaining: currentFreeAttemptsRemaining,
       };
     });
 
     return res.status(200).json({
       success: true,
       data: {
-        chargedTokens: pricing.tokens,
+        chargedTokens: billingResult.chargedTokens,
         pricing,
         flyerOutputPath,
         ...billingResult,

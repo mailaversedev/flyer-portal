@@ -4,11 +4,13 @@ const admin = require("firebase-admin");
 
 const { authenticateToken } = require("./auth");
 const {
+  DAILY_FREE_GENERATIONS_PER_COMPANY,
   TOKEN_BUNDLES,
   TOKEN_PRICING,
 } = require("../config/billingConfig");
 const {
   createCompanyWalletIfMissing,
+  getCompanyDailyUsage,
   serializeCompanyWallet,
 } = require("../services/companyWalletService");
 
@@ -289,11 +291,21 @@ router.get("/wallet", authenticateToken, async (req, res) => {
         companyId: req.user.companyId,
         initialBalance: 0,
       });
+      const dailyUsage = await getCompanyDailyUsage(req.user.companyId);
+      const freeAttemptsUsed = Number(dailyUsage.data?.freeGenerationAttemptsUsed) || 0;
+      const freeAttemptsRemaining = Math.max(
+        0,
+        DAILY_FREE_GENERATIONS_PER_COMPANY - freeAttemptsUsed,
+      );
 
       return res.status(200).json({
         success: true,
         data: {
           ...serializeCompanyWallet(wallet),
+          dailyFreeAttemptsDate: dailyUsage.dateKey,
+          dailyFreeAttemptsLimit: DAILY_FREE_GENERATIONS_PER_COMPANY,
+          dailyFreeAttemptsUsed: freeAttemptsUsed,
+          dailyFreeAttemptsRemaining: freeAttemptsRemaining,
           bundles: TOKEN_BUNDLES,
           pricing: TOKEN_PRICING,
         },

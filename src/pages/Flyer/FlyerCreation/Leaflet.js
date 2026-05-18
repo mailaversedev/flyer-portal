@@ -217,7 +217,10 @@ const LeafletCreation = () => {
 
   const tokenCost = getLeafletTokenCost(leafletData.resolution);
   const availableTokens = Number(walletSummary?.balance) || 0;
+  const freeAttemptsRemaining = Number(walletSummary?.dailyFreeAttemptsRemaining) || 0;
+  const hasFreeAttemptRemaining = isSuperAdminUser || freeAttemptsRemaining > 0;
   const hasEnoughTokens = isSuperAdminUser || availableTokens >= tokenCost;
+  const canGenerate = hasFreeAttemptRemaining || hasEnoughTokens;
 
   useEffect(() => {
     if (isEditMode || isSuperAdminUser) {
@@ -291,7 +294,7 @@ const LeafletCreation = () => {
         return;
       }
 
-      if (!isSuperAdminUser && walletSummary && !hasEnoughTokens) {
+      if (!isSuperAdminUser && walletSummary && !canGenerate) {
         alert(t("leafletCreation.tokenIndicatorLowBalance"));
         return;
       }
@@ -318,7 +321,18 @@ const LeafletCreation = () => {
           if (billingResponse?.success && billingResponse?.data) {
             setWalletSummary((prev) => ({
               ...(prev || {}),
-              balance: billingResponse.data.newBalance,
+              balance:
+                typeof billingResponse.data.newBalance === "number"
+                  ? billingResponse.data.newBalance
+                  : prev?.balance,
+              dailyFreeAttemptsRemaining:
+                typeof billingResponse.data.dailyFreeAttemptsRemaining === "number"
+                  ? billingResponse.data.dailyFreeAttemptsRemaining
+                  : prev?.dailyFreeAttemptsRemaining,
+              dailyFreeAttemptsUsed:
+                typeof billingResponse.data.dailyFreeAttemptsUsed === "number"
+                  ? billingResponse.data.dailyFreeAttemptsUsed
+                  : prev?.dailyFreeAttemptsUsed,
               updatedAt: new Date().toISOString(),
             }));
           }
@@ -513,8 +527,8 @@ const LeafletCreation = () => {
                       marginTop: "20px",
                       padding: "18px 20px",
                       borderRadius: "16px",
-                      border: `1px solid ${hasEnoughTokens ? "#334155" : "#7f1d1d"}`,
-                      background: hasEnoughTokens
+                      border: `1px solid ${canGenerate ? "#334155" : "#7f1d1d"}`,
+                      background: canGenerate
                         ? "linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96))"
                         : "linear-gradient(135deg, rgba(69, 10, 10, 0.95), rgba(31, 41, 55, 0.96))",
                       color: "#e2e8f0",
@@ -532,27 +546,38 @@ const LeafletCreation = () => {
                           fontWeight: 700,
                           letterSpacing: "0.08em",
                           textTransform: "uppercase",
-                          color: hasEnoughTokens ? "#93c5fd" : "#fca5a5",
+                          color: canGenerate ? "#93c5fd" : "#fca5a5",
                         }}
                       >
                         {t("leafletCreation.tokenIndicatorTitle")}
                       </span>
                       <strong style={{ fontSize: "1.05rem" }}>
-                        {t("leafletCreation.tokenIndicatorCost", {
-                          count: tokenCost,
-                          resolution: leafletData.resolution || "2K",
-                        })}
+                        {hasFreeAttemptRemaining && !isSuperAdminUser
+                          ? t("leafletCreation.freeAttemptMessage", {
+                              count: freeAttemptsRemaining,
+                            })
+                          : t("leafletCreation.tokenIndicatorCost", {
+                              count: tokenCost,
+                              resolution: leafletData.resolution || "2K",
+                            })}
                       </strong>
                       {isSuperAdminUser ? (
                         <span style={{ color: "#cbd5e1" }}>
                           {t("leafletCreation.tokenIndicatorSuperAdmin")}
                         </span>
                       ) : (
-                        <span style={{ color: "#cbd5e1" }}>
-                          {t("leafletCreation.tokenIndicatorBalance", {
-                            count: availableTokens,
-                          })}
-                        </span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ color: "#cbd5e1" }}>
+                            {t("leafletCreation.tokenIndicatorBalance", {
+                              count: availableTokens,
+                            })}
+                          </span>
+                          <span style={{ color: "#cbd5e1" }}>
+                            {t("leafletCreation.freeAttemptBalance", {
+                              count: freeAttemptsRemaining,
+                            })}
+                          </span>
+                        </div>
                       )}
                     </div>
 
@@ -563,18 +588,22 @@ const LeafletCreation = () => {
                         gap: "8px",
                         borderRadius: "999px",
                         padding: "8px 12px",
-                        backgroundColor: hasEnoughTokens
+                        backgroundColor: canGenerate
                           ? "rgba(37, 99, 235, 0.18)"
                           : "rgba(220, 38, 38, 0.2)",
-                        color: hasEnoughTokens ? "#dbeafe" : "#fecaca",
+                        color: canGenerate ? "#dbeafe" : "#fecaca",
                         fontWeight: 600,
                       }}
                     >
                       {isSuperAdminUser
                         ? t("leafletCreation.tokenIndicatorExempt")
+                        : hasFreeAttemptRemaining
+                          ? t("leafletCreation.freeAttemptReady", {
+                              count: freeAttemptsRemaining,
+                            })
                         : hasEnoughTokens
-                        ? t("leafletCreation.tokenIndicatorReady")
-                        : t("leafletCreation.tokenIndicatorLowBalance")}
+                          ? t("leafletCreation.tokenIndicatorReady")
+                          : t("leafletCreation.tokenIndicatorLowBalance")}
                     </div>
                   </div>
                 </>
@@ -629,7 +658,7 @@ const LeafletCreation = () => {
                 <button
                   className="nav-button next-button"
                   onClick={handleNext}
-                  disabled={loading || (!isSuperAdminUser && walletSummary && !hasEnoughTokens)}
+                  disabled={loading || (!isSuperAdminUser && walletSummary && !canGenerate)}
                 >
                   {loading ? t("leafletCreation.generating") : t("creation.next")}
                 </button>

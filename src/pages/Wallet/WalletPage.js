@@ -73,6 +73,12 @@ const WalletPage = () => {
                 {wallet?.balance ?? 0} {wallet?.currency || "TOKEN"}
               </strong>
               <p>{t("walletPage.balanceHint")}</p>
+              <p>
+                {t("walletPage.freeAttemptsSummary", {
+                  remaining: wallet?.dailyFreeAttemptsRemaining ?? 0,
+                  total: wallet?.dailyFreeAttemptsLimit ?? 3,
+                })}
+              </p>
             </div>
           </div>
 

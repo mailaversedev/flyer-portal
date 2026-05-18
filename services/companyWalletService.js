@@ -4,8 +4,44 @@ const db = admin.firestore();
 
 const COMPANY_WALLET_OWNER_TYPE = "company";
 const DEFAULT_CURRENCY = "TOKEN";
+const COMPANY_DAILY_USAGE_COLLECTION = "billingDailyUsage";
 
 const getCurrentIsoTimestamp = () => new Date().toISOString();
+
+const getHongKongDateKey = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Hong_Kong",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return `${year}-${month}-${day}`;
+};
+
+const getCompanyDailyUsageRef = (companyId, dateKey = getHongKongDateKey()) =>
+  db
+    .collection("companies")
+    .doc(companyId)
+    .collection(COMPANY_DAILY_USAGE_COLLECTION)
+    .doc(dateKey);
+
+const getCompanyDailyUsage = async (companyId, options = {}) => {
+  const { transaction, dateKey = getHongKongDateKey() } = options;
+  const ref = getCompanyDailyUsageRef(companyId, dateKey);
+  const snapshot = transaction ? await transaction.get(ref) : await ref.get();
+
+  return {
+    ref,
+    dateKey,
+    exists: snapshot.exists,
+    data: snapshot.exists ? snapshot.data() || {} : null,
+  };
+};
 
 const getCompanyWalletQuery = (companyId) =>
   db
@@ -197,6 +233,8 @@ module.exports = {
   createCompanyWalletIfMissing,
   createCompanyWalletTransaction,
   ensureCompanyWalletInTransaction,
+  getCompanyDailyUsage,
   getCompanyWalletByCompanyId,
+  getHongKongDateKey,
   serializeCompanyWallet,
 };

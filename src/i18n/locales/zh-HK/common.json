@@ -89,6 +89,7 @@
     "loadError": "載入錢包資料失敗。",
     "balanceLabel": "可用餘額",
     "balanceHint": "只有當生成成功完成後才會扣除代幣。",
+    "freeAttemptsSummary": "今日尚餘 {{remaining}} / {{total}} 次免費生成機會。",
     "offlineBillingTitle": "離線付款",
     "offlineBillingDescription": "套餐購買會由 Mailaverse 團隊離線處理。完成線下付款後，請聯絡支援或客戶經理充值。",
     "starterCredit": "新公司註冊時會自動獲得 10 個起始代幣。",
@@ -286,10 +287,13 @@
     "tokenIndicatorTitle": "代幣預算",
     "tokenIndicatorCost": "今次 {{resolution}} 生成會扣除 {{count}} 個代幣。",
     "tokenIndicatorBalance": "公司目前餘額：{{count}} 個代幣。",
+    "freeAttemptMessage": "今日尚餘 {{count}} 次免費生成機會。",
+    "freeAttemptBalance": "今日免費次數餘額：{{count}} 次。",
     "tokenIndicatorSuperAdmin": "超級管理員生成不會扣除任何代幣。",
     "tokenIndicatorReady": "可以生成",
     "tokenIndicatorLowBalance": "代幣不足",
-    "tokenIndicatorExempt": "免扣代幣"
+    "tokenIndicatorExempt": "免扣代幣",
+    "freeAttemptReady": "可使用免費生成"
   },
   "queryCreation": {
     "creatingWait": "正在建立傳單，請稍候...",
