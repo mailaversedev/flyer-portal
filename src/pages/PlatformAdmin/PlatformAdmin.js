@@ -55,6 +55,9 @@ const PlatformAdmin = () => {
   const [flyers, setFlyers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [grantAmounts, setGrantAmounts] = useState({});
+  const [grantingCompanyId, setGrantingCompanyId] = useState("");
+  const [grantFeedback, setGrantFeedback] = useState(null);
 
   useEffect(() => {
     const loadAdminData = async () => {
@@ -85,6 +88,53 @@ const PlatformAdmin = () => {
   if (!isSuperAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
+
+  const handleGrantTokens = async (companyId) => {
+    const amount = Number.parseInt(grantAmounts[companyId], 10);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setGrantFeedback({
+        type: "error",
+        message: t("adminPage.invalidGrantAmount"),
+      });
+      return;
+    }
+
+    try {
+      setGrantingCompanyId(companyId);
+      setGrantFeedback(null);
+
+      const response = await ApiService.grantCompanyTokens(companyId, { amount });
+
+      setCompanies((prev) =>
+        prev.map((company) =>
+          company.id === companyId
+            ? {
+                ...company,
+                walletBalance: response.data.newBalance,
+                walletUpdatedAt: new Date().toISOString(),
+              }
+            : company,
+        ),
+      );
+      setGrantAmounts((prev) => ({
+        ...prev,
+        [companyId]: "",
+      }));
+      setGrantFeedback({
+        type: "success",
+        message: t("adminPage.grantSuccess"),
+      });
+    } catch (grantError) {
+      console.error("Failed to grant company tokens", grantError);
+      setGrantFeedback({
+        type: "error",
+        message: grantError.message || t("adminPage.grantError"),
+      });
+    } finally {
+      setGrantingCompanyId("");
+    }
+  };
 
   const formattedFlyers = flyers.map((flyer) => {
     const lottery = flyer.lottery || {};
@@ -198,47 +248,85 @@ const PlatformAdmin = () => {
               </tbody>
             </table>
           ) : activeTab === "companies" ? (
-            <table className="campaigns-table">
-              <thead>
-                <tr>
-                  <th>{t("adminPage.companyDisplayName")}</th>
-                  <th>{t("adminPage.companyLegalName")}</th>
-                  <th>{t("adminPage.status")}</th>
-                  <th>{t("adminPage.industry")}</th>
-                  <th>{t("adminPage.contact")}</th>
-                  <th>{t("adminPage.website")}</th>
-                  <th>{t("adminPage.address")}</th>
-                  <th>{t("adminPage.createdAt")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {companies.map((company) => (
-                  <tr key={company.id} className="campaign-row-disabled">
-                    <td className="platform-admin-text-cell">
-                      {company.companyDisplayName || "-"}
-                    </td>
-                    <td className="platform-admin-text-cell">{company.name || "-"}</td>
-                    <td>
-                      <span className={`status ${company.isActive ? "live" : "completed"}`}>
-                        {company.isActive ? t("adminPage.active") : t("adminPage.inactive")}
-                      </span>
-                    </td>
-                    <td>{company.nature || "-"}</td>
-                    <td>{company.contact || "-"}</td>
-                    <td className="platform-admin-text-cell">{company.website || "-"}</td>
-                    <td className="platform-admin-text-cell">{company.address || "-"}</td>
-                    <td>{formatDate(company.createdAt)}</td>
-                  </tr>
-                ))}
-                {companies.length === 0 && (
+            <div className="platform-admin-company-panel">
+              {grantFeedback && (
+                <div
+                  className={`platform-admin-feedback ${grantFeedback.type === "error" ? "error" : "success"}`}
+                >
+                  {grantFeedback.message}
+                </div>
+              )}
+
+              <table className="campaigns-table">
+                <thead>
                   <tr>
-                    <td colSpan="8" className="platform-admin-empty-cell">
-                      {t("adminPage.noCompanies")}
-                    </td>
+                    <th>{t("adminPage.companyDisplayName")}</th>
+                    <th>{t("adminPage.companyLegalName")}</th>
+                    <th>{t("adminPage.status")}</th>
+                    <th>{t("adminPage.industry")}</th>
+                    <th>{t("adminPage.contact")}</th>
+                    <th>{t("adminPage.companyTokens")}</th>
+                    <th>{t("adminPage.walletUpdatedAt")}</th>
+                    <th>{t("adminPage.grantTokens")}</th>
+                    <th>{t("adminPage.createdAt")}</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {companies.map((company) => (
+                    <tr key={company.id} className="campaign-row-disabled">
+                      <td className="platform-admin-text-cell">
+                        {company.companyDisplayName || "-"}
+                      </td>
+                      <td className="platform-admin-text-cell">{company.name || "-"}</td>
+                      <td>
+                        <span className={`status ${company.isActive ? "live" : "completed"}`}>
+                          {company.isActive ? t("adminPage.active") : t("adminPage.inactive")}
+                        </span>
+                      </td>
+                      <td>{company.nature || "-"}</td>
+                      <td>{company.contact || "-"}</td>
+                      <td>{company.walletBalance ?? 0}</td>
+                      <td>{formatDate(company.walletUpdatedAt)}</td>
+                      <td>
+                        <div className="platform-admin-grant-controls">
+                          <input
+                            type="number"
+                            min="1"
+                            value={grantAmounts[company.id] || ""}
+                            onChange={(event) =>
+                              setGrantAmounts((prev) => ({
+                                ...prev,
+                                [company.id]: event.target.value,
+                              }))
+                            }
+                            placeholder={t("adminPage.grantAmountPlaceholder")}
+                            className="platform-admin-grant-input"
+                          />
+                          <button
+                            type="button"
+                            className="platform-admin-grant-button"
+                            onClick={() => handleGrantTokens(company.id)}
+                            disabled={grantingCompanyId === company.id}
+                          >
+                            {grantingCompanyId === company.id
+                              ? t("adminPage.granting")
+                              : t("adminPage.grantButton")}
+                          </button>
+                        </div>
+                      </td>
+                      <td>{formatDate(company.createdAt)}</td>
+                    </tr>
+                  ))}
+                  {companies.length === 0 && (
+                    <tr>
+                      <td colSpan="9" className="platform-admin-empty-cell">
+                        {t("adminPage.noCompanies")}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <table className="campaigns-table">
               <thead>

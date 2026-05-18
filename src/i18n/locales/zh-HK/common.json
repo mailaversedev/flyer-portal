@@ -83,7 +83,34 @@
     "currentCompanyIcon": "目前公司圖示"
   },
   "walletPage": {
-    "title": "錢包頁面"
+    "title": "公司錢包",
+    "subtitle": "查看代幣餘額、離線套餐及最近扣費紀錄。",
+    "loading": "正在載入錢包...",
+    "loadError": "載入錢包資料失敗。",
+    "balanceLabel": "可用餘額",
+    "balanceHint": "只有當生成成功完成後才會扣除代幣。",
+    "offlineBillingTitle": "離線付款",
+    "offlineBillingDescription": "套餐購買會由 Mailaverse 團隊離線處理。完成線下付款後，請聯絡支援或客戶經理充值。",
+    "starterCredit": "新公司註冊時會自動獲得 10 個起始代幣。",
+    "pricingTitle": "代幣收費",
+    "pricingSubtitle": "目前及即將推出的 FlyerGenie 代幣用量。",
+    "bundlesTitle": "可用套餐",
+    "bundlesSubtitle": "套餐會在確認線下付款後由超級管理員手動充值。",
+    "transactionsTitle": "最近紀錄",
+    "transactionsSubtitle": "公司錢包的加值及扣減紀錄。",
+    "emptyTransactions": "暫時未有錢包紀錄。",
+    "transactionType": "類型",
+    "description": "描述",
+    "amount": "數量",
+    "newBalance": "最新餘額",
+    "createdAt": "建立時間",
+    "tokensShort": "代幣",
+    "tokensLabel": "代幣",
+    "perGeneration": "每次生成收費",
+    "perEdit": "每次編輯收費",
+    "bundleRate": "每個代幣 HK${{price}}",
+    "active": "可用",
+    "comingSoon": "即將推出"
   },
   "adminPage": {
     "usersTab": "用戶列表",
@@ -113,7 +140,16 @@
     "noFlyers": "找不到傳單",
     "company": "公司",
     "createdAt": "建立時間",
-    "untitledFlyer": "推廣活動"
+    "untitledFlyer": "推廣活動",
+    "companyTokens": "代幣",
+    "walletUpdatedAt": "錢包更新時間",
+    "grantTokens": "充值代幣",
+    "grantAmountPlaceholder": "數量",
+    "grantButton": "充值",
+    "granting": "充值中...",
+    "grantSuccess": "公司錢包已成功更新。",
+    "grantError": "充值代幣失敗。",
+    "invalidGrantAmount": "請輸入有效的正整數代幣數量。"
   },
   "voucherAdminPage": {
     "createTitle": "建立禮券",
@@ -246,7 +282,12 @@
     "creatingWait": "正在建立傳單，請稍候...",
     "createdSuccess": "傳單廣告已成功建立！",
     "createFailed": "建立傳單失敗，請再試一次。",
-    "createError": "建立傳單時發生錯誤，請再試一次。"
+    "createError": "建立傳單時發生錯誤，請再試一次。",
+    "tokenIndicatorTitle": "代幣預算",
+    "tokenIndicatorCost": "今次 {{resolution}} 生成會扣除 {{count}} 個代幣。",
+    "tokenIndicatorBalance": "公司目前餘額：{{count}} 個代幣。",
+    "tokenIndicatorReady": "可以生成",
+    "tokenIndicatorLowBalance": "代幣不足"
   },
   "queryCreation": {
     "creatingWait": "正在建立傳單，請稍候...",

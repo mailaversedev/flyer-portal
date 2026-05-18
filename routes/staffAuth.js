@@ -4,6 +4,11 @@ const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
 
 const { authenticateToken } = require("./auth");
+const { INITIAL_COMPANY_TOKENS } = require("../config/billingConfig");
+const {
+  createCompanyWallet,
+  createCompanyWalletTransaction,
+} = require("../services/companyWalletService");
 
 const router = express.Router();
 const db = admin.firestore();
@@ -109,6 +114,7 @@ router.post("/register", async (req, res) => {
     const result = await db.runTransaction(async (transaction) => {
       let companyId = null;
       let companyData = null;
+      const timestamp = new Date().toISOString();
 
       // If company info is provided, create company
       if (companyName) {
@@ -120,12 +126,36 @@ router.post("/register", async (req, res) => {
           address,
           contact,
           nature: companyNature,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: timestamp,
+          updatedAt: timestamp,
           isActive: true,
         };
         transaction.set(companyRef, companyData);
         companyId = companyRef.id;
+
+        const wallet = createCompanyWallet({
+          transaction,
+          companyId,
+          companyName,
+          companyDisplayName,
+          initialBalance: INITIAL_COMPANY_TOKENS,
+          timestamp,
+        });
+
+        createCompanyWalletTransaction({
+          transaction,
+          walletId: wallet.ref.id,
+          companyId,
+          type: "ADD",
+          amount: INITIAL_COMPANY_TOKENS,
+          previousBalance: 0,
+          newBalance: INITIAL_COMPANY_TOKENS,
+          description: "Company onboarding starter tokens",
+          timestamp,
+          metadata: {
+            source: "company_onboarding",
+          },
+        });
       }
 
       // Create staff data
@@ -140,8 +170,8 @@ router.post("/register", async (req, res) => {
         profile: {
           locale: locale || "en",
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
         isActive: true,
       };
 
@@ -176,7 +206,9 @@ router.post("/register", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Staff registered successfully",
+      message: result.companyData
+        ? `Staff registered successfully. ${INITIAL_COMPANY_TOKENS} starter tokens have been added to the company wallet.`
+        : "Staff registered successfully",
       data: responseData,
     });
   } catch (error) {

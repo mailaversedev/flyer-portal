@@ -3,6 +3,14 @@ const { v4: uuidv4 } = require("uuid");
 const admin = require("firebase-admin");
 
 const { authenticateToken } = require("./auth");
+const {
+  TOKEN_BUNDLES,
+  TOKEN_PRICING,
+} = require("../config/billingConfig");
+const {
+  createCompanyWalletIfMissing,
+  serializeCompanyWallet,
+} = require("../services/companyWalletService");
 
 const router = express.Router();
 const db = admin.firestore();
@@ -276,6 +284,22 @@ router.post("/deduct-tokens", authenticateToken, async (req, res) => {
 // GET /api/payment/wallet - Get wallet balance and details
 router.get("/wallet", authenticateToken, async (req, res) => {
   try {
+    if (req.user?.companyId) {
+      const wallet = await createCompanyWalletIfMissing({
+        companyId: req.user.companyId,
+        initialBalance: 0,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...serializeCompanyWallet(wallet),
+          bundles: TOKEN_BUNDLES,
+          pricing: TOKEN_PRICING,
+        },
+      });
+    }
+
     const userId = req.user.userId;
     const wallet = await getWalletByUserId(userId);
 
@@ -304,13 +328,15 @@ router.get("/wallet", authenticateToken, async (req, res) => {
 // GET /api/payment/transactions - Get transaction history
 router.get("/transactions", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.userId;
     const { limit = 50, offset = 0, type } = req.query;
 
-    let query = db
-      .collection("transactions")
-      .where("userId", "==", userId)
-      .orderBy("createdAt", "desc");
+    let query = db.collection("transactions").orderBy("createdAt", "desc");
+
+    if (req.user?.companyId) {
+      query = query.where("companyId", "==", req.user.companyId);
+    } else {
+      query = query.where("userId", "==", req.user.userId);
+    }
 
     // Filter by transaction type if specified
     if (type && (type === "ADD" || type === "DEDUCT")) {
@@ -364,31 +390,37 @@ router.get(
   authenticateToken,
   async (req, res) => {
     try {
-      const userId = req.user.userId;
       const { transactionId } = req.params;
 
-      const txQuery = await db
+      let txQuery = db
         .collection("transactions")
         .where("transactionId", "==", transactionId)
-        .where("userId", "==", userId)
-        .limit(1)
-        .get();
+        .limit(1);
 
-      if (txQuery.empty) {
+      if (req.user?.companyId) {
+        txQuery = txQuery.where("companyId", "==", req.user.companyId);
+      } else {
+        txQuery = txQuery.where("userId", "==", req.user.userId);
+      }
+
+      const txSnapshot = await txQuery.get();
+
+      if (txSnapshot.empty) {
         return res.status(404).json({
           success: false,
           message: "Transaction not found",
         });
       }
 
-      const txData = txQuery.docs[0].data();
+      const txData = txSnapshot.docs[0].data();
 
       res.status(200).json({
         success: true,
         data: {
-          id: txQuery.docs[0].id,
+          id: txSnapshot.docs[0].id,
           transactionId: txData.transactionId,
           userId: txData.userId,
+          companyId: txData.companyId,
           walletId: txData.walletId,
           type: txData.type,
           amount: txData.amount,

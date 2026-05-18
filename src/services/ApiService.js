@@ -97,7 +97,17 @@ class ApiService {
       }
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+
+        try {
+          const errorPayload = await response.json();
+          errorMessage =
+            errorPayload?.message || errorPayload?.error || errorMessage;
+        } catch (_error) {
+          // Ignore non-JSON error payloads and keep the default message.
+        }
+
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -228,6 +238,13 @@ class ApiService {
     );
   }
 
+  static async grantCompanyTokens(companyId, payload) {
+    return this.makeRequest(`/api/admin/companies/${companyId}/grant-tokens`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   static async getAdminVouchers(limit = 100, direction = "desc") {
     return this.makeRequest(
       `/api/admin/vouchers?limit=${limit}&direction=${direction}`,
@@ -271,6 +288,23 @@ class ApiService {
     return this.makeRequest("/api/company/me/coupons");
   }
 
+  static async getCompanyWallet() {
+    return this.makeRequest("/api/payment/wallet");
+  }
+
+  static async getWalletTransactions(limit = 20, offset = 0, type = null) {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    });
+
+    if (type) {
+      params.set("type", type);
+    }
+
+    return this.makeRequest(`/api/payment/transactions?${params.toString()}`);
+  }
+
   // POST /api/file - Upload file/image
   static async uploadFile(file, category = "general") {
     const formData = new FormData();
@@ -287,93 +321,56 @@ class ApiService {
   static async generateLeaflet(leafletData) {
     const formData = new FormData();
 
-    const endpoint =
-      "https://flyergenie-backend-pro-91102396327.europe-west1.run.app/api/generate-image";
+    formData.append("productName", leafletData.productName || "");
+    formData.append("flyerPrompts", leafletData.flyerPrompts || "");
+    formData.append("aspectRatio", leafletData.aspectRatio || "1:1");
+    formData.append("resolution", leafletData.resolution || "2K");
+    formData.append("logoPosition", leafletData.logoPosition || "natural placement");
 
-    formData.append("Product_Name", leafletData.productName || "");
-    formData.append("Query_Context", leafletData.flyerPrompts || "");
-    formData.append("Aspect_Ratio", leafletData.aspectRatio || "1:1");
-    formData.append("Resolution", leafletData.resolution || "2K");
-    formData.append(
-      "Logo_Position",
-      leafletData.logoPosition || "natural placement",
-    );
+    formData.append("header", leafletData.header || "");
+    formData.append("copyPosition", leafletData.copyPosition || "natural placement");
 
-    formData.append("Copy_Line", leafletData.header || "");
+    formData.append("bodyCopy", leafletData.bodyCopy || "");
     formData.append(
-      "Copy_Position",
-      leafletData.copyPosition || "natural placement",
-    );
-
-    formData.append("Body_Copy", leafletData.bodyCopy || "");
-    formData.append(
-      "Body_Copy_Position",
+      "bodyCopyPosition",
       leafletData.bodyCopyPosition || "natural placement",
     );
 
     if (leafletData.primaryColor) {
-      formData.append("Primary_Color", leafletData.primaryColor);
+      formData.append("primaryColor", leafletData.primaryColor);
     }
     if (leafletData.secondaryColor) {
-      formData.append("Secondary_Color", leafletData.secondaryColor);
+      formData.append("secondaryColor", leafletData.secondaryColor);
     }
     if (leafletData.typography) {
-      formData.append("Typography", leafletData.typography);
+      formData.append("typography", leafletData.typography);
     }
     if (leafletData.brandVoice) {
-      formData.append("Brand_Voice", leafletData.brandVoice);
+      formData.append("brandVoice", leafletData.brandVoice);
     }
     if (leafletData.campaignMoodboard) {
-      formData.append("Campaign_Moodboard", leafletData.campaignMoodboard);
+      formData.append("campaignMoodboard", leafletData.campaignMoodboard);
     }
 
     if (leafletData.logoImage && leafletData.logoImage.file) {
-      formData.append("logo_image", leafletData.logoImage.file);
-    } else {
-      const companyIcon = await ApiService.getCurrentCompanyIconFile();
-      if (companyIcon) {
-        formData.append("logo_image", companyIcon);
-      }
+      formData.append("logoImage", leafletData.logoImage.file);
     }
 
     if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
-      formData.append(
-        "reference_image_file",
-        leafletData.referenceFlyer.file,
-      );
+      formData.append("referenceFlyer", leafletData.referenceFlyer.file);
     }
 
     if (leafletData.productPhoto && leafletData.productPhoto.length > 0) {
       const photo = leafletData.productPhoto[0];
       if (photo.file) {
-        formData.append("product_image", photo.file);
+        formData.append("productPhoto", photo.file);
       }
     }
 
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-        // Let browser set Content-Type with boundary
-      });
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.image_urls && result.image_urls.length > 0) {
-        return {
-          flyer_output_path: result.image_urls[0],
-          ...result,
-        };
-      }
-
-      return result;
-    } catch (error) {
-      console.error("FlyerGenie API Request failed:", error);
-      throw error;
-    }
+    return this.makeRequest("/api/flyer/leaflet/generate", {
+      method: "POST",
+      body: formData,
+    });
   }
 
   // Helper method to upload only file fields and return their URLs

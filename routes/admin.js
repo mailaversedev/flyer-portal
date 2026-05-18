@@ -9,6 +9,10 @@ const {
   getCrmEmailCampaign,
   listCrmEmailCampaigns,
 } = require("../services/crmEmailCampaignService");
+const {
+  createCompanyWalletTransaction,
+  ensureCompanyWalletInTransaction,
+} = require("../services/companyWalletService");
 
 const router = express.Router();
 const db = admin.firestore();
@@ -225,8 +229,28 @@ router.get("/companies", async (req, res) => {
       .limit(limit)
       .get();
 
+    const walletSnapshot = await db
+      .collection("wallets")
+      .where("ownerType", "==", "company")
+      .where("isActive", "==", true)
+      .get();
+
+    const walletByCompanyId = new Map();
+    walletSnapshot.docs.forEach((walletDoc) => {
+      const walletData = walletDoc.data() || {};
+
+      if (walletData.companyId && !walletByCompanyId.has(walletData.companyId)) {
+        walletByCompanyId.set(walletData.companyId, {
+          walletId: walletDoc.id,
+          balance: Number(walletData.balance) || 0,
+          updatedAt: walletData.updatedAt || null,
+        });
+      }
+    });
+
     const companies = snapshot.docs.map((doc) => {
       const data = doc.data() || {};
+      const wallet = walletByCompanyId.get(doc.id) || null;
 
       return {
         id: doc.id,
@@ -239,6 +263,9 @@ router.get("/companies", async (req, res) => {
         createdAt: data.createdAt || null,
         updatedAt: data.updatedAt || null,
         isActive: data.isActive !== false,
+        walletId: wallet?.walletId || null,
+        walletBalance: wallet?.balance || 0,
+        walletUpdatedAt: wallet?.updatedAt || null,
       };
     });
 
@@ -251,6 +278,104 @@ router.get("/companies", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch companies",
+      error: error.message,
+    });
+  }
+});
+
+router.post("/companies/:companyId/grant-tokens", async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const amount = Number.parseInt(req.body?.amount, 10);
+    const note = normalizeString(req.body?.note);
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Company ID is required",
+      });
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Grant amount must be a positive integer",
+      });
+    }
+
+    const companyDoc = await db.collection("companies").doc(companyId).get();
+
+    if (!companyDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    const companyData = companyDoc.data() || {};
+    const timestamp = new Date().toISOString();
+
+    const result = await db.runTransaction(async (transaction) => {
+      const wallet = await ensureCompanyWalletInTransaction({
+        transaction,
+        companyId,
+        companyName: companyData.name || "",
+        companyDisplayName: companyData.companyDisplayName || "",
+        initialBalance: 0,
+        timestamp,
+      });
+      const walletRef = wallet.ref || wallet.doc.ref;
+      const previousBalance = Number(wallet.data.balance) || 0;
+      const newBalance = previousBalance + amount;
+
+      transaction.set(
+        walletRef,
+        {
+          companyName: companyData.name || wallet.data.companyName || "",
+          companyDisplayName:
+            companyData.companyDisplayName ||
+            wallet.data.companyDisplayName ||
+            "",
+          balance: newBalance,
+          updatedAt: timestamp,
+          version: (Number(wallet.data.version) || 0) + 1,
+        },
+        { merge: true },
+      );
+
+      createCompanyWalletTransaction({
+        transaction,
+        walletId: walletRef.id,
+        companyId,
+        type: "ADD",
+        amount,
+        previousBalance,
+        newBalance,
+        description: note || "Offline token grant",
+        timestamp,
+        metadata: {
+          source: "super_admin_grant",
+          grantedBy: req.user?.username || req.user?.userId || "",
+        },
+      });
+
+      return {
+        walletId: walletRef.id,
+        previousBalance,
+        newBalance,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Tokens granted successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error granting company tokens:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to grant company tokens",
       error: error.message,
     });
   }

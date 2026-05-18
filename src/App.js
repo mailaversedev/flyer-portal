@@ -1,6 +1,5 @@
 import React from "react";
 import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router";
-import { useTranslation } from "react-i18next";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Coupons from "./pages/Coupons/Coupons";
@@ -16,6 +15,7 @@ import PlatformVouchersListPage from "./pages/PlatformVouchers/PlatformVouchersL
 import PlatformVouchersCreatePage from "./pages/PlatformVouchers/PlatformVouchersCreatePage";
 import CrmCampaignListPage from "./pages/CrmCampaigns/CrmCampaignListPage";
 import CrmCampaignCreatePage from "./pages/CrmCampaigns/CrmCampaignCreatePage";
+import WalletPage from "./pages/Wallet/WalletPage";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import { isSuperAdmin } from "./utils/AuthUtil";
 import "./App.css";
@@ -37,8 +37,6 @@ const DefaultHome = () => {
 };
 
 function App() {
-  const { t } = useTranslation();
-
   return (
     <Router>
       <div className="App">
@@ -97,7 +95,7 @@ function App() {
                       path="/wallet"
                       element={
                         <SuperAdminRedirect>
-                          <div>{t("walletPage.title")}</div>
+                          <WalletPage />
                         </SuperAdminRedirect>
                       }
                     />

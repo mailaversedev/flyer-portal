@@ -1,0 +1,140 @@
+.wallet-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.wallet-page-header h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 28px;
+}
+
+.wallet-page-header p {
+  margin: 8px 0 0;
+  color: #94a3b8;
+}
+
+.wallet-summary-grid,
+.wallet-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.wallet-page-panel {
+  background: #1f2937;
+  border: 1px solid #334155;
+  border-radius: 18px;
+  padding: 20px;
+  color: #e2e8f0;
+}
+
+.wallet-balance-panel {
+  background: linear-gradient(135deg, #1d4ed8, #0f172a);
+}
+
+.wallet-kicker {
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+}
+
+.wallet-balance-value,
+.wallet-card-metric {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.wallet-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wallet-section-header h3 {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.wallet-section-header p {
+  margin: 6px 0 0;
+  color: #94a3b8;
+}
+
+.wallet-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wallet-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wallet-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wallet-badge.active {
+  background: rgba(59, 130, 246, 0.18);
+  color: #bfdbfe;
+}
+
+.wallet-badge.muted {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+}
+
+.wallet-transactions-panel {
+  overflow-x: auto;
+}
+
+.wallet-transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wallet-transactions-table th,
+.wallet-transactions-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #334155;
+  text-align: left;
+}
+
+.wallet-transactions-table th {
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.wallet-empty-state,
+.wallet-page-error {
+  color: #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .wallet-page-header h2 {
+    font-size: 24px;
+  }
+
+  .wallet-transactions-table {
+    min-width: 620px;
+  }
+}

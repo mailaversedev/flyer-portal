@@ -103,7 +103,7 @@ const StaffLogin = () => {
       if (response.success) {
         if (isRegistering) {
           setIsRegistering(false);
-          setError(t("login.registrationSuccess"));
+          setError(response.message || t("login.registrationSuccess"));
           setIsSuccessMessage(true);
           setPassword("");
         } else {

@@ -49,6 +49,20 @@ const buildLeafletEditPayload = (data) => ({
   tags: data.tags,
 });
 
+const getLeafletTokenCost = (resolution = "2K") => {
+  const normalizedResolution = `${resolution || "2K"}`.trim().toUpperCase();
+
+  if (normalizedResolution === "1K") {
+    return 1;
+  }
+
+  if (normalizedResolution === "4K") {
+    return 4;
+  }
+
+  return 2;
+};
+
 const LeafletEditForm = ({ data, onUpdate, t }) => {
   const [newTag, setNewTag] = useState("");
 
@@ -194,9 +208,14 @@ const LeafletCreation = () => {
   const [loading, setLoading] = useState("");
   const [isFetching, setIsFetching] = useState(isEditMode);
   const [generatedHistory, setGeneratedHistory] = useState([]);
+  const [walletSummary, setWalletSummary] = useState(null);
   const step1Ref = useRef();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const tokenCost = getLeafletTokenCost(leafletData.resolution);
+  const availableTokens = Number(walletSummary?.balance) || 0;
+  const hasEnoughTokens = availableTokens >= tokenCost;
 
   useEffect(() => {
     if (isEditMode) {
@@ -244,6 +263,26 @@ const LeafletCreation = () => {
     fetchFlyer();
   }, [flyerId, isEditMode, navigate]);
 
+  useEffect(() => {
+    if (isEditMode) {
+      return;
+    }
+
+    const fetchWallet = async () => {
+      try {
+        const response = await ApiService.getCompanyWallet();
+
+        if (response.success && response.data) {
+          setWalletSummary(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load company wallet:", error);
+      }
+    };
+
+    fetchWallet();
+  }, [isEditMode]);
+
   const handleNext = async () => {
     if (currentStep === 1) {
       if (step1Ref.current && !step1Ref.current.validateRequiredFields()) {
@@ -260,14 +299,24 @@ const LeafletCreation = () => {
             coverPhoto: response.flyer_output_path,
           }));
           setGeneratedHistory((prev) => [response.flyer_output_path, ...prev].slice(0, 3));
+          if (response.billing) {
+            setWalletSummary((prev) => ({
+              ...(prev || {}),
+              balance: response.billing.newBalance,
+              updatedAt: new Date().toISOString(),
+            }));
+          }
+          setCurrentStep(2);
+          return;
         }
+
+        alert(t("leafletCreation.createFailed"));
       } catch (error) {
         console.error("Error generating leaflet:", error);
+        alert(error.message || t("leafletCreation.createError"));
       } finally {
         setLoading("");
       }
-
-      setCurrentStep(2);
       return;
     }
 
@@ -442,6 +491,68 @@ const LeafletCreation = () => {
                     data={leafletData}
                     onUpdate={updateLeafletData}
                   />
+
+                  <div
+                    style={{
+                      marginTop: "20px",
+                      padding: "18px 20px",
+                      borderRadius: "16px",
+                      border: `1px solid ${hasEnoughTokens ? "#334155" : "#7f1d1d"}`,
+                      background: hasEnoughTokens
+                        ? "linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96))"
+                        : "linear-gradient(135deg, rgba(69, 10, 10, 0.95), rgba(31, 41, 55, 0.96))",
+                      color: "#e2e8f0",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "16px",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: hasEnoughTokens ? "#93c5fd" : "#fca5a5",
+                        }}
+                      >
+                        {t("leafletCreation.tokenIndicatorTitle")}
+                      </span>
+                      <strong style={{ fontSize: "1.05rem" }}>
+                        {t("leafletCreation.tokenIndicatorCost", {
+                          count: tokenCost,
+                          resolution: leafletData.resolution || "2K",
+                        })}
+                      </strong>
+                      <span style={{ color: "#cbd5e1" }}>
+                        {t("leafletCreation.tokenIndicatorBalance", {
+                          count: availableTokens,
+                        })}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        borderRadius: "999px",
+                        padding: "8px 12px",
+                        backgroundColor: hasEnoughTokens
+                          ? "rgba(37, 99, 235, 0.18)"
+                          : "rgba(220, 38, 38, 0.2)",
+                        color: hasEnoughTokens ? "#dbeafe" : "#fecaca",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {hasEnoughTokens
+                        ? t("leafletCreation.tokenIndicatorReady")
+                        : t("leafletCreation.tokenIndicatorLowBalance")}
+                    </div>
+                  </div>
                 </>
               )}
 
