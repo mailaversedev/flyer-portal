@@ -289,20 +289,30 @@ const LeafletCreation = () => {
         return;
       }
 
+      if (walletSummary && !hasEnoughTokens) {
+        alert(t("leafletCreation.tokenIndicatorLowBalance"));
+        return;
+      }
+
       setLoading(t("leafletCreation.generatingWait"));
 
       try {
         const response = await ApiService.generateLeaflet(leafletData);
         if (response.flyer_output_path) {
+          const billingResponse = await ApiService.consumeLeafletTokens({
+            resolution: leafletData.resolution,
+            flyerOutputPath: response.flyer_output_path,
+          });
+
           setLeafletData((prev) => ({
             ...prev,
             coverPhoto: response.flyer_output_path,
           }));
           setGeneratedHistory((prev) => [response.flyer_output_path, ...prev].slice(0, 3));
-          if (response.billing) {
+          if (billingResponse?.success && billingResponse?.data) {
             setWalletSummary((prev) => ({
               ...(prev || {}),
-              balance: response.billing.newBalance,
+              balance: billingResponse.data.newBalance,
               updatedAt: new Date().toISOString(),
             }));
           }
@@ -605,7 +615,7 @@ const LeafletCreation = () => {
                 <button
                   className="nav-button next-button"
                   onClick={handleNext}
-                  disabled={loading}
+                  disabled={loading || (walletSummary && !hasEnoughTokens)}
                 >
                   {loading ? t("leafletCreation.generating") : t("creation.next")}
                 </button>

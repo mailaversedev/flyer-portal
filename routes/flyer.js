@@ -1,6 +1,5 @@
 const express = require("express");
 const admin = require("firebase-admin");
-const multer = require("multer");
 
 const { authenticateToken } = require("./auth");
 const { getLeafletTokenCost } = require("../config/billingConfig");
@@ -23,53 +22,8 @@ const {
 
 const router = express.Router();
 const db = admin.firestore();
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 15 * 1024 * 1024,
-  },
-});
 const MAILAVERSE_COMPANY_NAME = "Mailaverse";
 const MAILAVERSE_COMPANY_ICON = "https://static.wixstatic.com/media/255d46_b08eb7f7e1134cd8b8d5758d0ab3d99e~mv2.png/v1/fill/w_61,h_55,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Mailaverse%20Logo.png";
-const PRO_LEAFLET_GENERATION_ENDPOINT =
-  "https://flyergenie-backend-pro-91102396327.europe-west1.run.app/api/generate-image";
-
-const appendUploadedFile = (formData, fieldName, file) => {
-  if (!file) {
-    return;
-  }
-
-  formData.append(
-    fieldName,
-    new Blob([file.buffer], { type: file.mimetype || "application/octet-stream" }),
-    file.originalname || `${fieldName}.bin`,
-  );
-};
-
-const appendRemoteImage = async (formData, fieldName, remoteUrl, fallbackName) => {
-  if (!remoteUrl) {
-    return;
-  }
-
-  try {
-    const response = await fetch(remoteUrl);
-
-    if (!response.ok) {
-      return;
-    }
-
-    const contentType = response.headers.get("content-type") || "image/png";
-    const arrayBuffer = await response.arrayBuffer();
-
-    formData.append(
-      fieldName,
-      new Blob([arrayBuffer], { type: contentType }),
-      fallbackName,
-    );
-  } catch (error) {
-    console.warn(`Failed to fetch remote asset for ${fieldName}:`, error);
-  }
-};
 
 async function processFlyerJobsHandler(req, res) {
   try {
@@ -109,213 +63,126 @@ async function processFlyerJobsHandler(req, res) {
 router.post("/flyer-jobs/process", processFlyerJobsHandler);
 router.post("/notification-jobs/process", processFlyerJobsHandler);
 
-router.post(
-  "/flyer/leaflet/generate",
-  authenticateToken,
-  upload.fields([
-    { name: "logoImage", maxCount: 1 },
-    { name: "referenceFlyer", maxCount: 1 },
-    { name: "productPhoto", maxCount: 5 },
-  ]),
-  async (req, res) => {
-    try {
-      const companyId = req.user?.companyId;
+router.post("/flyer/leaflet/consume-tokens", authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const flyerOutputPath = `${req.body?.flyerOutputPath || ""}`.trim();
 
-      if (!companyId) {
-        return res.status(403).json({
-          success: false,
-          message: "Flyer generation is available to company users only",
-        });
-      }
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        message: "Flyer generation is available to company users only",
+      });
+    }
 
-      const companyDoc = await db.collection("companies").doc(companyId).get();
+    if (!flyerOutputPath) {
+      return res.status(400).json({
+        success: false,
+        message: "flyerOutputPath is required",
+      });
+    }
 
-      if (!companyDoc.exists) {
-        return res.status(404).json({
-          success: false,
-          message: "Company not found",
-        });
-      }
+    const companyDoc = await db.collection("companies").doc(companyId).get();
 
-      const companyData = companyDoc.data() || {};
-      const pricing = getLeafletTokenCost(req.body?.resolution);
-      const wallet = await createCompanyWalletIfMissing({
+    if (!companyDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    const companyData = companyDoc.data() || {};
+    const pricing = getLeafletTokenCost(req.body?.resolution);
+    await createCompanyWalletIfMissing({
+      companyId,
+      companyName: companyData.name || "",
+      companyDisplayName: companyData.companyDisplayName || "",
+      initialBalance: 0,
+    });
+
+    const timestamp = new Date().toISOString();
+    const billingResult = await db.runTransaction(async (transaction) => {
+      const currentWallet = await ensureCompanyWalletInTransaction({
+        transaction,
         companyId,
         companyName: companyData.name || "",
         companyDisplayName: companyData.companyDisplayName || "",
         initialBalance: 0,
+        timestamp,
       });
-      const availableTokens = Number(wallet?.data?.balance) || 0;
+      const currentBalance = Number(currentWallet.data.balance) || 0;
 
-      if (availableTokens < pricing.tokens) {
-        return res.status(402).json({
-          success: false,
-          message: `Insufficient tokens. ${pricing.title} requires ${pricing.tokens} token${pricing.tokens > 1 ? "s" : ""}.`,
-          data: {
-            requiredTokens: pricing.tokens,
-            availableTokens,
-            pricing,
-          },
-        });
+      if (currentBalance < pricing.tokens) {
+        throw new Error("__INSUFFICIENT_TOKENS__");
       }
 
-      const files = req.files || {};
-      const upstreamFormData = new FormData();
+      const newBalance = currentBalance - pricing.tokens;
+      const walletRef = currentWallet.ref || currentWallet.doc.ref;
 
-      upstreamFormData.append("Product_Name", req.body?.productName || "");
-      upstreamFormData.append("Query_Context", req.body?.flyerPrompts || "");
-      upstreamFormData.append("Aspect_Ratio", req.body?.aspectRatio || "1:1");
-      upstreamFormData.append("Resolution", pricing.resolution);
-      upstreamFormData.append(
-        "Logo_Position",
-        req.body?.logoPosition || "natural placement",
-      );
-      upstreamFormData.append("Copy_Line", req.body?.header || "");
-      upstreamFormData.append(
-        "Copy_Position",
-        req.body?.copyPosition || "natural placement",
-      );
-      upstreamFormData.append("Body_Copy", req.body?.bodyCopy || "");
-      upstreamFormData.append(
-        "Body_Copy_Position",
-        req.body?.bodyCopyPosition || "natural placement",
-      );
-
-      if (req.body?.primaryColor) {
-        upstreamFormData.append("Primary_Color", req.body.primaryColor);
-      }
-      if (req.body?.secondaryColor) {
-        upstreamFormData.append("Secondary_Color", req.body.secondaryColor);
-      }
-      if (req.body?.typography) {
-        upstreamFormData.append("Typography", req.body.typography);
-      }
-      if (req.body?.brandVoice) {
-        upstreamFormData.append("Brand_Voice", req.body.brandVoice);
-      }
-      if (req.body?.campaignMoodboard) {
-        upstreamFormData.append("Campaign_Moodboard", req.body.campaignMoodboard);
-      }
-
-      appendUploadedFile(upstreamFormData, "logo_image", files.logoImage?.[0]);
-      if (!files.logoImage?.[0]) {
-        await appendRemoteImage(
-          upstreamFormData,
-          "logo_image",
-          companyData.icon,
-          `${companyId}.png`,
-        );
-      }
-
-      appendUploadedFile(
-        upstreamFormData,
-        "reference_image_file",
-        files.referenceFlyer?.[0],
-      );
-      appendUploadedFile(upstreamFormData, "product_image", files.productPhoto?.[0]);
-
-      const upstreamResponse = await fetch(PRO_LEAFLET_GENERATION_ENDPOINT, {
-        method: "POST",
-        body: upstreamFormData,
-      });
-
-      if (!upstreamResponse.ok) {
-        const upstreamError = await upstreamResponse.text();
-        throw new Error(
-          `Flyer generation failed: ${upstreamResponse.status} ${upstreamResponse.statusText}${upstreamError ? ` - ${upstreamError}` : ""}`,
-        );
-      }
-
-      const generationResult = await upstreamResponse.json();
-
-      if (!generationResult.image_urls || generationResult.image_urls.length === 0) {
-        throw new Error("Flyer generation did not return any image output");
-      }
-
-      const timestamp = new Date().toISOString();
-      const billingResult = await db.runTransaction(async (transaction) => {
-        const currentWallet = await ensureCompanyWalletInTransaction({
-          transaction,
-          companyId,
-          companyName: companyData.name || "",
-          companyDisplayName: companyData.companyDisplayName || "",
-          initialBalance: 0,
-          timestamp,
-        });
-        const currentBalance = Number(currentWallet.data.balance) || 0;
-
-        if (currentBalance < pricing.tokens) {
-          throw new Error("__INSUFFICIENT_TOKENS__");
-        }
-
-        const newBalance = currentBalance - pricing.tokens;
-        const walletRef = currentWallet.ref || currentWallet.doc.ref;
-
-        transaction.set(
-          walletRef,
-          {
-            companyName: companyData.name || currentWallet.data.companyName || "",
-            companyDisplayName:
-              companyData.companyDisplayName ||
-              currentWallet.data.companyDisplayName ||
-              "",
-            balance: newBalance,
-            updatedAt: timestamp,
-            version: (Number(currentWallet.data.version) || 0) + 1,
-          },
-          { merge: true },
-        );
-
-        createCompanyWalletTransaction({
-          transaction,
-          walletId: walletRef.id,
-          companyId,
-          type: "DEDUCT",
-          amount: pricing.tokens,
-          previousBalance: currentBalance,
-          newBalance,
-          description: `${pricing.title} generation`,
-          timestamp,
-          metadata: {
-            source: "leaflet_generation",
-            resolution: pricing.resolution,
-            productCode: pricing.code,
-          },
-        });
-
-        return {
-          previousBalance: currentBalance,
-          newBalance,
-        };
-      });
-
-      return res.status(200).json({
-        success: true,
-        flyer_output_path: generationResult.image_urls[0],
-        billing: {
-          chargedTokens: pricing.tokens,
-          pricing,
-          ...billingResult,
+      transaction.set(
+        walletRef,
+        {
+          companyName: companyData.name || currentWallet.data.companyName || "",
+          companyDisplayName:
+            companyData.companyDisplayName ||
+            currentWallet.data.companyDisplayName ||
+            "",
+          balance: newBalance,
+          updatedAt: timestamp,
+          version: (Number(currentWallet.data.version) || 0) + 1,
         },
-        ...generationResult,
-      });
-    } catch (error) {
-      if (error.message === "__INSUFFICIENT_TOKENS__") {
-        return res.status(402).json({
-          success: false,
-          message: "Insufficient tokens to complete flyer generation",
-        });
-      }
+        { merge: true },
+      );
 
-      console.error("Error generating leaflet via backend:", error);
-      return res.status(500).json({
+      createCompanyWalletTransaction({
+        transaction,
+        walletId: walletRef.id,
+        companyId,
+        type: "DEDUCT",
+        amount: pricing.tokens,
+        previousBalance: currentBalance,
+        newBalance,
+        description: `${pricing.title} generation`,
+        timestamp,
+        metadata: {
+          source: "leaflet_generation",
+          resolution: pricing.resolution,
+          productCode: pricing.code,
+          flyerOutputPath,
+        },
+      });
+
+      return {
+        previousBalance: currentBalance,
+        newBalance,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        chargedTokens: pricing.tokens,
+        pricing,
+        flyerOutputPath,
+        ...billingResult,
+      },
+    });
+  } catch (error) {
+    if (error.message === "__INSUFFICIENT_TOKENS__") {
+      return res.status(402).json({
         success: false,
-        message: "Failed to generate leaflet",
-        error: error.message,
+        message: "Insufficient tokens to complete flyer generation",
       });
     }
-  },
-);
+
+    console.error("Error consuming leaflet tokens:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to deduct leaflet tokens",
+      error: error.message,
+    });
+  }
+});
 
 // POST /api/flyer - Create flyer (leaflet, query, or qr code)
 router.post("/flyer", authenticateToken, async (req, res) => {

@@ -321,55 +321,91 @@ class ApiService {
   static async generateLeaflet(leafletData) {
     const formData = new FormData();
 
-    formData.append("productName", leafletData.productName || "");
-    formData.append("flyerPrompts", leafletData.flyerPrompts || "");
-    formData.append("aspectRatio", leafletData.aspectRatio || "1:1");
-    formData.append("resolution", leafletData.resolution || "2K");
-    formData.append("logoPosition", leafletData.logoPosition || "natural placement");
-
-    formData.append("header", leafletData.header || "");
-    formData.append("copyPosition", leafletData.copyPosition || "natural placement");
-
-    formData.append("bodyCopy", leafletData.bodyCopy || "");
+    formData.append("Product_Name", leafletData.productName || "");
+    formData.append("Query_Context", leafletData.flyerPrompts || "");
+    formData.append("Aspect_Ratio", leafletData.aspectRatio || "1:1");
+    formData.append("Resolution", leafletData.resolution || "2K");
     formData.append(
-      "bodyCopyPosition",
+      "Logo_Position",
+      leafletData.logoPosition || "natural placement",
+    );
+
+    formData.append("Copy_Line", leafletData.header || "");
+    formData.append(
+      "Copy_Position",
+      leafletData.copyPosition || "natural placement",
+    );
+
+    formData.append("Body_Copy", leafletData.bodyCopy || "");
+    formData.append(
+      "Body_Copy_Position",
       leafletData.bodyCopyPosition || "natural placement",
     );
 
     if (leafletData.primaryColor) {
-      formData.append("primaryColor", leafletData.primaryColor);
+      formData.append("Primary_Color", leafletData.primaryColor);
     }
     if (leafletData.secondaryColor) {
-      formData.append("secondaryColor", leafletData.secondaryColor);
+      formData.append("Secondary_Color", leafletData.secondaryColor);
     }
     if (leafletData.typography) {
-      formData.append("typography", leafletData.typography);
+      formData.append("Typography", leafletData.typography);
     }
     if (leafletData.brandVoice) {
-      formData.append("brandVoice", leafletData.brandVoice);
+      formData.append("Brand_Voice", leafletData.brandVoice);
     }
     if (leafletData.campaignMoodboard) {
-      formData.append("campaignMoodboard", leafletData.campaignMoodboard);
+      formData.append("Campaign_Moodboard", leafletData.campaignMoodboard);
     }
 
     if (leafletData.logoImage && leafletData.logoImage.file) {
-      formData.append("logoImage", leafletData.logoImage.file);
+      formData.append("logo_image", leafletData.logoImage.file);
+    } else {
+      const companyIcon = await ApiService.getCurrentCompanyIconFile();
+      if (companyIcon) {
+        formData.append("logo_image", companyIcon);
+      }
     }
 
     if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
-      formData.append("referenceFlyer", leafletData.referenceFlyer.file);
+      formData.append("reference_image_file", leafletData.referenceFlyer.file);
     }
 
     if (leafletData.productPhoto && leafletData.productPhoto.length > 0) {
       const photo = leafletData.productPhoto[0];
       if (photo.file) {
-        formData.append("productPhoto", photo.file);
+        formData.append("product_image", photo.file);
       }
     }
 
-    return this.makeRequest("/api/flyer/leaflet/generate", {
+    const response = await fetch(
+      "https://flyergenie-backend-pro-91102396327.europe-west1.run.app/api/generate-image",
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (result.image_urls && result.image_urls.length > 0) {
+      return {
+        flyer_output_path: result.image_urls[0],
+        ...result,
+      };
+    }
+
+    return result;
+  }
+
+  static async consumeLeafletTokens(payload) {
+    return this.makeRequest("/api/flyer/leaflet/consume-tokens", {
       method: "POST",
-      body: formData,
+      body: JSON.stringify(payload),
     });
   }
 
