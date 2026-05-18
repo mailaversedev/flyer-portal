@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, Settings, Sparkles } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router";
 
-import Step1Content from "../../../components/Flyer/Leaflet/Step1Content";
 import Step1ContentPro from "../../../components/Flyer/Leaflet/Step1ContentPro";
 import TargetBudget, {
   validateTargetBudgetStep,
@@ -191,7 +190,6 @@ const LeafletCreation = () => {
   const { flyerId } = useParams();
   const isEditMode = Boolean(flyerId);
   const [currentStep, setCurrentStep] = useState(1);
-  const [isProMode, setIsProMode] = useState(false);
   const [leafletData, setLeafletData] = useState(DEFAULT_LEAFLET_DATA);
   const [loading, setLoading] = useState("");
   const [isFetching, setIsFetching] = useState(isEditMode);
@@ -255,7 +253,7 @@ const LeafletCreation = () => {
       setLoading(t("leafletCreation.generatingWait"));
 
       try {
-        const response = await ApiService.generateLeaflet(leafletData, isProMode);
+        const response = await ApiService.generateLeaflet(leafletData);
         if (response.flyer_output_path) {
           setLeafletData((prev) => ({
             ...prev,
@@ -421,66 +419,29 @@ const LeafletCreation = () => {
                       marginBottom: "20px",
                     }}
                   >
-                    <div
+                    <span
                       style={{
                         display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
                         backgroundColor: "#1e2433",
-                        borderRadius: "8px",
-                        padding: "4px",
+                        color: "#e2e8f0",
+                        border: "1px solid #334155",
+                        borderRadius: "999px",
+                        padding: "8px 14px",
+                        fontWeight: 600,
                       }}
                     >
-                      <button
-                        type="button"
-                        onClick={() => setIsProMode(false)}
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "6px",
-                          border: "none",
-                          backgroundColor: !isProMode ? "#3b82f6" : "transparent",
-                          color: !isProMode ? "white" : "#94a3b8",
-                          cursor: "pointer",
-                          fontWeight: "600",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <Settings size={16} /> {t("creation.standard")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsProMode(true)}
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "6px",
-                          border: "none",
-                          backgroundColor: isProMode ? "#8b5cf6" : "transparent",
-                          color: isProMode ? "white" : "#94a3b8",
-                          cursor: "pointer",
-                          fontWeight: "600",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <Sparkles size={16} /> {t("creation.pro")}
-                      </button>
-                    </div>
+                      <Sparkles size={16} />
+                      {t("creation.pro")}
+                    </span>
                   </div>
 
-                  {isProMode ? (
-                    <Step1ContentPro
-                      ref={step1Ref}
-                      data={leafletData}
-                      onUpdate={updateLeafletData}
-                    />
-                  ) : (
-                    <Step1Content
-                      ref={step1Ref}
-                      data={leafletData}
-                      onUpdate={updateLeafletData}
-                    />
-                  )}
+                  <Step1ContentPro
+                    ref={step1Ref}
+                    data={leafletData}
+                    onUpdate={updateLeafletData}
+                  />
                 </>
               )}
 
