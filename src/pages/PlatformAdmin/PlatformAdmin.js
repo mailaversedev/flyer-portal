@@ -85,6 +85,20 @@ const PlatformAdmin = () => {
     loadAdminData();
   }, [t]);
 
+  useEffect(() => {
+    if (!grantFeedback) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setGrantFeedback(null);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [grantFeedback]);
+
   if (!isSuperAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -169,6 +183,14 @@ const PlatformAdmin = () => {
 
   return (
     <div className="platform-admin-page">
+      {grantFeedback && (
+        <div
+          className={`platform-admin-feedback-popup ${grantFeedback.type === "error" ? "error" : "success"}`}
+        >
+          {grantFeedback.message}
+        </div>
+      )}
+
       <div className="platform-admin-summary">
         <div className="platform-admin-card">
           <span className="platform-admin-label">{t("adminPage.totalUsers")}</span>
@@ -249,14 +271,6 @@ const PlatformAdmin = () => {
             </table>
           ) : activeTab === "companies" ? (
             <div className="platform-admin-company-panel">
-              {grantFeedback && (
-                <div
-                  className={`platform-admin-feedback ${grantFeedback.type === "error" ? "error" : "success"}`}
-                >
-                  {grantFeedback.message}
-                </div>
-              )}
-
               <table className="campaigns-table">
                 <thead>
                   <tr>
