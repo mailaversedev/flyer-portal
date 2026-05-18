@@ -275,14 +275,13 @@ const PlatformAdmin = () => {
                 <thead>
                   <tr>
                     <th>{t("adminPage.companyDisplayName")}</th>
-                    <th>{t("adminPage.companyLegalName")}</th>
                     <th>{t("adminPage.status")}</th>
                     <th>{t("adminPage.industry")}</th>
                     <th>{t("adminPage.contact")}</th>
                     <th>{t("adminPage.companyTokens")}</th>
-                    <th>{t("adminPage.walletUpdatedAt")}</th>
                     <th>{t("adminPage.grantTokens")}</th>
                     <th>{t("adminPage.createdAt")}</th>
+                    <th>{t("adminPage.walletUpdatedAt")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -291,7 +290,6 @@ const PlatformAdmin = () => {
                       <td className="platform-admin-text-cell">
                         {company.companyDisplayName || "-"}
                       </td>
-                      <td className="platform-admin-text-cell">{company.name || "-"}</td>
                       <td>
                         <span className={`status ${company.isActive ? "live" : "completed"}`}>
                           {company.isActive ? t("adminPage.active") : t("adminPage.inactive")}
@@ -300,7 +298,6 @@ const PlatformAdmin = () => {
                       <td>{company.nature || "-"}</td>
                       <td>{company.contact || "-"}</td>
                       <td>{company.walletBalance ?? 0}</td>
-                      <td>{formatDate(company.walletUpdatedAt)}</td>
                       <td>
                         <div className="platform-admin-grant-controls">
                           <input
@@ -329,11 +326,12 @@ const PlatformAdmin = () => {
                         </div>
                       </td>
                       <td>{formatDate(company.createdAt)}</td>
+                      <td>{formatDate(company.walletUpdatedAt)}</td>
                     </tr>
                   ))}
                   {companies.length === 0 && (
                     <tr>
-                      <td colSpan="9" className="platform-admin-empty-cell">
+                      <td colSpan="8" className="platform-admin-empty-cell">
                         {t("adminPage.noCompanies")}
                       </td>
                     </tr>
