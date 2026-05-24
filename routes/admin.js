@@ -325,6 +325,18 @@ router.get("/users", async (req, res) => {
     const totalRegisteredUsers = userCountSnapshot.data().count || 0;
     const totalCrmContacts = crmCountSnapshot.data().count || 0;
 
+    if (
+      !nextToken &&
+      currentSource === AUDIENCE_SOURCE_CRM &&
+      remaining === 0 &&
+      totalCrmContacts > 0
+    ) {
+      nextToken = encodeNextToken({
+        source: AUDIENCE_SOURCE_CRM,
+        cursor: null,
+      });
+    }
+
     res.status(200).json({
       success: true,
       data: {
