@@ -702,4 +702,61 @@ router.get("/flyers", async (req, res) => {
   }
 });
 
+router.post("/flyers/:flyerId/status", async (req, res) => {
+  try {
+    const { flyerId } = req.params;
+    const nextStatus = normalizeString(req.body?.status).toLowerCase();
+
+    if (!flyerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Flyer ID is required",
+      });
+    }
+
+    if (!["active", "inactive"].includes(nextStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be active or inactive",
+      });
+    }
+
+    const flyerRef = db.collection("flyers").doc(flyerId);
+    const flyerDoc = await flyerRef.get();
+
+    if (!flyerDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Flyer not found",
+      });
+    }
+
+    await flyerRef.set(
+      {
+        status: nextStatus,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+
+    const updatedFlyerDoc = await flyerRef.get();
+
+    return res.status(200).json({
+      success: true,
+      message: "Flyer status updated successfully",
+      data: {
+        id: updatedFlyerDoc.id,
+        ...updatedFlyerDoc.data(),
+      },
+    });
+  } catch (error) {
+    console.error("Error updating admin flyer status:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update flyer status",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;

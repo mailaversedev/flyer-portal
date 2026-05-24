@@ -127,6 +127,10 @@
   top: 24px;
   right: 24px;
   z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   min-width: 280px;
   max-width: 420px;
   padding: 14px 18px;
@@ -135,6 +139,16 @@
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35);
   font-weight: 600;
   backdrop-filter: blur(10px);
+}
+
+.platform-admin-feedback-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
 }
 
 .platform-admin-feedback-popup.success {
@@ -175,6 +189,26 @@
 }
 
 .platform-admin-grant-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.platform-admin-flyer-action-button {
+  padding: 8px 12px;
+  border: 1px solid #475569;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-admin-flyer-action-button:hover:not(:disabled) {
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.platform-admin-flyer-action-button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }

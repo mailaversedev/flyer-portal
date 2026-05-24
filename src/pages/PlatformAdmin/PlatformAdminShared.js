@@ -92,6 +92,7 @@ export const usePlatformAdminData = () => {
     companies,
     flyers,
     totalUsersCount,
+    setFlyers,
     setCompanies,
     loading,
     error,
@@ -258,7 +259,12 @@ export const PlatformAdminCompaniesTable = ({
   </div>
 );
 
-export const PlatformAdminFlyersTable = ({ flyers, t }) => {
+export const PlatformAdminFlyersTable = ({
+  flyers,
+  t,
+  onUpdateFlyerStatus,
+  updatingFlyerId = "",
+}) => {
   const formattedFlyers = flyers.map((flyer) => {
     const lottery = flyer.lottery || {};
     const coupon = flyer.coupon || {};
@@ -287,6 +293,7 @@ export const PlatformAdminFlyersTable = ({ flyers, t }) => {
         : "-",
       downloadRate: downloadRate > 0 ? `${downloadRate.toFixed(2)}%` : "-",
       createdAt: formatDate(flyer.createdAt),
+      rawStatus: flyer.status || "",
     };
   });
 
@@ -304,6 +311,7 @@ export const PlatformAdminFlyersTable = ({ flyers, t }) => {
           <th>{t("dashboard.remainingPool")}</th>
           <th>{t("dashboard.downloadRate")}</th>
           <th>{t("adminPage.createdAt")}</th>
+          <th>{t("adminPage.actions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -325,11 +333,30 @@ export const PlatformAdminFlyersTable = ({ flyers, t }) => {
             <td>{flyer.remainingPool}</td>
             <td>{flyer.downloadRate}</td>
             <td>{flyer.createdAt}</td>
+            <td>
+              <button
+                type="button"
+                className="platform-admin-flyer-action-button"
+                onClick={() =>
+                  onUpdateFlyerStatus(
+                    flyer.id,
+                    flyer.rawStatus === "active" ? "inactive" : "active",
+                  )
+                }
+                disabled={updatingFlyerId === flyer.id}
+              >
+                {updatingFlyerId === flyer.id
+                  ? t("adminPage.updatingStatus")
+                  : flyer.rawStatus === "active"
+                    ? t("adminPage.markInactive")
+                    : t("adminPage.markActive")}
+              </button>
+            </td>
           </tr>
         ))}
         {formattedFlyers.length === 0 && (
           <tr>
-            <td colSpan="10" className="platform-admin-empty-cell">
+            <td colSpan="11" className="platform-admin-empty-cell">
               {t("adminPage.noFlyers")}
             </td>
           </tr>

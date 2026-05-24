@@ -277,6 +277,13 @@ class ApiService {
     );
   }
 
+  static async updateAdminFlyerStatus(flyerId, status) {
+    return this.makeRequest(`/api/admin/flyers/${flyerId}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    });
+  }
+
   static async getCrmContactSummary() {
     return this.makeRequest("/api/admin/crm-contacts/summary");
   }

@@ -84,7 +84,7 @@ const Dashboard = () => {
             flyerType: flyer.type,
             thumbnail: flyer?.coverPhoto || "📄",
             adTitle: flyer.header || `Promotion ${flyer.id.substr(0, 6)}`,
-            status: flyer.status === "active" ? "Live" : "Completed",
+            status: flyer.status === "active" ? "Live" : "Inactive",
             adType: flyer.type.charAt(0).toUpperCase() + flyer.type.slice(1),
             totalReached: lottery.userReached || 0,
             browseRate:

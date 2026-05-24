@@ -84,6 +84,13 @@ router.get("/", authenticateToken, async (req, res) => {
     }
 
     const flyer = flyerDoc.data();
+
+    if (flyer?.status !== "active") {
+      return res.status(200).json({
+        success: false,
+      });
+    }
+
     if (flyer?.noReward || !flyer?.lottery) {
       return res.status(409).json({
         success: false,
