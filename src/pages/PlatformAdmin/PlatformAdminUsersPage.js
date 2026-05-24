@@ -4,14 +4,14 @@ import { useTranslation } from "react-i18next";
 
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import {
-  PlatformAdminFlyersTable,
   PlatformAdminSummary,
+  PlatformAdminUsersTable,
   usePlatformAdminData,
 } from "./PlatformAdminShared";
 import "../../components/Dashboard/CampaignTable.css";
 import "./PlatformAdmin.css";
 
-const PlatformAdmin = () => {
+const PlatformAdminUsersPage = () => {
   const { t } = useTranslation();
   const { users, companies, flyers, loading, error } = usePlatformAdminData();
 
@@ -30,7 +30,7 @@ const PlatformAdmin = () => {
           ) : error ? (
             <div className="table-loading">{error}</div>
           ) : (
-            <PlatformAdminFlyersTable flyers={flyers} t={t} />
+            <PlatformAdminUsersTable users={users} t={t} />
           )}
         </div>
       </div>
@@ -38,4 +38,4 @@ const PlatformAdmin = () => {
   );
 };
 
-export default PlatformAdmin;
+export default PlatformAdminUsersPage;

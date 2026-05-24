@@ -11,6 +11,8 @@ import QRGeneration from "./pages/Flyer/FlyerCreation/QRGeneration";
 import StaffLogin from "./pages/Login/StaffLogin";
 import Profile from "./pages/Profile/Profile";
 import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
+import PlatformAdminUsersPage from "./pages/PlatformAdmin/PlatformAdminUsersPage";
+import PlatformAdminCompaniesPage from "./pages/PlatformAdmin/PlatformAdminCompaniesPage";
 import PlatformVouchersListPage from "./pages/PlatformVouchers/PlatformVouchersListPage";
 import PlatformVouchersCreatePage from "./pages/PlatformVouchers/PlatformVouchersCreatePage";
 import CrmCampaignListPage from "./pages/CrmCampaigns/CrmCampaignListPage";
@@ -100,6 +102,11 @@ function App() {
                       }
                     />
                     <Route path="/platform-admin" element={<PlatformAdmin />} />
+                    <Route path="/platform-admin/users" element={<PlatformAdminUsersPage />} />
+                    <Route
+                      path="/platform-admin/companies"
+                      element={<PlatformAdminCompaniesPage />}
+                    />
                     <Route path="/platform-vouchers" element={<PlatformVouchersListPage />} />
                     <Route path="/platform-vouchers/create" element={<PlatformVouchersCreatePage />} />
                     <Route path="/crm-campaigns" element={<CrmCampaignListPage />} />

@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
+  Building2,
   LayoutDashboard,
   Mail,
   ShoppingBag,
@@ -10,6 +11,7 @@ import {
   Percent,
   Shield,
   Gift,
+  Users,
 } from "lucide-react";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./Sidebar.css";
@@ -24,6 +26,16 @@ const Sidebar = () => {
           name: t("common.platformAdmin"),
           path: "/platform-admin",
           icon: Shield,
+        },
+        {
+          name: t("adminPage.usersTab"),
+          path: "/platform-admin/users",
+          icon: Users,
+        },
+        {
+          name: t("adminPage.companiesTab"),
+          path: "/platform-admin/companies",
+          icon: Building2,
         },
         {
           name: t("common.vouchers"),
