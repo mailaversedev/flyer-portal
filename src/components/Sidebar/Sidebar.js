@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
   Building2,
@@ -18,7 +18,11 @@ import "./Sidebar.css";
 
 const Sidebar = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const showSuperAdminItem = isSuperAdmin();
+  const isPlatformAdminSection =
+    location.pathname === "/platform-admin" ||
+    location.pathname.startsWith("/platform-admin/");
 
   const navigationItems = showSuperAdminItem
     ? [
@@ -26,16 +30,19 @@ const Sidebar = () => {
           name: t("common.platformAdmin"),
           path: "/platform-admin",
           icon: Shield,
+          isSectionRoot: true,
         },
         {
           name: t("adminPage.usersTab"),
           path: "/platform-admin/users",
           icon: Users,
+          isChild: true,
         },
         {
           name: t("adminPage.companiesTab"),
           path: "/platform-admin/companies",
           icon: Building2,
+          isChild: true,
         },
         {
           name: t("common.vouchers"),
@@ -102,7 +109,12 @@ const Sidebar = () => {
           <NavLink
             key={item.name}
             to={item.path}
-            className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+            className={({ isActive }) => {
+              const isItemActive =
+                isActive || (item.isSectionRoot && isPlatformAdminSection);
+
+              return `nav-item ${isItemActive ? "active" : ""} ${item.isChild ? "child" : ""}`;
+            }}
           >
             <item.icon className="nav-icon" size={20} />
             <span className="nav-text">{item.name}</span>

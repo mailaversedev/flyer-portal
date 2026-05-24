@@ -6,7 +6,6 @@ import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import {
   PlatformAdminCompaniesTable,
-  PlatformAdminSummary,
   usePlatformAdminData,
 } from "./PlatformAdminShared";
 import "../../components/Dashboard/CampaignTable.css";
@@ -14,7 +13,7 @@ import "./PlatformAdmin.css";
 
 const PlatformAdminCompaniesPage = () => {
   const { t } = useTranslation();
-  const { users, companies, flyers, setCompanies, loading, error } = usePlatformAdminData();
+  const { companies, setCompanies, loading, error } = usePlatformAdminData();
   const [grantAmounts, setGrantAmounts] = useState({});
   const [grantingCompanyId, setGrantingCompanyId] = useState("");
   const [grantFeedback, setGrantFeedback] = useState(null);
@@ -93,8 +92,6 @@ const PlatformAdminCompaniesPage = () => {
           {grantFeedback.message}
         </div>
       )}
-
-      <PlatformAdminSummary users={users} companies={companies} flyers={flyers} t={t} />
 
       <div className="campaign-table">
         <div className="table-container">

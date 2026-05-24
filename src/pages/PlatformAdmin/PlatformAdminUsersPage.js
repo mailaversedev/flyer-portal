@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import {
-  PlatformAdminSummary,
   PlatformAdminUsersTable,
   usePlatformAdminData,
 } from "./PlatformAdminShared";
@@ -13,7 +12,7 @@ import "./PlatformAdmin.css";
 
 const PlatformAdminUsersPage = () => {
   const { t } = useTranslation();
-  const { users, companies, flyers, loading, error } = usePlatformAdminData();
+  const { users, loading, error } = usePlatformAdminData();
 
   if (!isSuperAdmin()) {
     return <Navigate to="/dashboard" replace />;
@@ -21,8 +20,6 @@ const PlatformAdminUsersPage = () => {
 
   return (
     <div className="platform-admin-page">
-      <PlatformAdminSummary users={users} companies={companies} flyers={flyers} t={t} />
-
       <div className="campaign-table">
         <div className="table-container">
           {loading ? (
