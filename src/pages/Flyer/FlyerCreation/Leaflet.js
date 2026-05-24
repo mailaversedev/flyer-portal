@@ -223,7 +223,7 @@ const LeafletCreation = () => {
   const canGenerate = hasFreeAttemptRemaining || hasEnoughTokens;
 
   useEffect(() => {
-    if (isEditMode || isSuperAdminUser) {
+    if (isEditMode) {
       return;
     }
 
@@ -234,7 +234,7 @@ const LeafletCreation = () => {
       }));
       setCurrentStep(2);
     }
-  }, [isEditMode, isSuperAdminUser, location.state]);
+  }, [isEditMode, location.state]);
 
   useEffect(() => {
     if (!isEditMode) {
