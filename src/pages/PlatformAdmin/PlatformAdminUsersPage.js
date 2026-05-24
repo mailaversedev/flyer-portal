@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
@@ -15,11 +15,6 @@ const PAGE_SIZE = 20;
 const PlatformAdminUsersPage = () => {
   const { t } = useTranslation();
   const [entries, setEntries] = useState([]);
-  const [summary, setSummary] = useState({
-    registeredUsers: 0,
-    crmContacts: 0,
-    totalAudience: 0,
-  });
   const [nextToken, setNextToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -43,19 +38,6 @@ const PlatformAdminUsersPage = () => {
         const nextEntries = response?.success ? response.data?.entries || [] : [];
 
         setEntries((prev) => (replace ? nextEntries : [...prev, ...nextEntries]));
-        setSummary(
-          response?.success
-            ? response.summary || {
-                registeredUsers: 0,
-                crmContacts: 0,
-                totalAudience: 0,
-              }
-            : {
-                registeredUsers: 0,
-                crmContacts: 0,
-                totalAudience: 0,
-              },
-        );
         setNextToken(response?.success ? response.nextToken || null : null);
       } catch (loadError) {
         console.error("Failed to load platform audience lists", loadError);
@@ -101,16 +83,6 @@ const PlatformAdminUsersPage = () => {
     };
   }, [error, loadAudienceEntries, loading, loadingMore, nextToken]);
 
-  const subtitle = useMemo(
-    () =>
-      t("adminPage.audienceSubtitle", {
-        users: summary.registeredUsers,
-        crmContacts: summary.crmContacts,
-        total: summary.totalAudience || entries.length,
-      }),
-    [entries.length, summary.crmContacts, summary.registeredUsers, summary.totalAudience, t],
-  );
-
   if (!isSuperAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -134,7 +106,6 @@ const PlatformAdminUsersPage = () => {
               <h2 className="platform-admin-section-title">
                 {t("adminPage.audienceSection")}
               </h2>
-              <p className="platform-admin-section-subtitle">{subtitle}</p>
             </div>
           </div>
 

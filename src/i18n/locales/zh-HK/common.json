@@ -157,7 +157,6 @@
     "crmContactsSection": "潛在用戶",
     "crmContactsSubtitle": "共有 {{count}} 位 CRM 聯絡人可用於向商戶展示受眾規模。",
     "audienceSection": "受眾名單",
-    "audienceSubtitle": "先顯示 {{users}} 位已註冊用戶，再顯示 {{crmContacts}} 位 CRM 聯絡人。總受眾數：{{total}}。",
     "loadingMore": "正在載入更多受眾...",
     "audienceEnd": "已載入全部受眾資料。",
     "previousPage": "上一頁",
