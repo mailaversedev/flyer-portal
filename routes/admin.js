@@ -22,6 +22,9 @@ const MAX_LIMIT = 500;
 const CRM_EMAIL_SUBJECT_MAX_LENGTH = 160;
 const CRM_EMAIL_HTML_MAX_LENGTH = 200000;
 const SIMPLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CRM_CONTACTS_COLLECTION = "crm_contacts";
+const AUDIENCE_SOURCE_USERS = "users";
+const AUDIENCE_SOURCE_CRM = "crm_contacts";
 
 const requireSuperAdmin = (req, res, next) => {
   if (req.user?.role !== "super-admin") {
@@ -45,6 +48,100 @@ const normalizeLimit = (value) => {
 };
 
 const normalizeString = (value) => `${value || ""}`.trim();
+
+const encodeNextToken = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+};
+
+const decodeNextToken = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
+  } catch (_error) {
+    return null;
+  }
+};
+
+const buildAudienceQuery = ({ collectionName, direction, limit, cursor }) => {
+  let query = db
+    .collection(collectionName)
+    .orderBy("createdAt", direction)
+    .orderBy(admin.firestore.FieldPath.documentId(), direction)
+    .limit(limit + 1);
+
+  if (cursor?.createdAt && cursor?.id) {
+    query = query.startAfter(cursor.createdAt, cursor.id);
+  }
+
+  return query;
+};
+
+const serializeAdminUser = (doc) => {
+  const data = doc.data() || {};
+
+  return {
+    id: doc.id,
+    username: data.username || "",
+    displayName: data.displayName || "",
+    createdAt: data.createdAt || null,
+    lastLoginAt: data.lastLoginAt || null,
+    status: data.isActive !== false ? "active" : "inactive",
+    location: data.location || null,
+    source: "user",
+  };
+};
+
+const serializeCrmContact = (doc) => {
+  const data = doc.data() || {};
+
+  return {
+    id: doc.id,
+    username: data.email || "",
+    displayName: data.name || "",
+    createdAt: data.createdAt || null,
+    lastLoginAt: null,
+    status: "engaged",
+    location: data.location || null,
+    source: "crm_contact",
+  };
+};
+
+const fetchAudienceSegment = async ({ source, direction, limit, cursor }) => {
+  const collectionName =
+    source === AUDIENCE_SOURCE_CRM ? CRM_CONTACTS_COLLECTION : AUDIENCE_SOURCE_USERS;
+  const snapshot = await buildAudienceQuery({
+    collectionName,
+    direction,
+    limit,
+    cursor,
+  }).get();
+  const docs = snapshot.docs;
+  const hasMore = docs.length > limit;
+  const visibleDocs = hasMore ? docs.slice(0, limit) : docs;
+  const serialize =
+    source === AUDIENCE_SOURCE_CRM ? serializeCrmContact : serializeAdminUser;
+  const entries = visibleDocs.map((doc) => serialize(doc));
+  const lastDoc = visibleDocs.at(-1);
+
+  return {
+    entries,
+    hasMore,
+    cursor:
+      lastDoc && lastDoc.get("createdAt")
+        ? {
+            id: lastDoc.id,
+            createdAt: lastDoc.get("createdAt"),
+          }
+        : null,
+  };
+};
 
 router.use(authenticateToken, requireSuperAdmin);
 
@@ -183,30 +280,62 @@ router.get("/users", async (req, res) => {
   try {
     const limit = normalizeLimit(req.query.limit);
     const direction = req.query.direction === "asc" ? "asc" : "desc";
+    const parsedToken = decodeNextToken(req.query.nextToken);
+    let currentSource =
+      parsedToken?.source === AUDIENCE_SOURCE_CRM
+        ? AUDIENCE_SOURCE_CRM
+        : AUDIENCE_SOURCE_USERS;
+    let cursor = parsedToken?.cursor || null;
+    let remaining = limit;
+    const entries = [];
+    let nextToken = null;
 
-    const snapshot = await db
-      .collection("users")
-      .orderBy("createdAt", direction)
-      .limit(limit)
-      .get();
+    const [userCountSnapshot, crmCountSnapshot] = await Promise.all([
+      db.collection(AUDIENCE_SOURCE_USERS).count().get(),
+      db.collection(CRM_CONTACTS_COLLECTION).count().get(),
+    ]);
 
-    const users = snapshot.docs.map((doc) => {
-      const data = doc.data() || {};
+    while (remaining > 0 && currentSource) {
+      const segment = await fetchAudienceSegment({
+        source: currentSource,
+        direction,
+        limit: remaining,
+        cursor,
+      });
 
-      return {
-        id: doc.id,
-        username: data.username || "",
-        displayName: data.displayName || "",
-        createdAt: data.createdAt || null,
-        lastLoginAt: data.lastLoginAt || null,
-        isActive: data.isActive !== false,
-        location: data.location || null,
-      };
-    });
+      entries.push(...segment.entries);
+      remaining -= segment.entries.length;
+
+      if (segment.hasMore && segment.cursor) {
+        nextToken = encodeNextToken({
+          source: currentSource,
+          cursor: segment.cursor,
+        });
+        break;
+      }
+
+      if (currentSource === AUDIENCE_SOURCE_USERS) {
+        currentSource = AUDIENCE_SOURCE_CRM;
+        cursor = null;
+      } else {
+        currentSource = null;
+      }
+    }
+
+    const totalRegisteredUsers = userCountSnapshot.data().count || 0;
+    const totalCrmContacts = crmCountSnapshot.data().count || 0;
 
     res.status(200).json({
       success: true,
-      data: users,
+      data: {
+        entries,
+      },
+      nextToken,
+      summary: {
+        registeredUsers: totalRegisteredUsers,
+        crmContacts: totalCrmContacts,
+        totalAudience: totalRegisteredUsers + totalCrmContacts,
+      },
     });
   } catch (error) {
     console.error("Error fetching admin user list:", error);

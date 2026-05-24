@@ -136,6 +136,7 @@
     "lastLogin": "最後登入",
     "active": "啟用",
     "inactive": "停用",
+    "engaged": "已互動",
     "noUsers": "找不到用戶",
     "noCompanies": "找不到公司",
     "noFlyers": "找不到傳單",
@@ -150,7 +151,17 @@
     "granting": "充值中...",
     "grantSuccess": "公司錢包已成功更新。",
     "grantError": "充值代幣失敗。",
-    "invalidGrantAmount": "請輸入有效的正整數代幣數量。"
+    "invalidGrantAmount": "請輸入有效的正整數代幣數量。",
+    "registeredUsersSection": "已註冊用戶",
+    "registeredUsersSubtitle": "平台資料庫內共有 {{count}} 位已註冊用戶。",
+    "crmContactsSection": "潛在用戶",
+    "crmContactsSubtitle": "共有 {{count}} 位 CRM 聯絡人可用於向商戶展示受眾規模。",
+    "audienceSection": "受眾名單",
+    "audienceSubtitle": "先顯示 {{users}} 位已註冊用戶，再顯示 {{crmContacts}} 位 CRM 聯絡人。總受眾數：{{total}}。",
+    "loadingMore": "正在載入更多受眾...",
+    "audienceEnd": "已載入全部受眾資料。",
+    "previousPage": "上一頁",
+    "nextPage": "下一頁"
   },
   "voucherAdminPage": {
     "createTitle": "建立禮券",

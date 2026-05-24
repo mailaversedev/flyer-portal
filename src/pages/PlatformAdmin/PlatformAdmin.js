@@ -13,7 +13,7 @@ import "./PlatformAdmin.css";
 
 const PlatformAdmin = () => {
   const { t } = useTranslation();
-  const { users, companies, flyers, loading, error } = usePlatformAdminData();
+  const { users, companies, flyers, totalUsersCount, loading, error } = usePlatformAdminData();
 
   if (!isSuperAdmin()) {
     return <Navigate to="/dashboard" replace />;
@@ -21,7 +21,13 @@ const PlatformAdmin = () => {
 
   return (
     <div className="platform-admin-page">
-      <PlatformAdminSummary users={users} companies={companies} flyers={flyers} t={t} />
+      <PlatformAdminSummary
+        users={users}
+        companies={companies}
+        flyers={flyers}
+        totalUsersCount={totalUsersCount}
+        t={t}
+      />
 
       <div className="campaign-table">
         <div className="table-container">

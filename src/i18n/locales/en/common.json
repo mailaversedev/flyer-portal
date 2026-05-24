@@ -136,6 +136,7 @@
     "lastLogin": "Last Login",
     "active": "Active",
     "inactive": "Inactive",
+    "engaged": "Engaged",
     "noUsers": "No users found",
     "noCompanies": "No companies found",
     "noFlyers": "No flyers found",
@@ -150,7 +151,17 @@
     "granting": "Granting...",
     "grantSuccess": "Company wallet updated successfully.",
     "grantError": "Failed to grant tokens.",
-    "invalidGrantAmount": "Enter a valid positive token amount."
+    "invalidGrantAmount": "Enter a valid positive token amount.",
+    "registeredUsersSection": "Registered Users",
+    "registeredUsersSubtitle": "{{count}} registered users in the platform database.",
+    "crmContactsSection": "Potential Users",
+    "crmContactsSubtitle": "{{count}} CRM contacts available for merchant audience positioning.",
+    "audienceSection": "Audience Directory",
+    "audienceSubtitle": "{{users}} registered users first, then {{crmContacts}} CRM contacts. Total audience: {{total}}.",
+    "loadingMore": "Loading more audience...",
+    "audienceEnd": "All audience records have been loaded.",
+    "previousPage": "Previous",
+    "nextPage": "Next"
   },
   "voucherAdminPage": {
     "createTitle": "Create Voucher",

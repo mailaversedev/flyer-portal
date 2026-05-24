@@ -48,6 +48,7 @@ export const usePlatformAdminData = () => {
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [flyers, setFlyers] = useState([]);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -63,9 +64,18 @@ export const usePlatformAdminData = () => {
           ApiService.getAdminFlyers(),
         ]);
 
-        setUsers(usersResponse.success ? usersResponse.data : []);
+        const nextUsers = usersResponse?.success
+          ? usersResponse.data?.entries || usersResponse.data?.users || []
+          : [];
+
+        setUsers(nextUsers);
         setCompanies(companiesResponse.success ? companiesResponse.data : []);
         setFlyers(flyersResponse.success ? flyersResponse.data : []);
+        setTotalUsersCount(
+          usersResponse?.success
+            ? Number(usersResponse.summary?.totalAudience) || nextUsers.length
+            : 0,
+        );
       } catch (loadError) {
         console.error("Failed to load platform admin data", loadError);
         setError(t("adminPage.loadError"));
@@ -81,17 +91,47 @@ export const usePlatformAdminData = () => {
     users,
     companies,
     flyers,
+    totalUsersCount,
     setCompanies,
     loading,
     error,
   };
 };
 
-export const PlatformAdminSummary = ({ users, companies, flyers, t }) => (
+const getUserStatusMeta = (user, t) => {
+  const normalizedStatus = `${user?.status || ""}`.trim().toLowerCase();
+
+  if (normalizedStatus === "engaged") {
+    return {
+      className: "engaged",
+      label: t("adminPage.engaged"),
+    };
+  }
+
+  if (normalizedStatus === "inactive") {
+    return {
+      className: "completed",
+      label: t("adminPage.inactive"),
+    };
+  }
+
+  return {
+    className: "live",
+    label: t("adminPage.active"),
+  };
+};
+
+export const PlatformAdminSummary = ({
+  users,
+  companies,
+  flyers,
+  totalUsersCount,
+  t,
+}) => (
   <div className="platform-admin-summary">
     <div className="platform-admin-card">
       <span className="platform-admin-label">{t("adminPage.totalUsers")}</span>
-      <strong className="platform-admin-value">{users.length}</strong>
+      <strong className="platform-admin-value">{totalUsersCount ?? users.length}</strong>
     </div>
     <div className="platform-admin-card">
       <span className="platform-admin-label">{t("adminPage.totalFlyers")}</span>
@@ -104,7 +144,7 @@ export const PlatformAdminSummary = ({ users, companies, flyers, t }) => (
   </div>
 );
 
-export const PlatformAdminUsersTable = ({ users, t }) => (
+export const PlatformAdminUsersTable = ({ users, t, emptyMessage = null }) => (
   <table className="campaigns-table">
     <thead>
       <tr>
@@ -118,12 +158,12 @@ export const PlatformAdminUsersTable = ({ users, t }) => (
     </thead>
     <tbody>
       {users.map((user) => (
-        <tr key={user.id} className="campaign-row-disabled">
+        <tr key={`${user.source || "user"}-${user.id}`} className="campaign-row-disabled">
           <td>{user.username || "-"}</td>
           <td>{user.displayName || "-"}</td>
           <td>
-            <span className={`status ${user.isActive ? "live" : "completed"}`}>
-              {user.isActive ? t("adminPage.active") : t("adminPage.inactive")}
+            <span className={`status ${getUserStatusMeta(user, t).className}`}>
+              {getUserStatusMeta(user, t).label}
             </span>
           </td>
           <td className="platform-admin-text-cell">{formatLocation(user.location)}</td>
@@ -134,7 +174,7 @@ export const PlatformAdminUsersTable = ({ users, t }) => (
       {users.length === 0 && (
         <tr>
           <td colSpan="6" className="platform-admin-empty-cell">
-            {t("adminPage.noUsers")}
+            {emptyMessage || t("adminPage.noUsers")}
           </td>
         </tr>
       )}

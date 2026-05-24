@@ -1,18 +1,115 @@
-import React from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
+import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import {
   PlatformAdminUsersTable,
-  usePlatformAdminData,
 } from "./PlatformAdminShared";
 import "../../components/Dashboard/CampaignTable.css";
 import "./PlatformAdmin.css";
 
+const PAGE_SIZE = 20;
+
 const PlatformAdminUsersPage = () => {
   const { t } = useTranslation();
-  const { users, loading, error } = usePlatformAdminData();
+  const [entries, setEntries] = useState([]);
+  const [summary, setSummary] = useState({
+    registeredUsers: 0,
+    crmContacts: 0,
+    totalAudience: 0,
+  });
+  const [nextToken, setNextToken] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState("");
+  const loadMoreRef = useRef(null);
+
+  const loadAudienceEntries = useCallback(
+    async ({ token = "", replace = false } = {}) => {
+      try {
+        if (replace) {
+          setLoading(true);
+          setError("");
+        } else {
+          setLoadingMore(true);
+        }
+
+        const response = await ApiService.getAdminUsers({
+          limit: PAGE_SIZE,
+          nextToken: token,
+        });
+        const nextEntries = response?.success ? response.data?.entries || [] : [];
+
+        setEntries((prev) => (replace ? nextEntries : [...prev, ...nextEntries]));
+        setSummary(
+          response?.success
+            ? response.summary || {
+                registeredUsers: 0,
+                crmContacts: 0,
+                totalAudience: 0,
+              }
+            : {
+                registeredUsers: 0,
+                crmContacts: 0,
+                totalAudience: 0,
+              },
+        );
+        setNextToken(response?.success ? response.nextToken || null : null);
+      } catch (loadError) {
+        console.error("Failed to load platform audience lists", loadError);
+        setError(loadError.message || t("adminPage.loadError"));
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [t],
+  );
+
+  useEffect(() => {
+    loadAudienceEntries({ replace: true });
+  }, [loadAudienceEntries]);
+
+  useEffect(() => {
+    if (!nextToken || loading || loadingMore || error) {
+      return undefined;
+    }
+
+    const target = loadMoreRef.current;
+
+    if (!target) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entriesList) => {
+        if (entriesList[0]?.isIntersecting) {
+          loadAudienceEntries({ token: nextToken, replace: false });
+        }
+      },
+      {
+        rootMargin: "280px 0px",
+      },
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [error, loadAudienceEntries, loading, loadingMore, nextToken]);
+
+  const subtitle = useMemo(
+    () =>
+      t("adminPage.audienceSubtitle", {
+        users: summary.registeredUsers,
+        crmContacts: summary.crmContacts,
+        total: summary.totalAudience || entries.length,
+      }),
+    [entries.length, summary.crmContacts, summary.registeredUsers, summary.totalAudience, t],
+  );
 
   if (!isSuperAdmin()) {
     return <Navigate to="/dashboard" replace />;
@@ -20,17 +117,46 @@ const PlatformAdminUsersPage = () => {
 
   return (
     <div className="platform-admin-page">
-      <div className="campaign-table">
-        <div className="table-container">
-          {loading ? (
-            <div className="table-loading">{t("adminPage.loading")}</div>
-          ) : error ? (
-            <div className="table-loading">{error}</div>
-          ) : (
-            <PlatformAdminUsersTable users={users} t={t} />
-          )}
+      {loading || error ? (
+        <div className="campaign-table">
+          <div className="table-container">
+            {loading ? (
+              <div className="table-loading">{t("adminPage.loading")}</div>
+            ) : (
+              <div className="table-loading">{error}</div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <section className="campaign-table">
+          <div className="platform-admin-section-header">
+            <div>
+              <h2 className="platform-admin-section-title">
+                {t("adminPage.audienceSection")}
+              </h2>
+              <p className="platform-admin-section-subtitle">{subtitle}</p>
+            </div>
+          </div>
+
+          <div className="table-container">
+            <PlatformAdminUsersTable users={entries} t={t} />
+          </div>
+
+          {loadingMore && (
+            <div className="platform-admin-infinite-state">
+              {t("adminPage.loadingMore")}
+            </div>
+          )}
+
+          {!nextToken && entries.length > 0 && (
+            <div className="platform-admin-infinite-state complete">
+              {t("adminPage.audienceEnd")}
+            </div>
+          )}
+
+          {nextToken && <div ref={loadMoreRef} className="platform-admin-load-more-trigger" />}
+        </section>
+      )}
     </div>
   );
 };

@@ -226,10 +226,23 @@ class ApiService {
     return this.makeRequest(`/api/flyers?${queryString}`);
   }
 
-  static async getAdminUsers(limit = 100, direction = "desc") {
-    return this.makeRequest(
-      `/api/admin/users?limit=${limit}&direction=${direction}`,
-    );
+  static async getAdminUsers(options = {}) {
+    const {
+      limit = 20,
+      direction = "desc",
+      nextToken = "",
+    } = options;
+
+    const params = new URLSearchParams({
+      limit: String(limit),
+      direction,
+    });
+
+    if (nextToken) {
+      params.set("nextToken", nextToken);
+    }
+
+    return this.makeRequest(`/api/admin/users?${params.toString()}`);
   }
 
   static async getAdminCompanies(limit = 100, direction = "desc") {
