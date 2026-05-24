@@ -156,7 +156,6 @@
     "registeredUsersSubtitle": "{{count}} registered users in the platform database.",
     "crmContactsSection": "Potential Users",
     "crmContactsSubtitle": "{{count}} CRM contacts available for merchant audience positioning.",
-    "audienceSection": "Audience Directory",
     "loadingMore": "Loading more audience...",
     "audienceEnd": "All audience records have been loaded.",
     "previousPage": "Previous",

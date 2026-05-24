@@ -101,14 +101,6 @@ const PlatformAdminUsersPage = () => {
         </div>
       ) : (
         <section className="campaign-table">
-          <div className="platform-admin-section-header">
-            <div>
-              <h2 className="platform-admin-section-title">
-                {t("adminPage.audienceSection")}
-              </h2>
-            </div>
-          </div>
-
           <div className="table-container">
             <PlatformAdminUsersTable users={entries} t={t} />
           </div>

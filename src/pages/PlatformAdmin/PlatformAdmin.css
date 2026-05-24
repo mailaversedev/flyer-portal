@@ -51,6 +51,10 @@
 .platform-admin-users-table th,
 .platform-admin-users-table td {
   vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.5;
 }
 
 .platform-admin-user-column {
@@ -69,15 +73,15 @@
 .platform-admin-users-table td.platform-admin-location-column {
   width: 33%;
   max-width: none;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-all;
-  line-height: 1.5;
 }
 
 .platform-admin-users-table th.platform-admin-timestamp-column,
 .platform-admin-users-table td.platform-admin-timestamp-column {
   width: 15%;
+}
+
+.platform-admin-users-table td .status {
+  display: inline-flex;
 }
 
 .table-loading {

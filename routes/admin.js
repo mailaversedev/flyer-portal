@@ -99,6 +99,8 @@ const serializeAdminUser = (doc) => {
 
 const serializeCrmContact = (doc) => {
   const data = doc.data() || {};
+  const baseLocation =
+    data.location && typeof data.location === "object" ? data.location : {};
 
   return {
     id: doc.id,
@@ -107,7 +109,15 @@ const serializeCrmContact = (doc) => {
     createdAt: data.createdAt || null,
     lastLoginAt: null,
     status: "engaged",
-    location: data.location || null,
+    location: {
+      countryCity: baseLocation.countryCity || data.countryCity || "",
+      district: baseLocation.district || data.district || "",
+      buildingEstate:
+        baseLocation.buildingEstate ||
+        baseLocation.address ||
+        data.address ||
+        "",
+    },
     source: "crm_contact",
   };
 };
