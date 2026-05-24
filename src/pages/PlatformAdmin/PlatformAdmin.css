@@ -65,15 +65,18 @@
   width: 10%;
 }
 
-.platform-admin-location-column {
+.platform-admin-users-table th.platform-admin-location-column,
+.platform-admin-users-table td.platform-admin-location-column {
   width: 33%;
   max-width: none;
   white-space: normal;
   overflow-wrap: anywhere;
-  word-break: break-word;
+  word-break: break-all;
+  line-height: 1.5;
 }
 
-.platform-admin-timestamp-column {
+.platform-admin-users-table th.platform-admin-timestamp-column,
+.platform-admin-users-table td.platform-admin-timestamp-column {
   width: 15%;
 }
 

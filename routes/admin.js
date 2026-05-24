@@ -72,12 +72,11 @@ const decodeNextToken = (value) => {
 const buildAudienceQuery = ({ collectionName, direction, limit, cursor }) => {
   let query = db
     .collection(collectionName)
-    .orderBy("createdAt", direction)
     .orderBy(admin.firestore.FieldPath.documentId(), direction)
     .limit(limit + 1);
 
-  if (cursor?.createdAt && cursor?.id) {
-    query = query.startAfter(cursor.createdAt, cursor.id);
+  if (cursor?.id) {
+    query = query.startAfter(cursor.id);
   }
 
   return query;
@@ -133,13 +132,7 @@ const fetchAudienceSegment = async ({ source, direction, limit, cursor }) => {
   return {
     entries,
     hasMore,
-    cursor:
-      lastDoc && lastDoc.get("createdAt")
-        ? {
-            id: lastDoc.id,
-            createdAt: lastDoc.get("createdAt"),
-          }
-        : null,
+    cursor: lastDoc ? { id: lastDoc.id } : null,
   };
 };
 
