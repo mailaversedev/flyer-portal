@@ -145,30 +145,32 @@ export const PlatformAdminSummary = ({
 );
 
 export const PlatformAdminUsersTable = ({ users, t, emptyMessage = null }) => (
-  <table className="campaigns-table">
+  <table className="campaigns-table platform-admin-users-table">
     <thead>
       <tr>
-        <th>{t("adminPage.username")}</th>
-        <th>{t("adminPage.displayName")}</th>
-        <th>{t("adminPage.status")}</th>
-        <th>{t("adminPage.location")}</th>
-        <th>{t("adminPage.registeredAt")}</th>
-        <th>{t("adminPage.lastLogin")}</th>
+        <th className="platform-admin-user-column">{t("adminPage.username")}</th>
+        <th className="platform-admin-name-column">{t("adminPage.displayName")}</th>
+        <th className="platform-admin-status-column">{t("adminPage.status")}</th>
+        <th className="platform-admin-location-column">{t("adminPage.location")}</th>
+        <th className="platform-admin-timestamp-column">{t("adminPage.registeredAt")}</th>
+        <th className="platform-admin-timestamp-column">{t("adminPage.lastLogin")}</th>
       </tr>
     </thead>
     <tbody>
       {users.map((user) => (
         <tr key={`${user.source || "user"}-${user.id}`} className="campaign-row-disabled">
-          <td>{user.username || "-"}</td>
-          <td>{user.displayName || "-"}</td>
-          <td>
+          <td className="platform-admin-user-column">{user.username || "-"}</td>
+          <td className="platform-admin-name-column">{user.displayName || "-"}</td>
+          <td className="platform-admin-status-column">
             <span className={`status ${getUserStatusMeta(user, t).className}`}>
               {getUserStatusMeta(user, t).label}
             </span>
           </td>
-          <td className="platform-admin-text-cell">{formatLocation(user.location)}</td>
-          <td>{formatDate(user.createdAt)}</td>
-          <td>{formatDate(user.lastLoginAt)}</td>
+          <td className="platform-admin-text-cell platform-admin-location-column">
+            {formatLocation(user.location)}
+          </td>
+          <td className="platform-admin-timestamp-column">{formatDate(user.createdAt)}</td>
+          <td className="platform-admin-timestamp-column">{formatDate(user.lastLoginAt)}</td>
         </tr>
       ))}
       {users.length === 0 && (

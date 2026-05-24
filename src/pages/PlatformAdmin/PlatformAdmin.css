@@ -44,6 +44,39 @@
   white-space: normal;
 }
 
+.platform-admin-users-table {
+  table-layout: fixed;
+}
+
+.platform-admin-users-table th,
+.platform-admin-users-table td {
+  vertical-align: top;
+}
+
+.platform-admin-user-column {
+  width: 12%;
+}
+
+.platform-admin-name-column {
+  width: 15%;
+}
+
+.platform-admin-status-column {
+  width: 10%;
+}
+
+.platform-admin-location-column {
+  width: 33%;
+  max-width: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.platform-admin-timestamp-column {
+  width: 15%;
+}
+
 .table-loading {
   padding: 24px;
   color: #e5e7eb;

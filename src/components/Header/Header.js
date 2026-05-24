@@ -9,7 +9,7 @@ import i18n, {
   clearPendingLocale,
   normalizeLocale,
 } from "../../i18n";
-import { getStoredUser } from "../../utils/AuthUtil";
+import { getStoredUser, isSuperAdmin } from "../../utils/AuthUtil";
 
 import "./Header.css";
 
@@ -97,6 +97,9 @@ const Header = () => {
 
   const accountLabel = company?.name || user?.displayName || user?.username || null;
   const canOpenProfile = Boolean(company);
+  const avatarSrc = isSuperAdmin()
+    ? `${process.env.PUBLIC_URL}/favicon.ico`
+    : company?.icon || null;
 
   const handleLocaleChange = async (event) => {
     const locale = event.target.value;
@@ -156,16 +159,16 @@ const Header = () => {
         </button>
 
         {accountLabel && (
-          <div 
-            className="user-info" 
+          <div
+            className="user-info"
             onClick={canOpenProfile ? () => navigate("/profile") : undefined}
             style={{ cursor: canOpenProfile ? "pointer" : "default" }}
             title={canOpenProfile ? t("header.editProfile") : accountLabel}
           >
             <div className="user-avatar">
-              {company?.icon ? (
+              {avatarSrc ? (
                 <img
-                  src={company.icon}
+                  src={avatarSrc}
                   alt={accountLabel}
                   style={{
                     width: 28,
