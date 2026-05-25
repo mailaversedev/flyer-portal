@@ -5,6 +5,8 @@ const bcrypt = require("bcryptjs");
 const router = express.Router();
 const db = admin.firestore();
 const ONBOARDING_GIFT_TOKENS = 50;
+const ONBOARDING_GIFT_SOURCE = "onboarding_gift";
+const ONBOARDING_GIFT_GRANTED_FIELD = "onboardingGiftGrantedAt";
 
 // GET /profile - Get user profile
 router.get("/profile", async (req, res) => {
@@ -59,6 +61,8 @@ router.put("/profile", async (req, res) => {
         throw new Error("__USER_NOT_FOUND__");
       }
 
+      const userData = userDoc.data() || {};
+
       const updates = {
         updatedAt: timestamp,
         profile: profileData,
@@ -78,36 +82,59 @@ router.put("/profile", async (req, res) => {
         throw new Error("__WALLET_NOT_FOUND__");
       }
 
+      const userTransactionsQuery = db
+        .collection("transactions")
+        .where("userId", "==", userId);
+      const userTransactionsSnapshot = await transaction.get(userTransactionsQuery);
+      const onboardingGiftTransaction = userTransactionsSnapshot.docs.find(
+        (transactionDoc) =>
+          transactionDoc.data()?.metadata?.source === ONBOARDING_GIFT_SOURCE,
+      );
+      const hasOnboardingGift = Boolean(
+        userData[ONBOARDING_GIFT_GRANTED_FIELD] || onboardingGiftTransaction,
+      );
+
       const walletDoc = walletSnapshot.docs[0];
       const walletRef = walletDoc.ref;
-      const walletData = walletDoc.data() || {};
-      const previousBalance = Number(walletData.balance) || 0;
-      const previousVersion = Number(walletData.version) || 0;
-      const updatedBalance = previousBalance + ONBOARDING_GIFT_TOKENS;
 
-      transaction.update(walletRef, {
-        balance: updatedBalance,
-        updatedAt: timestamp,
-        version: previousVersion + 1,
-      });
+      if (!hasOnboardingGift) {
+        const walletData = walletDoc.data() || {};
+        const previousBalance = Number(walletData.balance) || 0;
+        const previousVersion = Number(walletData.version) || 0;
+        const updatedBalance = previousBalance + ONBOARDING_GIFT_TOKENS;
 
-      const transactionRef = db.collection("transactions").doc();
-      transaction.set(transactionRef, {
-        transactionId: transactionRef.id,
-        userId,
-        walletId: walletDoc.id,
-        type: "ADD",
-        amount: ONBOARDING_GIFT_TOKENS,
-        previousBalance,
-        newBalance: updatedBalance,
-        description: "Onboarding gift",
-        status: "COMPLETED",
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        metadata: {
-          source: "onboarding_gift",
-        },
-      });
+        transaction.update(walletRef, {
+          balance: updatedBalance,
+          updatedAt: timestamp,
+          version: previousVersion + 1,
+        });
+
+        const transactionRef = db.collection("transactions").doc();
+        transaction.set(transactionRef, {
+          transactionId: transactionRef.id,
+          userId,
+          walletId: walletDoc.id,
+          type: "ADD",
+          amount: ONBOARDING_GIFT_TOKENS,
+          previousBalance,
+          newBalance: updatedBalance,
+          description: "Onboarding gift",
+          status: "COMPLETED",
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          metadata: {
+            source: ONBOARDING_GIFT_SOURCE,
+          },
+        });
+
+        updates[ONBOARDING_GIFT_GRANTED_FIELD] = timestamp;
+      } else if (
+        !userData[ONBOARDING_GIFT_GRANTED_FIELD] &&
+        onboardingGiftTransaction
+      ) {
+        updates[ONBOARDING_GIFT_GRANTED_FIELD] =
+          onboardingGiftTransaction.data()?.createdAt || timestamp;
+      }
 
       transaction.set(userRef, updates, { merge: true });
     });
