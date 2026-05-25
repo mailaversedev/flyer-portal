@@ -6,9 +6,9 @@ import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./TargetBudget.css";
 
-const MIN_BUDGET = 1000;
+const MIN_BUDGET = 500;
 const MAX_BUDGET = 50000;
-const DEFAULT_BUDGET = 5000;
+const DEFAULT_BUDGET = 1000;
 
 export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) => {
   const formData = {
