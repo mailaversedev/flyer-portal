@@ -28,6 +28,7 @@ const router = express.Router();
 const db = admin.firestore();
 const MAILAVERSE_COMPANY_NAME = "Mailaverse";
 const MAILAVERSE_COMPANY_ICON = "https://static.wixstatic.com/media/255d46_b08eb7f7e1134cd8b8d5758d0ab3d99e~mv2.png/v1/fill/w_61,h_55,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Mailaverse%20Logo.png";
+const roundMoneyAmount = (value) => Math.round(Number(value) * 100) / 100;
 
 async function processFlyerJobsHandler(req, res) {
   try {
@@ -350,7 +351,7 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     let lotteryEvent = null;
 
     if (!noReward) {
-      const poolHkd = data?.targetBudget?.budget || 5000;
+      const poolHkd = Number(data?.targetBudget?.budget) || 5000;
       const lotteryMetrics = calculateLotteryMetricsFromHkd(poolHkd);
       pool = lotteryMetrics.pool;
       eventCostPercent = lotteryMetrics.eventCostPercent;
@@ -410,8 +411,20 @@ router.post("/flyer", authenticateToken, async (req, res) => {
     await db.runTransaction(async (transaction) => {
       // Reads must come before writes
       let statsDoc = null;
+      let currentWallet = null;
+
       if (statsRef) {
         statsDoc = await transaction.get(statsRef);
+      }
+
+      if (!isSuperAdmin && !noReward && flyerData.companyId) {
+        currentWallet = await ensureCompanyWalletInTransaction({
+          transaction,
+          companyId: flyerData.companyId,
+          companyName: companyData.name || "",
+          companyDisplayName: companyData.companyDisplayName || "",
+          initialBalance: 0,
+        });
       }
 
       // Create Flyer
@@ -458,6 +471,52 @@ router.post("/flyer", authenticateToken, async (req, res) => {
             totalEventMoney: noReward ? 0 : finalPool,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      if (currentWallet) {
+        const budgetHkd = roundMoneyAmount(Number(data?.targetBudget?.budget) || 0);
+        const currentCreditBalanceHkd = Number(currentWallet.data.creditBalanceHkd) || 0;
+
+        if (budgetHkd > 0 && currentCreditBalanceHkd >= budgetHkd) {
+          const newCreditBalanceHkd = roundMoneyAmount(
+            currentCreditBalanceHkd - budgetHkd,
+          );
+          const walletRef = currentWallet.ref || currentWallet.doc.ref;
+
+          transaction.set(
+            walletRef,
+            {
+              companyName: companyData.name || currentWallet.data.companyName || "",
+              companyDisplayName:
+                companyData.companyDisplayName ||
+                currentWallet.data.companyDisplayName ||
+                "",
+              creditBalanceHkd: newCreditBalanceHkd,
+              updatedAt: new Date().toISOString(),
+              version: (Number(currentWallet.data.version) || 0) + 1,
+            },
+            { merge: true },
+          );
+
+          createCompanyWalletTransaction({
+            transaction,
+            walletId: walletRef.id,
+            companyId: flyerData.companyId,
+            type: "DEDUCT",
+            amount: budgetHkd,
+            previousBalance: currentCreditBalanceHkd,
+            newBalance: newCreditBalanceHkd,
+            balanceField: "creditBalanceHkd",
+            unit: "HKD",
+            description: `${type} flyer budget allocation`,
+            metadata: {
+              source: "flyer_budget_credit",
+              flyerId: flyerRef.id,
+              flyerType: type,
+              budgetHkd,
+            },
           });
         }
       }

@@ -9,6 +9,7 @@ const {
   TOKEN_PRICING,
 } = require("../config/billingConfig");
 const {
+  createCompanyWalletTransaction,
   createCompanyWalletIfMissing,
   ensureCompanyWalletInTransaction,
   getCompanyDailyUsage,
