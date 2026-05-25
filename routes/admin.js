@@ -48,6 +48,15 @@ const normalizeLimit = (value) => {
 };
 
 const normalizeString = (value) => `${value || ""}`.trim();
+const normalizeMoneyAmount = (value) => {
+  const parsed = Number.parseFloat(value);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return Math.round(parsed * 100) / 100;
+};
 
 const encodeNextToken = (value) => {
   if (!value) {
@@ -387,6 +396,8 @@ router.get("/companies", async (req, res) => {
         walletByCompanyId.set(walletData.companyId, {
           walletId: walletDoc.id,
           balance: Number(walletData.balance) || 0,
+          creditBalanceHkd: Number(walletData.creditBalanceHkd) || 0,
+          creditCurrency: walletData.creditCurrency || "HKD",
           updatedAt: walletData.updatedAt || null,
         });
       }
@@ -409,6 +420,8 @@ router.get("/companies", async (req, res) => {
         isActive: data.isActive !== false,
         walletId: wallet?.walletId || null,
         walletBalance: wallet?.balance || 0,
+        walletCreditBalanceHkd: wallet?.creditBalanceHkd || 0,
+        walletCreditCurrency: wallet?.creditCurrency || "HKD",
         walletUpdatedAt: wallet?.updatedAt || null,
       };
     });
@@ -427,11 +440,12 @@ router.get("/companies", async (req, res) => {
   }
 });
 
-router.post("/companies/:companyId/grant-tokens", async (req, res) => {
+router.post("/companies/:companyId/manage-wallet", async (req, res) => {
   try {
     const { companyId } = req.params;
-    const amount = Number.parseInt(req.body?.amount, 10);
+    const amountHkd = normalizeMoneyAmount(req.body?.amountHkd ?? req.body?.amount);
     const note = normalizeString(req.body?.note);
+    const receiptImageUrl = normalizeString(req.body?.receiptImageUrl);
 
     if (!companyId) {
       return res.status(400).json({
@@ -440,10 +454,17 @@ router.post("/companies/:companyId/grant-tokens", async (req, res) => {
       });
     }
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!amountHkd) {
       return res.status(400).json({
         success: false,
-        message: "Grant amount must be a positive integer",
+        message: "Grant amount must be a positive HKD value",
+      });
+    }
+
+    if (!receiptImageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Receipt image is required",
       });
     }
 
@@ -470,7 +491,8 @@ router.post("/companies/:companyId/grant-tokens", async (req, res) => {
       });
       const walletRef = wallet.ref || wallet.doc.ref;
       const previousBalance = Number(wallet.data.balance) || 0;
-      const newBalance = previousBalance + amount;
+      const previousCreditBalanceHkd = Number(wallet.data.creditBalanceHkd) || 0;
+      const newCreditBalanceHkd = previousCreditBalanceHkd + amountHkd;
 
       transaction.set(
         walletRef,
@@ -480,7 +502,7 @@ router.post("/companies/:companyId/grant-tokens", async (req, res) => {
             companyData.companyDisplayName ||
             wallet.data.companyDisplayName ||
             "",
-          balance: newBalance,
+          creditBalanceHkd: newCreditBalanceHkd,
           updatedAt: timestamp,
           version: (Number(wallet.data.version) || 0) + 1,
         },
@@ -492,34 +514,41 @@ router.post("/companies/:companyId/grant-tokens", async (req, res) => {
         walletId: walletRef.id,
         companyId,
         type: "ADD",
-        amount,
-        previousBalance,
-        newBalance,
-        description: note || "Offline token grant",
+        amount: amountHkd,
+        previousBalance: previousCreditBalanceHkd,
+        newBalance: newCreditBalanceHkd,
+        balanceField: "creditBalanceHkd",
+        unit: "HKD",
+        description: note || "Offline wallet credit grant",
         timestamp,
         metadata: {
-          source: "super_admin_grant",
+          source: "super_admin_credit_grant",
           grantedBy: req.user?.username || req.user?.userId || "",
+          note,
+          receiptImageUrl,
+          tokenBalanceSnapshot: previousBalance,
         },
       });
 
       return {
         walletId: walletRef.id,
         previousBalance,
-        newBalance,
+        newBalance: previousBalance,
+        previousCreditBalanceHkd,
+        newCreditBalanceHkd,
       };
     });
 
     return res.status(200).json({
       success: true,
-      message: "Tokens granted successfully",
+      message: "Wallet credit updated successfully",
       data: result,
     });
   } catch (error) {
-    console.error("Error granting company tokens:", error);
+    console.error("Error managing company wallet:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to grant company tokens",
+      message: "Failed to update company wallet",
       error: error.message,
     });
   }

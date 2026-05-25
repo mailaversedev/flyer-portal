@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
@@ -24,32 +24,87 @@ const WalletPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState(null);
+  const [purchasingBundleCode, setPurchasingBundleCode] = useState("");
 
-  useEffect(() => {
-    const loadWallet = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  const loadWallet = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const [walletResponse, transactionsResponse] = await Promise.all([
-          ApiService.getCompanyWallet(),
-          ApiService.getWalletTransactions(20, 0),
-        ]);
+      const [walletResponse, transactionsResponse] = await Promise.all([
+        ApiService.getCompanyWallet(),
+        ApiService.getWalletTransactions(20, 0),
+      ]);
 
-        setWallet(walletResponse.success ? walletResponse.data : null);
-        setTransactions(transactionsResponse.success ? transactionsResponse.data : []);
-      } catch (loadError) {
-        console.error("Failed to load wallet page", loadError);
-        setError(t("walletPage.loadError"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadWallet();
+      setWallet(walletResponse.success ? walletResponse.data : null);
+      setTransactions(transactionsResponse.success ? transactionsResponse.data : []);
+    } catch (loadError) {
+      console.error("Failed to load wallet page", loadError);
+      setError(t("walletPage.loadError"));
+    } finally {
+      setLoading(false);
+    }
   }, [t]);
 
+  useEffect(() => {
+    loadWallet();
+  }, [loadWallet]);
+
+  useEffect(() => {
+    if (!feedback) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setFeedback(null);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [feedback]);
+
   const bundles = wallet?.bundles || [];
+  const availableCreditBalanceHkd = Number(wallet?.creditBalanceHkd) || 0;
+
+  const formatWalletValue = (value, unit = "TOKEN") => {
+    if (unit === "HKD") {
+      return `HK$${(Number(value) || 0).toFixed(2)}`;
+    }
+
+    return `${Number(value) || 0} ${t("walletPage.tokensShort")}`;
+  };
+
+  const handlePurchaseBundle = async (bundle) => {
+    try {
+      setPurchasingBundleCode(bundle.code);
+      setFeedback(null);
+
+      const response = await ApiService.purchaseCompanyBundle(bundle.code);
+
+      if (!response?.success) {
+        throw new Error(t("walletPage.purchaseError"));
+      }
+
+      await loadWallet();
+      setFeedback({
+        type: "success",
+        message: t("walletPage.purchaseSuccess", {
+          bundle: bundle.title,
+          tokens: bundle.tokens,
+        }),
+      });
+    } catch (purchaseError) {
+      console.error("Failed to purchase wallet bundle", purchaseError);
+      setFeedback({
+        type: "error",
+        message: purchaseError.message || t("walletPage.purchaseError"),
+      });
+    } finally {
+      setPurchasingBundleCode("");
+    }
+  };
 
   return (
     <div className="wallet-page">
@@ -59,6 +114,10 @@ const WalletPage = () => {
           <p>{t("walletPage.subtitle")}</p>
         </div>
       </div>
+
+      {feedback ? (
+        <div className={`wallet-page-feedback ${feedback.type}`}>{feedback.message}</div>
+      ) : null}
 
       {loading ? (
         <div className="wallet-page-panel">{t("walletPage.loading")}</div>
@@ -79,6 +138,14 @@ const WalletPage = () => {
                   total: wallet?.dailyFreeAttemptsLimit ?? 3,
                 })}
               </p>
+            </div>
+
+            <div className="wallet-page-panel wallet-balance-panel wallet-credit-panel">
+              <span className="wallet-kicker">{t("walletPage.creditBalanceLabel")}</span>
+              <strong className="wallet-balance-value">
+                HK${availableCreditBalanceHkd.toFixed(2)}
+              </strong>
+              <p>{t("walletPage.creditBalanceHint")}</p>
             </div>
           </div>
 
@@ -107,8 +174,8 @@ const WalletPage = () => {
                       <tr key={transaction.id}>
                         <td>{transaction.type}</td>
                         <td>{transaction.description || "-"}</td>
-                        <td>{transaction.amount}</td>
-                        <td>{transaction.newBalance}</td>
+                        <td>{formatWalletValue(transaction.amount, transaction.unit)}</td>
+                        <td>{formatWalletValue(transaction.newBalance, transaction.unit)}</td>
                         <td>{formatDate(transaction.createdAt)}</td>
                       </tr>
                     ))}
@@ -140,6 +207,24 @@ const WalletPage = () => {
                       price: (bundle.priceHkd / bundle.tokens).toFixed(2),
                     })}
                   </p>
+                  <button
+                    type="button"
+                    className="wallet-card-action"
+                    onClick={() => handlePurchaseBundle(bundle)}
+                    disabled={
+                      purchasingBundleCode === bundle.code ||
+                      availableCreditBalanceHkd < Number(bundle.priceHkd)
+                    }
+                  >
+                    {purchasingBundleCode === bundle.code
+                      ? t("walletPage.purchasing")
+                      : t("walletPage.purchaseButton")}
+                  </button>
+                  {availableCreditBalanceHkd < Number(bundle.priceHkd) ? (
+                    <span className="wallet-card-note">
+                      {t("walletPage.insufficientCredit")}
+                    </span>
+                  ) : null}
                 </article>
               ))}
             </div>

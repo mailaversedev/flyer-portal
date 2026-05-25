@@ -17,6 +17,8 @@ const formatDate = (value) => {
   return parsedDate.toLocaleString();
 };
 
+const formatHkd = (value) => `HK$${(Number(value) || 0).toFixed(2)}`;
+
 const formatLocation = (location) => {
   if (!location || typeof location !== "object") {
     return "-";
@@ -187,10 +189,8 @@ export const PlatformAdminUsersTable = ({ users, t, emptyMessage = null }) => (
 
 export const PlatformAdminCompaniesTable = ({
   companies,
-  grantAmounts,
-  grantingCompanyId,
-  onGrantAmountChange,
-  onGrantTokens,
+  managingCompanyId,
+  onManageCompany,
   t,
 }) => (
   <div className="platform-admin-company-panel">
@@ -202,9 +202,10 @@ export const PlatformAdminCompaniesTable = ({
           <th>{t("adminPage.industry")}</th>
           <th>{t("adminPage.contact")}</th>
           <th>{t("adminPage.companyTokens")}</th>
-          <th>{t("adminPage.grantTokens")}</th>
+          <th>{t("adminPage.companyWalletCredit")}</th>
           <th>{t("adminPage.createdAt")}</th>
           <th>{t("adminPage.walletUpdatedAt")}</th>
+          <th>{t("adminPage.actions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -221,35 +222,28 @@ export const PlatformAdminCompaniesTable = ({
             <td>{company.nature || "-"}</td>
             <td>{company.contact || "-"}</td>
             <td>{company.walletBalance ?? 0}</td>
+            <td>{formatHkd(company.walletCreditBalanceHkd)}</td>
             <td>
-              <div className="platform-admin-grant-controls">
-                <input
-                  type="number"
-                  min="1"
-                  value={grantAmounts[company.id] || ""}
-                  onChange={(event) => onGrantAmountChange(company.id, event.target.value)}
-                  placeholder={t("adminPage.grantAmountPlaceholder")}
-                  className="platform-admin-grant-input"
-                />
-                <button
-                  type="button"
-                  className="platform-admin-grant-button"
-                  onClick={() => onGrantTokens(company.id)}
-                  disabled={grantingCompanyId === company.id}
-                >
-                  {grantingCompanyId === company.id
-                    ? t("adminPage.granting")
-                    : t("adminPage.grantButton")}
-                </button>
-              </div>
+              {formatDate(company.createdAt)}
             </td>
-            <td>{formatDate(company.createdAt)}</td>
             <td>{formatDate(company.walletUpdatedAt)}</td>
+            <td>
+              <button
+                type="button"
+                className="platform-admin-manage-button"
+                onClick={() => onManageCompany(company)}
+                disabled={managingCompanyId === company.id}
+              >
+                {managingCompanyId === company.id
+                  ? t("adminPage.managingWallet")
+                  : t("adminPage.manageWalletButton")}
+              </button>
+            </td>
           </tr>
         ))}
         {companies.length === 0 && (
           <tr>
-            <td colSpan="8" className="platform-admin-empty-cell">
+            <td colSpan="9" className="platform-admin-empty-cell">
               {t("adminPage.noCompanies")}
             </td>
           </tr>

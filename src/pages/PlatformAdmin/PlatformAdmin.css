@@ -193,6 +193,21 @@
   cursor: not-allowed;
 }
 
+.platform-admin-manage-button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-admin-manage-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .platform-admin-flyer-action-button {
   padding: 8px 12px;
   border: 1px solid #475569;
@@ -256,6 +271,126 @@
   background: #2563eb;
   border-color: #2563eb;
   color: #ffffff;
+}
+
+.platform-admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.platform-admin-modal {
+  width: min(100%, 560px);
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 18px;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.45);
+  color: #e2e8f0;
+}
+
+.platform-admin-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.platform-admin-modal-header h3 {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.platform-admin-modal-header p {
+  margin: 6px 0 0;
+  color: #94a3b8;
+}
+
+.platform-admin-modal-close {
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.platform-admin-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.platform-admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.platform-admin-field span {
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.platform-admin-field input,
+.platform-admin-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #475569;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.platform-admin-field small {
+  color: #94a3b8;
+}
+
+.platform-admin-modal-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(127, 29, 29, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #fecaca;
+}
+
+.platform-admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.platform-admin-modal-secondary,
+.platform-admin-modal-primary {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-admin-modal-secondary {
+  border: 1px solid #475569;
+  background: transparent;
+  color: #e2e8f0;
+}
+
+.platform-admin-modal-primary {
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.platform-admin-modal-secondary:disabled,
+.platform-admin-modal-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .platform-admin-page-button:disabled {

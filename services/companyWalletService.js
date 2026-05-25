@@ -3,7 +3,8 @@ const admin = require("firebase-admin");
 const db = admin.firestore();
 
 const COMPANY_WALLET_OWNER_TYPE = "company";
-const DEFAULT_CURRENCY = "TOKEN";
+const DEFAULT_TOKEN_CURRENCY = "TOKEN";
+const DEFAULT_CREDIT_CURRENCY = "HKD";
 const COMPANY_DAILY_USAGE_COLLECTION = "billingDailyUsage";
 
 const getCurrentIsoTimestamp = () => new Date().toISOString();
@@ -74,6 +75,7 @@ const buildCompanyWalletData = ({
   companyName = "",
   companyDisplayName = "",
   initialBalance = 0,
+  initialCreditBalanceHkd = 0,
   timestamp = getCurrentIsoTimestamp(),
 }) => ({
   ownerType: COMPANY_WALLET_OWNER_TYPE,
@@ -81,7 +83,9 @@ const buildCompanyWalletData = ({
   companyName,
   companyDisplayName,
   balance: initialBalance,
-  currency: DEFAULT_CURRENCY,
+  creditBalanceHkd: initialCreditBalanceHkd,
+  currency: DEFAULT_TOKEN_CURRENCY,
+  creditCurrency: DEFAULT_CREDIT_CURRENCY,
   createdAt: timestamp,
   updatedAt: timestamp,
   isActive: true,
@@ -94,6 +98,7 @@ const createCompanyWallet = ({
   companyName = "",
   companyDisplayName = "",
   initialBalance = 0,
+  initialCreditBalanceHkd = 0,
   timestamp = getCurrentIsoTimestamp(),
 }) => {
   const walletRef = db.collection("wallets").doc();
@@ -102,6 +107,7 @@ const createCompanyWallet = ({
     companyName,
     companyDisplayName,
     initialBalance,
+    initialCreditBalanceHkd,
     timestamp,
   });
 
@@ -119,6 +125,7 @@ const ensureCompanyWalletInTransaction = async ({
   companyName = "",
   companyDisplayName = "",
   initialBalance = 0,
+  initialCreditBalanceHkd = 0,
   timestamp = getCurrentIsoTimestamp(),
 }) => {
   const existingWallet = await getCompanyWalletByCompanyId(companyId, {
@@ -135,6 +142,7 @@ const ensureCompanyWalletInTransaction = async ({
     companyName,
     companyDisplayName,
     initialBalance,
+    initialCreditBalanceHkd,
     timestamp,
   });
 };
@@ -144,6 +152,7 @@ const createCompanyWalletIfMissing = async ({
   companyName = "",
   companyDisplayName = "",
   initialBalance = 0,
+  initialCreditBalanceHkd = 0,
 }) => {
   const existingWallet = await getCompanyWalletByCompanyId(companyId);
 
@@ -168,6 +177,7 @@ const createCompanyWalletIfMissing = async ({
       companyName,
       companyDisplayName,
       initialBalance,
+      initialCreditBalanceHkd,
       timestamp,
     });
   });
@@ -185,9 +195,16 @@ const createCompanyWalletTransaction = ({
   newBalance,
   description,
   timestamp = getCurrentIsoTimestamp(),
+  balanceField = "balance",
+  unit,
   metadata = {},
 }) => {
   const transactionRef = db.collection("transactions").doc();
+  const resolvedUnit =
+    unit ||
+    (balanceField === "creditBalanceHkd"
+      ? DEFAULT_CREDIT_CURRENCY
+      : DEFAULT_TOKEN_CURRENCY);
 
   transaction.set(transactionRef, {
     transactionId: transactionRef.id,
@@ -198,6 +215,8 @@ const createCompanyWalletTransaction = ({
     amount,
     previousBalance,
     newBalance,
+    balanceField,
+    unit: resolvedUnit,
     description,
     status: "COMPLETED",
     createdAt: timestamp,
@@ -219,7 +238,9 @@ const serializeCompanyWallet = (wallet) => {
     companyName: wallet.data.companyName || "",
     companyDisplayName: wallet.data.companyDisplayName || "",
     balance: Number(wallet.data.balance) || 0,
-    currency: wallet.data.currency || DEFAULT_CURRENCY,
+    creditBalanceHkd: Number(wallet.data.creditBalanceHkd) || 0,
+    currency: wallet.data.currency || DEFAULT_TOKEN_CURRENCY,
+    creditCurrency: wallet.data.creditCurrency || DEFAULT_CREDIT_CURRENCY,
     createdAt: wallet.data.createdAt || null,
     updatedAt: wallet.data.updatedAt || null,
     isActive: wallet.data.isActive !== false,

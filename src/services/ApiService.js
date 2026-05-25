@@ -251,8 +251,8 @@ class ApiService {
     );
   }
 
-  static async grantCompanyTokens(companyId, payload) {
-    return this.makeRequest(`/api/admin/companies/${companyId}/grant-tokens`, {
+  static async manageCompanyWallet(companyId, payload) {
+    return this.makeRequest(`/api/admin/companies/${companyId}/manage-wallet`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -323,6 +323,13 @@ class ApiService {
     }
 
     return this.makeRequest(`/api/payment/transactions?${params.toString()}`);
+  }
+
+  static async purchaseCompanyBundle(bundleCode) {
+    return this.makeRequest("/api/payment/purchase-bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleCode }),
+    });
   }
 
   // POST /api/file - Upload file/image
