@@ -583,6 +583,7 @@ router.put("/flyer/:flyerId", authenticateToken, async (req, res) => {
   try {
     const { flyerId } = req.params;
     const { data = {} } = req.body || {};
+    const isSuperAdmin = req.user?.role === "super-admin";
 
     if (!flyerId) {
       return res.status(400).json({
@@ -604,6 +605,7 @@ router.put("/flyer/:flyerId", authenticateToken, async (req, res) => {
       const existingFlyer = flyerDoc.data() || {};
 
       if (
+        !isSuperAdmin &&
         existingFlyer.companyId &&
         existingFlyer.companyId !== req.user.companyId
       ) {
@@ -831,6 +833,7 @@ router.get("/company/:companyId/coupons", async (req, res) => {
 router.get("/flyer/:flyerId", authenticateToken, async (req, res) => {
   try {
     const { flyerId } = req.params;
+    const isSuperAdmin = req.user?.role === "super-admin";
 
     if (!flyerId) {
       return res.status(400).json({
@@ -849,7 +852,11 @@ router.get("/flyer/:flyerId", authenticateToken, async (req, res) => {
 
     const flyerData = flyerDoc.data() || {};
 
-    if (flyerData.companyId && flyerData.companyId !== req.user.companyId) {
+    if (
+      !isSuperAdmin &&
+      flyerData.companyId &&
+      flyerData.companyId !== req.user.companyId
+    ) {
       return res.status(404).json({
         success: false,
         message: "Flyer not found",
