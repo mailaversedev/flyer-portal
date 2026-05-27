@@ -228,6 +228,23 @@
   cursor: not-allowed;
 }
 
+.platform-admin-flyer-action-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.platform-admin-flyer-action-button.danger {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+}
+
+.platform-admin-flyer-action-button.danger:hover:not(:disabled) {
+  border-color: #f87171;
+  background: rgba(127, 29, 29, 0.22);
+  color: #fee2e2;
+}
+
 .status.engaged {
   background: rgba(59, 130, 246, 0.16);
   color: #93c5fd;

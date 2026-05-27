@@ -256,7 +256,10 @@ export const PlatformAdminCompaniesTable = ({
 export const PlatformAdminFlyersTable = ({
   flyers,
   t,
+  onOpenFlyer,
   onUpdateFlyerStatus,
+  onDeleteFlyer,
+  deletingFlyerId = "",
   updatingFlyerId = "",
 }) => {
   const formattedFlyers = flyers.map((flyer) => {
@@ -273,6 +276,7 @@ export const PlatformAdminFlyersTable = ({
 
     return {
       id: flyer.id,
+      flyerType: flyer.type || "",
       companyName,
       adTitle: flyer.header || `${t("adminPage.untitledFlyer")} ${flyer.id.slice(0, 6)}`,
       status: getFlyerStatusLabel(flyer.status),
@@ -290,6 +294,28 @@ export const PlatformAdminFlyersTable = ({
       rawStatus: flyer.status || "",
     };
   });
+
+  const getEditRoute = (flyer) => {
+    const flyerType = `${flyer.flyerType || flyer.adType || ""}`.trim().toLowerCase();
+
+    if (flyerType === "leaflet") {
+      return `/flyer/edit/leaflet/${flyer.id}`;
+    }
+
+    if (flyerType === "qr") {
+      return `/flyer/edit/qr/${flyer.id}`;
+    }
+
+    return null;
+  };
+
+  const handleRowClick = (flyer) => {
+    const route = getEditRoute(flyer);
+
+    if (route && onOpenFlyer) {
+      onOpenFlyer(route);
+    }
+  };
 
   return (
     <table className="campaigns-table">
@@ -309,8 +335,28 @@ export const PlatformAdminFlyersTable = ({
         </tr>
       </thead>
       <tbody>
-        {formattedFlyers.map((flyer) => (
-          <tr key={flyer.id} className="campaign-row-disabled">
+        {formattedFlyers.map((flyer) => {
+          const editRoute = getEditRoute(flyer);
+          const isEditable = Boolean(editRoute);
+
+          return (
+          <tr
+            key={flyer.id}
+            className={`campaign-row ${isEditable ? "campaign-row-editable" : "campaign-row-disabled"}`}
+            onClick={isEditable ? () => handleRowClick(flyer) : undefined}
+            onKeyDown={
+              isEditable
+                ? (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleRowClick(flyer);
+                    }
+                  }
+                : undefined
+            }
+            tabIndex={isEditable ? 0 : undefined}
+            role={isEditable ? "button" : undefined}
+          >
             <td className="platform-admin-text-cell">{flyer.companyName}</td>
             <td className="ad-title" title={flyer.adTitle}>
               {flyer.adTitle}
@@ -328,26 +374,42 @@ export const PlatformAdminFlyersTable = ({
             <td>{flyer.downloadRate}</td>
             <td>{flyer.createdAt}</td>
             <td>
-              <button
-                type="button"
-                className="platform-admin-flyer-action-button"
-                onClick={() =>
-                  onUpdateFlyerStatus(
-                    flyer.id,
-                    flyer.rawStatus === "active" ? "inactive" : "active",
-                  )
-                }
-                disabled={updatingFlyerId === flyer.id}
-              >
-                {updatingFlyerId === flyer.id
-                  ? t("adminPage.updatingStatus")
-                  : flyer.rawStatus === "active"
-                    ? t("adminPage.markInactive")
-                    : t("adminPage.markActive")}
-              </button>
+              <div className="platform-admin-flyer-action-group">
+                <button
+                  type="button"
+                  className="platform-admin-flyer-action-button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onUpdateFlyerStatus(
+                      flyer.id,
+                      flyer.rawStatus === "active" ? "inactive" : "active",
+                    );
+                  }}
+                  disabled={updatingFlyerId === flyer.id || deletingFlyerId === flyer.id}
+                >
+                  {updatingFlyerId === flyer.id
+                    ? t("adminPage.updatingStatus")
+                    : flyer.rawStatus === "active"
+                      ? t("adminPage.markInactive")
+                      : t("adminPage.markActive")}
+                </button>
+                <button
+                  type="button"
+                  className="platform-admin-flyer-action-button danger"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeleteFlyer(flyer);
+                  }}
+                  disabled={deletingFlyerId === flyer.id || updatingFlyerId === flyer.id}
+                >
+                  {deletingFlyerId === flyer.id
+                    ? t("adminPage.deletingFlyer")
+                    : t("adminPage.deleteFlyer")}
+                </button>
+              </div>
             </td>
           </tr>
-        ))}
+        );})}
         {formattedFlyers.length === 0 && (
           <tr>
             <td colSpan="11" className="platform-admin-empty-cell">

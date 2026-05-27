@@ -78,6 +78,20 @@ const decodeNextToken = (value) => {
   }
 };
 
+const commitDeleteRefsInChunks = async (refs, chunkSize = 450) => {
+  const uniqueRefs = Array.from(
+    new Map(refs.filter(Boolean).map((ref) => [ref.path, ref])).values(),
+  );
+
+  for (let index = 0; index < uniqueRefs.length; index += chunkSize) {
+    const batch = db.batch();
+    uniqueRefs.slice(index, index + chunkSize).forEach((ref) => {
+      batch.delete(ref);
+    });
+    await batch.commit();
+  }
+};
+
 const buildAudienceQuery = ({ collectionName, direction, limit, cursor }) => {
   let query = db
     .collection(collectionName)
@@ -783,6 +797,59 @@ router.post("/flyers/:flyerId/status", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to update flyer status",
+      error: error.message,
+    });
+  }
+});
+
+router.delete("/flyers/:flyerId", async (req, res) => {
+  try {
+    const { flyerId } = req.params;
+
+    if (!flyerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Flyer ID is required",
+      });
+    }
+
+    const flyerRef = db.collection("flyers").doc(flyerId);
+    const flyerDoc = await flyerRef.get();
+
+    if (!flyerDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Flyer not found",
+      });
+    }
+
+    const flyerData = flyerDoc.data() || {};
+    const lotteryRef = db.collection("lottery").doc(flyerId);
+    const flyerJobsSnapshot = await db
+      .collection("notificationJobs")
+      .where("flyerId", "==", flyerId)
+      .get();
+
+    const refsToDelete = [
+      flyerRef,
+      lotteryRef,
+      ...flyerJobsSnapshot.docs.map((doc) => doc.ref),
+    ];
+
+    await commitDeleteRefsInChunks(refsToDelete);
+
+    return res.status(200).json({
+      success: true,
+      message: "Flyer deleted successfully",
+      data: {
+        flyerId,
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting admin flyer:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete flyer",
       error: error.message,
     });
   }

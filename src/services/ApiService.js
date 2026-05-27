@@ -284,6 +284,12 @@ class ApiService {
     });
   }
 
+  static async deleteAdminFlyer(flyerId) {
+    return this.makeRequest(`/api/admin/flyers/${flyerId}`, {
+      method: "DELETE",
+    });
+  }
+
   static async getCrmContactSummary() {
     return this.makeRequest("/api/admin/crm-contacts/summary");
   }

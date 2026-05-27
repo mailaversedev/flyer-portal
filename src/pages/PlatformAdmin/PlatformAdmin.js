@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Navigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
 
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
@@ -14,6 +15,7 @@ import "./PlatformAdmin.css";
 
 const PlatformAdmin = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const {
     users,
     companies,
@@ -24,6 +26,7 @@ const PlatformAdmin = () => {
     error,
   } = usePlatformAdminData();
   const [updatingFlyerId, setUpdatingFlyerId] = useState("");
+  const [deletingFlyerId, setDeletingFlyerId] = useState("");
   const [statusFeedback, setStatusFeedback] = useState(null);
 
   if (!isSuperAdmin()) {
@@ -60,6 +63,35 @@ const PlatformAdmin = () => {
       });
     } finally {
       setUpdatingFlyerId("");
+    }
+  };
+
+  const handleDeleteFlyer = async (flyer) => {
+    const flyerTitle = flyer?.header || `${t("adminPage.untitledFlyer")} ${flyer?.id?.slice(0, 6) || ""}`;
+
+    if (!window.confirm(t("adminPage.deleteFlyerConfirm", { title: flyerTitle }))) {
+      return;
+    }
+
+    try {
+      setDeletingFlyerId(flyer.id);
+      setStatusFeedback(null);
+
+      await ApiService.deleteAdminFlyer(flyer.id);
+
+      setFlyers((prev) => prev.filter((entry) => entry.id !== flyer.id));
+      setStatusFeedback({
+        type: "success",
+        message: t("adminPage.flyerDeleteSuccess"),
+      });
+    } catch (deleteError) {
+      console.error("Failed to delete flyer", deleteError);
+      setStatusFeedback({
+        type: "error",
+        message: deleteError.message || t("adminPage.flyerDeleteError"),
+      });
+    } finally {
+      setDeletingFlyerId("");
     }
   };
 
@@ -101,7 +133,10 @@ const PlatformAdmin = () => {
             <PlatformAdminFlyersTable
               flyers={flyers}
               t={t}
+              onOpenFlyer={navigate}
               onUpdateFlyerStatus={handleUpdateFlyerStatus}
+              onDeleteFlyer={handleDeleteFlyer}
+              deletingFlyerId={deletingFlyerId}
               updatingFlyerId={updatingFlyerId}
             />
           )}
