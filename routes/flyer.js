@@ -421,8 +421,8 @@ router.post("/flyer", authenticateToken, async (req, res) => {
         currentWallet = await ensureCompanyWalletInTransaction({
           transaction,
           companyId: flyerData.companyId,
-          companyName: companyData.name || "",
-          companyDisplayName: companyData.companyDisplayName || "",
+          companyName: flyerData.companyName || "",
+          companyDisplayName: flyerData.companyDisplayName || "",
           initialBalance: 0,
         });
       }
@@ -488,9 +488,9 @@ router.post("/flyer", authenticateToken, async (req, res) => {
           transaction.set(
             walletRef,
             {
-              companyName: companyData.name || currentWallet.data.companyName || "",
+              companyName: flyerData.companyName || currentWallet.data.companyName || "",
               companyDisplayName:
-                companyData.companyDisplayName ||
+                flyerData.companyDisplayName ||
                 currentWallet.data.companyDisplayName ||
                 "",
               creditBalanceHkd: newCreditBalanceHkd,
