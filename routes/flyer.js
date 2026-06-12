@@ -352,7 +352,10 @@ router.post("/flyer", authenticateToken, async (req, res) => {
 
     if (!noReward) {
       const poolHkd = Number(data?.targetBudget?.budget) || 5000;
-      const lotteryMetrics = calculateLotteryMetricsFromHkd(poolHkd);
+      const lotteryMetrics = calculateLotteryMetricsFromHkd(
+        poolHkd,
+        flyerData.companyNature,
+      );
       pool = lotteryMetrics.pool;
       eventCostPercent = lotteryMetrics.eventCostPercent;
       eventUsagePercent = lotteryMetrics.eventUsagePercent;

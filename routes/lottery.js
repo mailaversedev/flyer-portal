@@ -101,7 +101,7 @@ router.get("/", authenticateToken, async (req, res) => {
     // Use flyer fields or fallback to defaults
     const poolHkd = flyer?.targetBudget?.budget || 5000;
     const { pool, lotteryMoney, maxUsers, avgMoneyPerUser, mailcoinHkdRate } =
-      calculateLotteryMetricsFromHkd(poolHkd);
+      calculateLotteryMetricsFromHkd(poolHkd, flyer?.companyNature);
 
     // --- Firestore collections ---
     const lotteryStateRef = db.collection("lottery").doc(flyerId);

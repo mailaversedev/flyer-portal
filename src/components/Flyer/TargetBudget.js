@@ -9,6 +9,54 @@ import "./TargetBudget.css";
 const MIN_BUDGET = 500;
 const MAX_BUDGET = 50000;
 const DEFAULT_BUDGET = 1000;
+const DEFAULT_SPREADING_COEFFICIENT = 0.845;
+
+const SPREADING_COEFFICIENT_BY_INDUSTRY = {
+  "F&B": 0.35,
+  Lifestyle: 0.8,
+  Entertainment: 0.65,
+  "Banking & Finance": 1.3,
+  Household: 0.65,
+  "Real Estate": 1.3,
+  Education: 0.65,
+  "Government Bodies": 1,
+  Utilities: 1,
+  Donation: 1,
+  Travelling: 1,
+  Healthcare: 0.8,
+  "Fitness & Sports": 0.8,
+};
+
+const normalizeIndustry = (industry) => `${industry || ""}`.trim();
+
+const getStoredCompanyNature = () => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    const storedCompany = JSON.parse(localStorage.getItem("company") || "null");
+    return storedCompany?.nature || "";
+  } catch {
+    return "";
+  }
+};
+
+const getSpreadingCoefficientByIndustry = (industry) => {
+  const normalizedIndustry = normalizeIndustry(industry);
+
+  if (
+    normalizedIndustry &&
+    Object.prototype.hasOwnProperty.call(
+      SPREADING_COEFFICIENT_BY_INDUSTRY,
+      normalizedIndustry,
+    )
+  ) {
+    return SPREADING_COEFFICIENT_BY_INDUSTRY[normalizedIndustry];
+  }
+
+  return DEFAULT_SPREADING_COEFFICIENT;
+};
 
 const getImageExtensionFromUrl = (url) => {
   try {
@@ -91,6 +139,13 @@ const TargetBudget = ({
   const [buildingOptions, setBuildingOptions] = useState([]);
   const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const companyNature =
+    data?.companyNature || ApiService.getCurrentCompany()?.nature || getStoredCompanyNature();
+  const spreadingCoefficient = getSpreadingCoefficientByIndustry(companyNature);
+  const projectedAudienceCount = Math.max(
+    0,
+    Math.floor((Number(formData.budget) || 0) / spreadingCoefficient),
+  );
 
   // Fetch districts on mount
   useEffect(() => {
@@ -499,7 +554,7 @@ const TargetBudget = ({
                 </span>
                 <span className="projection-value">
                   {t("targetBudget.approximatePersons", {
-                    count: Math.floor(formData.budget / 0.845),
+                    count: projectedAudienceCount,
                   })}
                 </span>
               </div>

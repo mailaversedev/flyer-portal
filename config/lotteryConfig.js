@@ -4,7 +4,39 @@ const DEFAULT_LOTTERY_FACTOR = 5;
 const DEFAULT_EVENT_COST_PERCENT = 0.6;
 const DEFAULT_EVENT_USAGE_PERCENT = 0.8;
 
-function getSpreadingCoefficient() {
+const SPREADING_COEFFICIENT_BY_INDUSTRY = {
+  "F&B": 0.35,
+  Lifestyle: 0.8,
+  Entertainment: 0.65,
+  "Banking & Finance": 1.3,
+  Household: 0.65,
+  "Real Estate": 1.3,
+  Education: 0.65,
+  "Government Bodies": 1,
+  Utilities: 1,
+  Donation: 1,
+  Travelling: 1,
+  Healthcare: 0.8,
+  "Fitness & Sports": 0.8,
+};
+
+function normalizeIndustry(industry) {
+  return `${industry || ""}`.trim();
+}
+
+function getSpreadingCoefficient(industry) {
+  const normalizedIndustry = normalizeIndustry(industry);
+
+  if (
+    normalizedIndustry &&
+    Object.prototype.hasOwnProperty.call(
+      SPREADING_COEFFICIENT_BY_INDUSTRY,
+      normalizedIndustry,
+    )
+  ) {
+    return SPREADING_COEFFICIENT_BY_INDUSTRY[normalizedIndustry];
+  }
+
   const rawValue = process.env.SPREADING_COEFFICIENT;
   const parsed = Number.parseFloat(rawValue);
 
@@ -32,8 +64,8 @@ function hkdToMailcoin(amountHkd) {
   return Math.max(0, Math.floor(numeric / rate));
 }
 
-function calculateLotteryMetricsFromHkd(poolHkd) {
-  const spreadingCoefficient = getSpreadingCoefficient();
+function calculateLotteryMetricsFromHkd(poolHkd, industry) {
+  const spreadingCoefficient = getSpreadingCoefficient(industry);
   const mailcoinHkdRate = getMailcoinHkdRate();
   const pool = hkdToMailcoin(poolHkd);
 
