@@ -10,6 +10,21 @@ const MIN_BUDGET = 500;
 const MAX_BUDGET = 50000;
 const DEFAULT_BUDGET = 1000;
 
+const getImageExtensionFromUrl = (url) => {
+  try {
+    const pathname = new URL(url).pathname;
+    const extension = pathname.split(".").pop()?.toLowerCase();
+
+    if (["png", "jpg", "jpeg", "webp"].includes(extension)) {
+      return extension === "jpeg" ? "jpg" : extension;
+    }
+  } catch (error) {
+    console.warn("Failed to parse image extension from URL", error);
+  }
+
+  return "png";
+};
+
 export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) => {
   const formData = {
     district: data?.targetBudget?.district || data?.district || "",
@@ -218,8 +233,46 @@ const TargetBudget = ({
     return amount.toLocaleString(i18n.language);
   };
 
-  const handleDownload = () => {
-    console.log("Downloading flyer...");
+  const handleDownload = async () => {
+    const imageUrl = data?.coverPhoto;
+
+    if (!imageUrl) {
+      return;
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const extension = getImageExtensionFromUrl(imageUrl);
+    const fileName = `flyer-${timestamp}.${extension}`;
+
+    const triggerDownload = (href, openInNewTab = false) => {
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = fileName;
+      link.rel = "noopener noreferrer";
+      if (openInNewTab) {
+        link.target = "_blank";
+      }
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    };
+
+    try {
+      const response = await fetch(imageUrl);
+
+      if (!response.ok) {
+        throw new Error(`Download failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      triggerDownload(objectUrl);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (error) {
+      console.error("Failed to download flyer image", error);
+      triggerDownload(imageUrl, true);
+    }
   };
 
   return (
@@ -623,7 +676,11 @@ const TargetBudget = ({
               >
                 <Plus size={16} />
               </button>
-              <button className="download-button" onClick={handleDownload}>
+              <button
+                className="download-button"
+                onClick={handleDownload}
+                disabled={!data?.coverPhoto}
+              >
                 <Download size={16} />
                 {t("targetBudget.download")}
               </button>

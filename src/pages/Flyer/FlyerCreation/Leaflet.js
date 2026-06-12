@@ -19,7 +19,7 @@ import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
 const DEFAULT_LEAFLET_DATA = {
-  aspectRatio: "1:1",
+  aspectRatio: "4:5",
   adType: "",
   referenceFlyer: null,
   backgroundPhoto: null,

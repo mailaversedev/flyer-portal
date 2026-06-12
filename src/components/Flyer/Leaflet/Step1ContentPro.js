@@ -14,16 +14,16 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   const typographyEntries = normalizeTypographyEntries(data.typography);
 
   const proAspectRatios = [
-    "1:1",
-    "2:3",
-    "3:2",
-    "3:4",
-    "4:3",
-    "4:5",
-    "5:4",
-    "9:16",
-    "16:9",
-    "21:9",
+    { value: "1:1", label: "1:1 (1080 x 1080)" },
+    { value: "2:3", label: "2:3 (1080 x 1620)" },
+    { value: "3:2", label: "3:2 (1620 x 1080)" },
+    { value: "3:4", label: "3:4 (1080 x 1440)" },
+    { value: "4:3", label: "4:3 (1440 x 1080)" },
+    { value: "4:5", label: "4:5 (1080 x 1350)" },
+    { value: "5:4", label: "5:4 (1350 x 1080)" },
+    { value: "9:16", label: "9:16 (1080 x 1920)" },
+    { value: "16:9", label: "16:9 (1920 x 1080)" },
+    { value: "21:9", label: "21:9 (2520 x 1080)" },
   ];
   const validateRequiredFields = () => {
     const newErrors = getProLeafletValidationErrors(data);
@@ -229,8 +229,8 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             >
               <option value="">{t("leafletPro.selectRatio")}</option>
               {proAspectRatios.map((ratio) => (
-                <option key={ratio} value={ratio}>
-                  {ratio}
+                <option key={ratio.value} value={ratio.value}>
+                  {ratio.label}
                 </option>
               ))}
             </select>

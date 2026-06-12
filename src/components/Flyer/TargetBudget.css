@@ -389,6 +389,13 @@
   box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
 }
 
+.download-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Generated Flyer Styles */
 .generated-flyer {
   width: 100%;
