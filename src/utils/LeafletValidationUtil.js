@@ -39,18 +39,6 @@ export const getProLeafletValidationErrors = (data) => {
     errors.aspectRatio = "Aspect Ratio is required";
   }
 
-  if (!data.productName || data.productName.trim() === "") {
-    errors.productName = "Product Name is required";
-  }
-
-  if (!data.header || data.header.trim() === "") {
-    errors.header = "Copy Line (Header) is required";
-  }
-
-  if (!data.adContent || data.adContent.trim() === "") {
-    errors.adContent = "Ad Content is required";
-  }
-
   if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
     errors.flyerPrompts = "Context/Prompts is required";
   }

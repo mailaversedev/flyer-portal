@@ -9,6 +9,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   const { t } = useTranslation();
   const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState({});
+  const tags = data.tags || [];
 
   const proAspectRatios = [
     "1:1",
@@ -22,15 +23,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
     "16:9",
     "21:9",
   ];
-  const logoPositions = [
-    { value: "natural placement", label: t("leafletPro.naturalPlacement") },
-    { value: "top-left", label: t("leafletPro.topLeft") },
-    { value: "top-right", label: t("leafletPro.topRight") },
-    { value: "bottom-left", label: t("leafletPro.bottomLeft") },
-    { value: "bottom-right", label: t("leafletPro.bottomRight") },
-    { value: "center", label: t("leafletPro.center") },
-  ];
-
   const validateRequiredFields = () => {
     const newErrors = getProLeafletValidationErrors(data);
 
@@ -59,22 +51,24 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   };
 
   const handleAddTag = () => {
-    if (newTag.trim() && !data.tags.includes(newTag.trim())) {
-      const updatedData = {
-        ...data,
-        tags: [...data.tags, newTag.trim()],
-      };
-      onUpdate(updatedData);
-      setNewTag("");
+    const nextTag = newTag.trim();
+
+    if (!nextTag || tags.includes(nextTag)) {
+      return;
     }
+
+    onUpdate({
+      ...data,
+      tags: [...tags, nextTag],
+    });
+    setNewTag("");
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    const updatedData = {
+    onUpdate({
       ...data,
-      tags: data.tags.filter((tag) => tag !== tagToRemove),
-    };
-    onUpdate(updatedData);
+      tags: tags.filter((tag) => tag !== tagToRemove),
+    });
   };
 
   const handleFileUpload = (field) => {
@@ -202,20 +196,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   return (
     <div className="step1-content">
       <div className="form-grid">
-        <div className="form-group full-width">
-          <label className="form-label">{t("leafletPro.productName")}</label>
-          <input
-            type="text"
-            className={`form-input ${errors.productName ? "error" : ""}`}
-            placeholder={t("leafletPro.productNamePlaceholder")}
-            value={data.productName || ""}
-            onChange={(e) => handleInputChange("productName", e.target.value)}
-          />
-          {errors.productName && (
-            <span className="error-message">{errors.productName}</span>
-          )}
-        </div>
-
         <div className="form-group">
           <label className="form-label">{t("leafletPro.aspectRatio")}</label>
           <div className="select-wrapper">
@@ -248,7 +228,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
             >
               <option value="1K">1K</option>
               <option value="2K">2K</option>
-              <option value="4K">4K</option>
             </select>
             <ChevronRight className="select-icon" size={16} />
           </div>
@@ -297,23 +276,6 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
               </div>
             </>
           )}
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t("leafletStandard.selectDesign")}</label>
-          <div className="select-wrapper">
-            <select
-              className="form-select"
-              value={data.designStyle}
-              onChange={(e) => handleInputChange("designStyle", e.target.value)}
-            >
-              <option value="">{t("qrGeneration.pleaseSelect")}</option>
-              <option value="modern">{t("leafletStandard.modern")}</option>
-              <option value="classic">{t("leafletStandard.classic")}</option>
-              <option value="minimalist">{t("leafletStandard.minimalist")}</option>
-            </select>
-            <ChevronRight className="select-icon" size={16} />
-          </div>
         </div>
 
         <ColorInputField
@@ -396,106 +358,12 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
           )}
         </div>
 
-        <div className="form-group">
-          <label className="form-label">{t("leafletPro.logoPosition")}</label>
-          <div className="select-wrapper">
-            <select
-              className="form-select"
-              value={data.logoPosition || "natural placement"}
-              onChange={(e) => handleInputChange("logoPosition", e.target.value)}
-            >
-              {logoPositions.map((pos) => (
-                <option key={pos.value} value={pos.value}>
-                  {pos.label}
-                </option>
-              ))}
-            </select>
-            <ChevronRight className="select-icon" size={16} />
-          </div>
-        </div>
       </div>
 
       <div className="content-section">
         <h3 className="section-title">{t("leafletPro.copyContent")}</h3>
 
         <div className="form-grid">
-          <div className="form-group full-width">
-            <label className="form-label">{t("leafletPro.copyLine")}</label>
-            <input
-              type="text"
-              className={`form-input ${errors.header ? "error" : ""}`}
-              placeholder={t("leafletPro.copyLinePlaceholder")}
-              value={data.header || ""}
-              onChange={(e) => handleInputChange("header", e.target.value)}
-            />
-            {errors.header && (
-              <span className="error-message">{errors.header}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{t("leafletPro.copyPosition")}</label>
-            <div className="select-wrapper">
-              <select
-                className="form-select"
-                value={data.copyPosition || "natural placement"}
-                onChange={(e) => handleInputChange("copyPosition", e.target.value)}
-              >
-                {logoPositions.map((pos) => (
-                  <option key={pos.value} value={pos.value}>
-                    {pos.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronRight className="select-icon" size={16} />
-            </div>
-          </div>
-
-          <div className="form-group full-width">
-            <label className="form-label">{t("leafletPro.adContent")}</label>
-            <textarea
-              className={`form-textarea ${errors.adContent ? "error" : ""}`}
-              placeholder={t("leafletPro.adContentPlaceholder")}
-              rows={4}
-              value={data.adContent || ""}
-              onChange={(e) => handleInputChange("adContent", e.target.value)}
-            />
-            {errors.adContent && (
-              <span className="error-message">{errors.adContent}</span>
-            )}
-          </div>
-
-          <div className="form-group full-width">
-            <label className="form-label">{t("leafletPro.bodyCopy")}</label>
-            <textarea
-              className="form-textarea"
-              placeholder={t("leafletPro.bodyCopyPlaceholder")}
-              rows={4}
-              value={data.bodyCopy || ""}
-              onChange={(e) => handleInputChange("bodyCopy", e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{t("leafletPro.bodyCopyPosition")}</label>
-            <div className="select-wrapper">
-              <select
-                className="form-select"
-                value={data.bodyCopyPosition || "natural placement"}
-                onChange={(e) =>
-                  handleInputChange("bodyCopyPosition", e.target.value)
-                }
-              >
-                {logoPositions.map((pos) => (
-                  <option key={pos.value} value={pos.value}>
-                    {pos.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronRight className="select-icon" size={16} />
-            </div>
-          </div>
-
           <div className="form-group full-width">
             <label className="form-label">{t("leafletPro.prompts")}</label>
             <textarea
@@ -538,9 +406,9 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
                   onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                 />
               </div>
-              {data.tags.length > 0 && (
+              {tags.length > 0 && (
                 <div className="tags-display">
-                  {data.tags.map((tag, index) => (
+                  {tags.map((tag, index) => (
                     <span key={index} className="tag">
                       #{tag}
                       <button

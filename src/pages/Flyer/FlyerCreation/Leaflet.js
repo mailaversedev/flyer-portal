@@ -17,28 +17,20 @@ const DEFAULT_LEAFLET_DATA = {
   aspectRatio: "1:1",
   adType: "",
   referenceFlyer: null,
-  designStyle: "",
   themeColor: "",
   backgroundPhoto: null,
-  header: "",
   subheader: "",
-  adContent: "",
-  bodyCopy: "",
   flyerPrompts: "",
   promotionMessage: "",
   productPhoto: [],
   productDescriptions: "",
   tags: [],
-  productName: "",
   resolution: "2K",
   primaryColor: "",
   secondaryColor: "",
   typography: "",
   brandVoice: "",
   logoImage: null,
-  copyPosition: "natural placement",
-  bodyCopyPosition: "natural placement",
-  logoPosition: "natural placement",
 };
 
 const buildLeafletEditPayload = (data) => ({
@@ -50,31 +42,30 @@ const buildLeafletEditPayload = (data) => ({
   tags: data.tags,
 });
 
-const getLeafletTokenCost = (resolution = "2K") => {
+const normalizeLeafletResolution = (resolution = "2K") => {
   const normalizedResolution = `${resolution || "2K"}`.trim().toUpperCase();
+  return normalizedResolution === "1K" ? "1K" : "2K";
+};
 
-  if (normalizedResolution === "1K") {
+const getLeafletTokenCost = (resolution = "2K") => {
+  if (normalizeLeafletResolution(resolution) === "1K") {
     return 1;
   }
-
-  if (normalizedResolution === "4K") {
-    return 4;
-  }
-
   return 2;
 };
 
 const LeafletEditForm = ({ data, onUpdate, t }) => {
   const [newTag, setNewTag] = useState("");
+  const tags = data.tags || [];
 
   const handleAddTag = () => {
     const nextTag = newTag.trim();
 
-    if (!nextTag || data.tags.includes(nextTag)) {
+    if (!nextTag || tags.includes(nextTag)) {
       return;
     }
 
-    onUpdate({ tags: [...data.tags, nextTag] });
+    onUpdate({ tags: [...tags, nextTag] });
     setNewTag("");
   };
 
@@ -172,16 +163,16 @@ const LeafletEditForm = ({ data, onUpdate, t }) => {
                 </button>
               </div>
 
-              {data.tags.length > 0 && (
+              {tags.length > 0 && (
                 <div className="tags-list">
-                  {data.tags.map((tag) => (
+                  {tags.map((tag) => (
                     <span key={tag} className="tag-item">
                       {tag}
                       <button
                         type="button"
                         onClick={() =>
                           onUpdate({
-                            tags: data.tags.filter((item) => item !== tag),
+                            tags: tags.filter((item) => item !== tag),
                           })
                         }
                         className="remove-tag-btn"
@@ -303,21 +294,30 @@ const LeafletCreation = () => {
 
       try {
         const response = await ApiService.generateLeaflet(leafletData);
-        if (response.flyer_output_path) {
+        const generatedUrls = Array.isArray(response?.images)
+          ? response.images.map((image) => image?.url).filter(Boolean)
+          : [];
+        const flyerOutputPath = generatedUrls[0] || response?.flyer_output_path;
+        const billingResolution = normalizeLeafletResolution(leafletData.resolution);
+
+        if (flyerOutputPath) {
           let billingResponse = null;
 
           if (!isSuperAdminUser) {
             billingResponse = await ApiService.consumeLeafletTokens({
-              resolution: leafletData.resolution,
-              flyerOutputPath: response.flyer_output_path,
+              resolution: billingResolution,
+              flyerOutputPath,
             });
           }
 
           setLeafletData((prev) => ({
             ...prev,
-            coverPhoto: response.flyer_output_path,
+            coverPhoto: flyerOutputPath,
           }));
-          setGeneratedHistory((prev) => [response.flyer_output_path, ...prev].slice(0, 3));
+          setGeneratedHistory((prev) => {
+            const mergedUrls = [...generatedUrls, flyerOutputPath, ...prev].filter(Boolean);
+            return Array.from(new Set(mergedUrls)).slice(0, 3);
+          });
           if (billingResponse?.success && billingResponse?.data) {
             setWalletSummary((prev) => ({
               ...(prev || {}),
@@ -397,6 +397,7 @@ const LeafletCreation = () => {
 
       const finalData = {
         ...remainingData,
+        tags: Array.isArray(leafletData.tags) ? leafletData.tags : [],
         coupon: {
           ...(coupon || {}),
           couponFile: uploadedFileUrls.couponFile || coupon?.couponFile || null,
@@ -558,7 +559,7 @@ const LeafletCreation = () => {
                             })
                           : t("leafletCreation.tokenIndicatorCost", {
                               count: tokenCost,
-                              resolution: leafletData.resolution || "2K",
+                              resolution: normalizeLeafletResolution(leafletData.resolution),
                             })}
                       </strong>
                       {isSuperAdminUser ? (

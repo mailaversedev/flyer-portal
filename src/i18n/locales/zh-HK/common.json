@@ -495,10 +495,6 @@
     "aspectRatio": "比例*",
     "selectAdType": "選擇廣告類型*",
     "uploadReference": "上傳參考傳單圖片（選填）",
-    "selectDesign": "選擇設計風格（選填）",
-    "modern": "現代",
-    "classic": "經典",
-    "minimalist": "極簡",
     "themeColor": "主題顏色 (Hex)（選填）",
     "uploadBackground": "上傳背景圖片（選填）",
     "contentTitle": "輸入你的自訂內容",
@@ -515,8 +511,6 @@
     "tagOptional": "標籤（選填，最多 3 個）"
   },
   "leafletPro": {
-    "productName": "產品名稱*",
-    "productNamePlaceholder": "例如：NeonFizz 能量飲品",
     "aspectRatio": "比例*",
     "selectRatio": "選擇比例",
     "resolution": "解析度（選填）",
@@ -529,25 +523,10 @@
     "brandVoicePlaceholder": "例如：前衛、年輕",
     "uploadLogo": "上傳 Logo（選填）",
     "selectLogoFile": "選擇 Logo 檔案",
-    "logoPosition": "Logo 位置（選填）",
     "copyContent": "文案與內容",
-    "copyLine": "主文案（標題）*",
-    "copyLinePlaceholder": "例如：點燃你的夜晚",
-    "copyPosition": "文案位置（選填）",
-    "adContent": "廣告內容*",
-    "adContentPlaceholder": "描述廣告內容及重點訊息...",
-    "bodyCopy": "內文（選填）",
-    "bodyCopyPlaceholder": "生成時使用的額外內文（選填）...",
-    "bodyCopyPosition": "內文位置（選填）",
     "prompts": "提示詞／查詢背景*",
     "promptsPlaceholder": "描述背景，例如：一款提神又清新的飲品...",
     "uploadProduct": "上傳產品圖片（選填）",
-    "tagOptional": "標籤（選填，最多 3 個）",
-    "naturalPlacement": "自然位置",
-    "topLeft": "左上",
-    "topRight": "右上",
-    "bottomLeft": "左下",
-    "bottomRight": "右下",
-    "center": "中央"
+    "tagOptional": "標籤（選填，最多 3 個）"
   }
 }

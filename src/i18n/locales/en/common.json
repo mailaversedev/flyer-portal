@@ -500,10 +500,6 @@
     "aspectRatio": "Aspect Ratio*",
     "selectAdType": "Select Ad Type*",
     "uploadReference": "Upload Reference Flyer Photo (optional)",
-    "selectDesign": "Select Design Style (optional)",
-    "modern": "Modern",
-    "classic": "Classic",
-    "minimalist": "Minimalist",
     "themeColor": "Theme Color (Hex) (optional)",
     "uploadBackground": "Upload Background Photo (optional)",
     "contentTitle": "Input Your Customised Content",
@@ -520,8 +516,6 @@
     "tagOptional": "Tag (optional, max 3)"
   },
   "leafletPro": {
-    "productName": "Product Name*",
-    "productNamePlaceholder": "e.g. NeonFizz Energy Drink",
     "aspectRatio": "Aspect Ratio*",
     "selectRatio": "Select Ratio",
     "resolution": "Resolution (optional)",
@@ -534,25 +528,10 @@
     "brandVoicePlaceholder": "e.g. Edgy, Youthful",
     "uploadLogo": "Upload Logo (optional)",
     "selectLogoFile": "Select Logo file",
-    "logoPosition": "Logo Position (optional)",
     "copyContent": "Copy & Content",
-    "copyLine": "Copy Line (Header)*",
-    "copyLinePlaceholder": "e.g. Ignite the Night",
-    "copyPosition": "Copy Position (optional)",
-    "adContent": "Ad Content*",
-    "adContentPlaceholder": "Describe the ad content and key message...",
-    "bodyCopy": "Body Copy (optional)",
-    "bodyCopyPlaceholder": "Optional flyer body copy used for generation...",
-    "bodyCopyPosition": "Body Copy Position (optional)",
     "prompts": "Prompts / Query Context*",
     "promptsPlaceholder": "Describe the context: e.g. a drink that is energizing and refreshing...",
     "uploadProduct": "Upload Product Photo (optional)",
-    "tagOptional": "Tag (optional, max 3)",
-    "naturalPlacement": "natural placement",
-    "topLeft": "top-left",
-    "topRight": "top-right",
-    "bottomLeft": "bottom-left",
-    "bottomRight": "bottom-right",
-    "center": "center"
+    "tagOptional": "Tag (optional, max 3)"
   }
 }
