@@ -3,6 +3,7 @@ import { Plus, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ColorInputField from "./ColorInputField";
 import { getProLeafletValidationErrors } from "../../../utils/LeafletValidationUtil";
+import { normalizeTypographyEntries } from "../../../utils/LeafletNormalizationUtil";
 import "./Step1Content.css";
 
 const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
@@ -10,6 +11,7 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState({});
   const tags = data.tags || [];
+  const typographyEntries = normalizeTypographyEntries(data.typography);
 
   const proAspectRatios = [
     "1:1",
@@ -69,6 +71,27 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
       ...data,
       tags: tags.filter((tag) => tag !== tagToRemove),
     });
+  };
+
+  const handleTypographyChange = (index, field, value) => {
+    const updatedTypography = typographyEntries.map((entry, rowIndex) =>
+      rowIndex === index ? { ...entry, [field]: value } : entry,
+    );
+
+    handleInputChange("typography", updatedTypography);
+  };
+
+  const handleAddTypographyRow = () => {
+    handleInputChange("typography", [...typographyEntries, { key: "", value: "" }]);
+  };
+
+  const handleRemoveTypographyRow = (index) => {
+    if (index < 2) {
+      return;
+    }
+
+    const updatedTypography = typographyEntries.filter((_, rowIndex) => rowIndex !== index);
+    handleInputChange("typography", updatedTypography);
   };
 
   const handleFileUpload = (field) => {
@@ -296,13 +319,46 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         <div className="form-group">
           <label className="form-label">{t("leafletPro.typography")}</label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder={t("leafletPro.typographyPlaceholder")}
-            value={data.typography || ""}
-            onChange={(e) => handleInputChange("typography", e.target.value)}
-          />
+          <div className="typography-editor">
+            {typographyEntries.map((entry, index) => (
+              <div className="typography-row" key={`${entry.key || "row"}-${index}`}>
+                <input
+                  type="text"
+                  className="form-input typography-key-input"
+                  placeholder={t("leafletPro.typographyKey")}
+                  value={entry.key}
+                  onChange={(e) =>
+                    handleTypographyChange(index, "key", e.target.value)
+                  }
+                />
+                <input
+                  type="text"
+                  className="form-input typography-value-input"
+                  placeholder={t("leafletPro.typographyPlaceholder")}
+                  value={entry.value}
+                  onChange={(e) =>
+                    handleTypographyChange(index, "value", e.target.value)
+                  }
+                />
+                {index >= 2 && (
+                  <button
+                    type="button"
+                    className="typography-remove-row"
+                    onClick={() => handleRemoveTypographyRow(index)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              className="typography-add-row"
+              onClick={handleAddTypographyRow}
+            >
+              + {t("leafletPro.addTypographyRow")}
+            </button>
+          </div>
         </div>
 
         <div className="form-group">

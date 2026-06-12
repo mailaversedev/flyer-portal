@@ -231,6 +231,59 @@
   margin-bottom: 24px;
 }
 
+.typography-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.typography-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.4fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.typography-key-input,
+.typography-value-input {
+  min-width: 0;
+}
+
+.typography-add-row {
+  align-self: flex-start;
+  padding: 8px 12px;
+  background: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typography-add-row:hover {
+  background: #4338ca;
+}
+
+.typography-remove-row {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #7f1d1d;
+  background: rgba(127, 29, 29, 0.35);
+  color: #fecaca;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typography-remove-row:hover {
+  background: rgba(127, 29, 29, 0.55);
+  border-color: #b91c1c;
+}
+
 .tag-input-container {
   display: flex;
   flex-direction: column;
@@ -397,6 +450,14 @@
   .form-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .typography-row {
+    grid-template-columns: 1fr;
+  }
+
+  .typography-remove-row {
+    justify-self: flex-end;
   }
   
   .section-title {

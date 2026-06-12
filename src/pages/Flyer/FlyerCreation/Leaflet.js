@@ -10,6 +10,11 @@ import TargetBudget, {
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
+import {
+  DEFAULT_TYPOGRAPHY,
+  normalizeLeafletResolution,
+  normalizeTypographyEntries,
+} from "../../../utils/LeafletNormalizationUtil";
 import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
@@ -17,7 +22,6 @@ const DEFAULT_LEAFLET_DATA = {
   aspectRatio: "1:1",
   adType: "",
   referenceFlyer: null,
-  themeColor: "",
   backgroundPhoto: null,
   subheader: "",
   flyerPrompts: "",
@@ -28,7 +32,7 @@ const DEFAULT_LEAFLET_DATA = {
   resolution: "2K",
   primaryColor: "",
   secondaryColor: "",
-  typography: "",
+  typography: DEFAULT_TYPOGRAPHY.map((entry) => ({ ...entry })),
   brandVoice: "",
   logoImage: null,
 };
@@ -41,11 +45,6 @@ const buildLeafletEditPayload = (data) => ({
   productDescriptions: data.productDescriptions,
   tags: data.tags,
 });
-
-const normalizeLeafletResolution = (resolution = "2K") => {
-  const normalizedResolution = `${resolution || "2K"}`.trim().toUpperCase();
-  return normalizedResolution === "1K" ? "1K" : "2K";
-};
 
 const getLeafletTokenCost = (resolution = "2K") => {
   if (normalizeLeafletResolution(resolution) === "1K") {
@@ -247,6 +246,7 @@ const LeafletCreation = () => {
             ...DEFAULT_LEAFLET_DATA,
             ...response.data,
             tags: response.data.tags || [],
+            typography: normalizeTypographyEntries(response.data.typography),
           });
         }
       } catch (error) {

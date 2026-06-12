@@ -5,6 +5,10 @@ import {
   isDataUrl,
   isFile,
 } from "../utils/FileUtil";
+import {
+  normalizeLeafletResolution,
+  normalizeTypographyMap,
+} from "../utils/LeafletNormalizationUtil";
 
 // API service for flyer-portal
 const API_BASE_URL =
@@ -364,13 +368,11 @@ class ApiService {
       throw new Error("Context/Prompts is required");
     }
 
-    const normalizedResolution = `${leafletData.resolution || "2K"}`
-      .trim()
-      .toUpperCase();
+    const normalizedResolution = normalizeLeafletResolution(leafletData.resolution);
 
     formData.append("user_query", userQuery);
     formData.append("aspect_ratio", leafletData.aspectRatio || "1:1");
-    formData.append("resolution", normalizedResolution === "1K" ? "1K" : "2K");
+    formData.append("resolution", normalizedResolution);
 
     const colorPalette = [leafletData.primaryColor, leafletData.secondaryColor]
       .map((color) => `${color || ""}`.trim())
@@ -380,27 +382,12 @@ class ApiService {
       formData.append("color_palette", color);
     });
 
-    if (leafletData.typography) {
-      const rawTypography = `${leafletData.typography}`.trim();
+    const typographyMap = normalizeTypographyMap(leafletData.typography);
 
-      if (rawTypography) {
-        let typographyPayload = JSON.stringify({ style: rawTypography });
-
-        try {
-          const parsedTypography = JSON.parse(rawTypography);
-          if (
-            parsedTypography &&
-            (Array.isArray(parsedTypography) || typeof parsedTypography === "object")
-          ) {
-            typographyPayload = JSON.stringify(parsedTypography);
-          }
-        } catch (_error) {
-          // Non-JSON typography input is wrapped into a simple object payload.
-        }
-
-        formData.append("typography", typographyPayload);
-      }
+    if (Object.keys(typographyMap).length > 0) {
+      formData.append("typography", JSON.stringify(typographyMap));
     }
+
     if (leafletData.brandVoice) {
       formData.append("brand_voice", leafletData.brandVoice);
     }
