@@ -590,6 +590,23 @@ const CouponBuilder = ({ data, onUpdate }) => {
             </div>
 
             <div className="form-group">
+              <label className="form-label">{t("couponBuilder.quantity")}</label>
+              <input
+                type="number"
+                className="form-input"
+                placeholder={t("couponBuilder.enterQuantity")}
+                value={couponData.quantity || ""}
+                onChange={(e) =>
+                  handleInputChange("quantity", e.target.value ? parseInt(e.target.value) : null)
+                }
+                min="1"
+              />
+              <div className="field-helper-text">
+                {t("couponBuilder.quantityHelper")}
+              </div>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">{t("couponBuilder.expiredDate")}</label>
               <div className="date-input-container">
                 <input

@@ -494,6 +494,9 @@
     "selectBarcode": "Select barcode image",
     "terms": "Terms & Conditions",
     "expiredDate": "Expired Date",
+    "quantity": "Quantity (Optional)",
+    "enterQuantity": "Enter quantity limit",
+    "quantityHelper": "Leave blank for unlimited coupons",
     "mobileView": "Mobile View"
   },
   "leafletStandard": {

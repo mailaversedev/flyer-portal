@@ -29,6 +29,9 @@ function normalizeCompanyCouponEntry({ flyerId, companyId, flyerData, now }) {
       typeof coupon.itemDescription === "string" ? coupon.itemDescription : "",
     promotionCode:
       typeof coupon.promotionCode === "string" ? coupon.promotionCode : "",
+    quantity:
+      coupon.quantity ? parseInt(coupon.quantity) : null,
+    downloadCount: coupon.downloadCount || 0,
     createdAt:
       typeof flyerData.createdAt === "string" ? flyerData.createdAt : timestamp,
     updatedAt: timestamp,
@@ -39,11 +42,21 @@ function isCompanyCouponAvailable(coupon, now = new Date().toISOString()) {
   const expiredDate =
     typeof coupon?.expiredDate === "string" ? coupon.expiredDate.trim() : "";
 
-  if (!expiredDate) {
-    return true;
+  // Check if coupon has expired
+  if (expiredDate && expiredDate < now.slice(0, 10)) {
+    return false;
   }
 
-  return expiredDate >= now.slice(0, 10);
+  // Check if coupon quantity is exhausted
+  if (coupon?.quantity) {
+    const quantity = parseInt(coupon.quantity);
+    const downloadCount = coupon?.downloadCount || 0;
+    if (downloadCount >= quantity) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function mapCompanyCouponDoc(doc) {
@@ -60,6 +73,8 @@ function mapCompanyCouponDoc(doc) {
     discountValue: data.discountValue || "",
     itemDescription: data.itemDescription || "",
     promotionCode: data.promotionCode || "",
+    quantity: data.quantity ? parseInt(data.quantity) : null,
+    downloadCount: data.downloadCount || 0,
     createdAt: data.createdAt || null,
     updatedAt: data.updatedAt || null,
   };

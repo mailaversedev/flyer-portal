@@ -489,6 +489,9 @@
     "selectBarcode": "選擇條碼圖片",
     "terms": "條款及細則",
     "expiredDate": "到期日",
+    "quantity": "數量（選填）",
+    "enterQuantity": "輸入數量限制",
+    "quantityHelper": "留空表示無限數量優惠券",
     "mobileView": "手機預覽"
   },
   "leafletStandard": {

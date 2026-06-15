@@ -36,6 +36,17 @@ router.post("/claim", async (req, res) => {
       });
     }
 
+    // Check if coupon has quantity limit and if it's available
+    if (coupon.quantity) {
+      const currentDownloadCount = coupon.downloadCount || 0;
+      if (currentDownloadCount >= coupon.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: "This coupon is no longer available",
+        });
+      }
+    }
+
     // 2. Check if user already claimed this specific coupon
     const claimRef = db
       .collection("users")
@@ -96,6 +107,23 @@ router.post("/claim", async (req, res) => {
     };
 
     await db.runTransaction(async (transaction) => {
+      // Re-check flyer data within transaction
+      const flyerDoc = await transaction.get(flyerRef);
+      if (!flyerDoc.exists) {
+        throw new Error("Flyer not found");
+      }
+
+      const flyerData = flyerDoc.data();
+      const coupon = flyerData?.coupon;
+
+      // Check quantity again within transaction to ensure consistency
+      if (coupon && coupon.quantity) {
+        const currentDownloadCount = coupon.downloadCount || 0;
+        if (currentDownloadCount >= coupon.quantity) {
+          throw new Error("__QUANTITY_EXCEEDED__");
+        }
+      }
+
       const claimDoc = await transaction.get(claimRef);
       if (claimDoc.exists) {
         throw new Error("__ALREADY_CLAIMED__");
@@ -149,6 +177,7 @@ router.post("/claim", async (req, res) => {
         }
       }
 
+      // Update flyer with incremented download count
       transaction.set(
         flyerRef,
         {
@@ -174,6 +203,13 @@ router.post("/claim", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "You have already claimed this coupon",
+      });
+    }
+    
+    if (error.message === "__QUANTITY_EXCEEDED__") {
+      return res.status(400).json({
+        success: false,
+        message: "This coupon is no longer available",
       });
     }
 
@@ -218,6 +254,61 @@ router.get("/my-coupons", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching coupons:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// POST /use - User uses a coupon
+router.post("/use", async (req, res) => {
+  try {
+    const { couponId } = req.body;
+    const userId = req.user.userId;
+
+    if (!couponId) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon ID is required",
+      });
+    }
+
+    const couponRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("coupons")
+      .doc(couponId);
+
+    const couponDoc = await couponRef.get();
+
+    if (!couponDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Coupon not found",
+      });
+    }
+
+    if (couponDoc.data().isUsed) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon has already been used",
+      });
+    }
+
+    await couponRef.update({
+      isUsed: true,
+      usedAt: new Date().toISOString(),
+      status: "used",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Coupon used successfully",
+    });
+  } catch (error) {
+    console.error("Error using coupon:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
