@@ -1,122 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { Download, Minus, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
+import {
+  MIN_BUDGET,
+  MAX_BUDGET,
+  DEFAULT_BUDGET,
+  validateTargetBudgetStep,
+} from "../../utils/FlyerValidationUtil";
+import {
+  getSpreadingCoefficientByIndustry,
+  getStoredCompanyNature,
+} from "../../utils/LeafletNormalizationUtil";
+import FlyerPreview from "./FlyerPreview";
+
 import "./TargetBudget.css";
-
-const MIN_BUDGET = 500;
-const MAX_BUDGET = 50000;
-const DEFAULT_BUDGET = 1000;
-const DEFAULT_SPREADING_COEFFICIENT = 0.845;
-
-const SPREADING_COEFFICIENT_BY_INDUSTRY = {
-  "F&B": 0.35,
-  Lifestyle: 0.8,
-  Entertainment: 0.65,
-  "Banking & Finance": 1.3,
-  Household: 0.65,
-  "Real Estate": 1.3,
-  Education: 0.65,
-  "Government Bodies": 1,
-  Utilities: 1,
-  Donation: 1,
-  Travelling: 1,
-  Healthcare: 0.8,
-  "Fitness & Sports": 0.8,
-};
-
-const normalizeIndustry = (industry) => `${industry || ""}`.trim();
-
-const getStoredCompanyNature = () => {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  try {
-    const storedCompany = JSON.parse(localStorage.getItem("company") || "null");
-    return storedCompany?.nature || "";
-  } catch {
-    return "";
-  }
-};
-
-const getSpreadingCoefficientByIndustry = (industry) => {
-  const normalizedIndustry = normalizeIndustry(industry);
-
-  if (
-    normalizedIndustry &&
-    Object.prototype.hasOwnProperty.call(
-      SPREADING_COEFFICIENT_BY_INDUSTRY,
-      normalizedIndustry,
-    )
-  ) {
-    return SPREADING_COEFFICIENT_BY_INDUSTRY[normalizedIndustry];
-  }
-
-  return DEFAULT_SPREADING_COEFFICIENT;
-};
-
-const getImageExtensionFromUrl = (url) => {
-  try {
-    const pathname = new URL(url).pathname;
-    const extension = pathname.split(".").pop()?.toLowerCase();
-
-    if (["png", "jpg", "jpeg", "webp"].includes(extension)) {
-      return extension === "jpeg" ? "jpg" : extension;
-    }
-  } catch (error) {
-    console.warn("Failed to parse image extension from URL", error);
-  }
-
-  return "png";
-};
-
-export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) => {
-  const formData = {
-    district: data?.targetBudget?.district || data?.district || "",
-    propertyEstate:
-      data?.targetBudget?.propertyEstate || data?.propertyEstate || "",
-    targetedGroup:
-      data?.targetBudget?.targetedGroup || data?.targetedGroup || "",
-    budget: data?.targetBudget?.budget || data?.budget || DEFAULT_BUDGET,
-    paymentMethod:
-      data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
-    noReward: Boolean(data?.targetBudget?.noReward || data?.noReward),
-  };
-
-  const missingFields = [];
-
-  if (isDirectUpload) {
-    if (!data?.header?.trim()) {
-      missingFields.push(t("targetBudget.header"));
-    }
-    if (!(data?.adContent || "").trim()) {
-      missingFields.push(t("targetBudget.adContent"));
-    }
-  }
-
-  if (!formData.noReward) {
-    if (!formData.paymentMethod.trim()) {
-      missingFields.push(t("targetBudget.payment"));
-    }
-    if (!formData.budget || formData.budget < MIN_BUDGET) {
-      missingFields.push(t("targetBudget.budgetHkd"));
-    }
-  }
-
-  return {
-    isValid: missingFields.length === 0,
-    missingFields,
-  };
-};
 
 const TargetBudget = ({
   data,
   onUpdate,
   history = [],
   isDirectUpload = false,
+  isFreeAttempt = false,
 }) => {
   const { t, i18n } = useTranslation();
   const showNoRewardOption = isSuperAdmin();
@@ -134,7 +40,6 @@ const TargetBudget = ({
     noReward: Boolean(data?.targetBudget?.noReward || data?.noReward),
   };
 
-  const [previewZoom, setPreviewZoom] = useState(100);
   const [districtOptions, setDistrictOptions] = useState([]);
   const [buildingOptions, setBuildingOptions] = useState([]);
   const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
@@ -280,54 +185,9 @@ const TargetBudget = ({
       });
     }
   };
-  const handleZoomChange = (delta) => {
-    setPreviewZoom((prev) => Math.max(50, Math.min(200, prev + delta)));
-  };
 
   const formatBudget = (amount) => {
     return amount.toLocaleString(i18n.language);
-  };
-
-  const handleDownload = async () => {
-    const imageUrl = data?.coverPhoto;
-
-    if (!imageUrl) {
-      return;
-    }
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const extension = getImageExtensionFromUrl(imageUrl);
-    const fileName = `flyer-${timestamp}.${extension}`;
-
-    const triggerDownload = (href, openInNewTab = false) => {
-      const link = document.createElement("a");
-      link.href = href;
-      link.download = fileName;
-      link.rel = "noopener noreferrer";
-      if (openInNewTab) {
-        link.target = "_blank";
-      }
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    };
-
-    try {
-      const response = await fetch(imageUrl);
-
-      if (!response.ok) {
-        throw new Error(`Download failed with status ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      triggerDownload(objectUrl);
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-    } catch (error) {
-      console.error("Failed to download flyer image", error);
-      triggerDownload(imageUrl, true);
-    }
   };
 
   return (
@@ -638,110 +498,13 @@ const TargetBudget = ({
         </div>
 
         {/* Right Side - Flyer Preview */}
-        <div className="flyer-preview">
-          <div className="preview-container">
-            {history && history.length > 0 && (
-              <div
-                className="history-thumbnails"
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  marginBottom: "12px",
-                  justifyContent: "center",
-                }}
-              >
-                {history.map((url, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => handleHistorySelect(url)}
-                    style={{
-                      width: "60px",
-                      height: "84px",
-                      cursor: "pointer",
-                      border:
-                        data.coverPhoto === url
-                          ? "2px solid #3b82f6"
-                          : "1px solid #e2e8f0",
-                      borderRadius: "4px",
-                      overflow: "hidden",
-                      opacity: data.coverPhoto === url ? 1 : 0.6,
-                      transition: "all 0.2s ease",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    }}
-                      title={t("flyerPage.version", { number: history.length - idx })}
-                  >
-                    <img
-                      src={url}
-                      alt={t("flyerPage.version", { number: idx + 1 })}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="preview-image">
-              {/* Show generated image if available, otherwise show placeholder */}
-              {data?.coverPhoto ? (
-                <div
-                  className="generated-flyer"
-                  style={{ transform: `scale(${previewZoom / 100})` }}
-                >
-                  <img
-                    src={data.coverPhoto}
-                    alt={t("targetBudget.generatedLeaflet")}
-                    className="generated-flyer-image"
-                  />
-                </div>
-              ) : (
-                <div className="flyer-placeholder">
-                  <div className="placeholder-content">
-                    <div className="placeholder-header">{t("targetBudget.placeholderHeader")}</div>
-                    <div className="placeholder-main">
-                      <div className="placeholder-figure"></div>
-                      <div className="placeholder-text">{t("targetBudget.placeholderTrial")}</div>
-                      <div className="placeholder-subtitle">
-                        {t("targetBudget.placeholderSubtitle")}
-                      </div>
-                    </div>
-                    <div className="placeholder-footer">
-                      <div className="placeholder-qr"></div>
-                      <div className="placeholder-contact">{t("targetBudget.apply")}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="preview-controls">
-              <button
-                className="zoom-button"
-                onClick={() => handleZoomChange(-10)}
-              >
-                <Minus size={16} />
-              </button>
-              <span className="zoom-display">{previewZoom}%</span>
-              <button
-                className="zoom-button"
-                onClick={() => handleZoomChange(10)}
-              >
-                <Plus size={16} />
-              </button>
-              <button
-                className="download-button"
-                onClick={handleDownload}
-                disabled={!data?.coverPhoto}
-              >
-                <Download size={16} />
-                {t("targetBudget.download")}
-              </button>
-            </div>
-          </div>
-        </div>
+        <FlyerPreview
+          coverPhoto={data?.coverPhoto}
+          history={history}
+          onHistorySelect={handleHistorySelect}
+          isFreeAttempt={isFreeAttempt}
+          t={t}
+        />
       </div>
     </div>
   );

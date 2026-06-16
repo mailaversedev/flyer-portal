@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+
 import ApiService from "../../services/ApiService";
 import i18n, { applyLocale, normalizeLocale } from "../../i18n";
+
 import "./StaffLogin.css";
 
 const StaffLogin = () => {
@@ -72,11 +74,11 @@ const StaffLogin = () => {
               throw new Error("Failed to upload company icon");
             }
           } catch (uploadError) {
-              setError(
-                t("login.uploadCompanyIconFailed", {
-                  message: uploadError.message,
-                }),
-              );
+            setError(
+              t("login.uploadCompanyIconFailed", {
+                message: uploadError.message,
+              }),
+            );
             setLoading(false);
             return;
           }
@@ -258,7 +260,9 @@ const StaffLogin = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="companyNature">{t("login.companyNature")}</label>
+                <label htmlFor="companyNature">
+                  {t("login.companyNature")}
+                </label>
                 <select
                   id="companyNature"
                   value={companyNature}
@@ -295,7 +299,10 @@ const StaffLogin = () => {
                   onChange={(e) => {
                     const file = e.target.files[0];
                     if (file) {
-                      if (file.type !== "image/png" && file.type !== "image/jpeg") {
+                      if (
+                        file.type !== "image/png" &&
+                        file.type !== "image/jpeg"
+                      ) {
                         alert("Only PNG and JPEG images are allowed.");
                         e.target.value = null;
                         return;

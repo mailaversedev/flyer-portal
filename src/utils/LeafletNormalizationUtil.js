@@ -122,7 +122,55 @@ export const normalizeTypographyMap = (typography) => {
   return typographyMap;
 };
 
-export const normalizeLeafletResolution = (resolution = "2K") => {
-  const normalizedResolution = `${resolution || "2K"}`.trim().toUpperCase();
-  return normalizedResolution === "1K" ? "1K" : "2K";
+export const normalizeLeafletResolution = (resolution) => {
+  const normalized = `${resolution || "2K"}`.toUpperCase();
+  if (["1K", "2K", "4K"].includes(normalized)) {
+    return normalized;
+  }
+  return "2K";
+};
+
+export const DEFAULT_SPREADING_COEFFICIENT = 0.845;
+
+export const SPREADING_COEFFICIENT_BY_INDUSTRY = {
+  "F&B": 0.35,
+  Lifestyle: 0.8,
+  Entertainment: 0.65,
+  "Banking & Finance": 1.3,
+  Household: 0.65,
+  "Real Estate": 1.3,
+  Education: 0.65,
+  "Government Bodies": 1,
+  Utilities: 1,
+  Donation: 1,
+  Travelling: 1,
+  Healthcare: 0.8,
+  "Fitness & Sports": 0.8,
+};
+
+export const normalizeIndustry = (industry) => `${industry || ""}`.trim();
+
+export const getStoredCompanyNature = () => {
+  try {
+    const storedCompany = JSON.parse(localStorage.getItem("company") || "null");
+    return storedCompany?.nature || "";
+  } catch {
+    return "";
+  }
+};
+
+export const getSpreadingCoefficientByIndustry = (industry) => {
+  const normalizedIndustry = normalizeIndustry(industry);
+
+  if (
+    normalizedIndustry &&
+    Object.prototype.hasOwnProperty.call(
+      SPREADING_COEFFICIENT_BY_INDUSTRY,
+      normalizedIndustry,
+    )
+  ) {
+    return SPREADING_COEFFICIENT_BY_INDUSTRY[normalizedIndustry];
+  }
+
+  return DEFAULT_SPREADING_COEFFICIENT;
 };

@@ -4,9 +4,8 @@ import { ChevronLeft, Sparkles } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router";
 
 import Step1ContentPro from "../../../components/Flyer/Leaflet/Step1ContentPro";
-import TargetBudget, {
-  validateTargetBudgetStep,
-} from "../../../components/Flyer/TargetBudget";
+import TargetBudget from "../../../components/Flyer/TargetBudget";
+import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
@@ -199,6 +198,7 @@ const LeafletCreation = () => {
   const [leafletData, setLeafletData] = useState(DEFAULT_LEAFLET_DATA);
   const [loading, setLoading] = useState("");
   const [isFetching, setIsFetching] = useState(isEditMode);
+  const [isFreeAttempt, setIsFreeAttempt] = useState(false);
   const [generatedHistory, setGeneratedHistory] = useState([]);
   const [walletSummary, setWalletSummary] = useState(null);
   const step1Ref = useRef();
@@ -293,6 +293,7 @@ const LeafletCreation = () => {
       setLoading(t("leafletCreation.generatingWait"));
 
       try {
+        const isFree = !isSuperAdminUser && freeAttemptsRemaining > 0;
         const response = await ApiService.generateLeaflet(leafletData);
         const generatedUrls = Array.isArray(response?.images)
           ? response.images.map((image) => image?.url).filter(Boolean)
@@ -301,6 +302,7 @@ const LeafletCreation = () => {
         const billingResolution = normalizeLeafletResolution(leafletData.resolution);
 
         if (flyerOutputPath) {
+          setIsFreeAttempt(isFree);
           let billingResponse = null;
 
           if (!isSuperAdminUser) {
@@ -616,6 +618,7 @@ const LeafletCreation = () => {
                   onUpdate={updateLeafletData}
                   history={generatedHistory}
                   isDirectUpload={location.state?.isDirectUpload}
+                  isFreeAttempt={isFreeAttempt}
                 />
               )}
 
