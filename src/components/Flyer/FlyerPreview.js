@@ -28,21 +28,23 @@ const FlyerPreview = ({
 
       if (isFreeAttempt) {
         ctx.save();
-        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-        ctx.font = `${Math.max(img.width, img.height) * 0.04}px Arial`;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; // Increased opacity
+        ctx.font = `bold ${Math.max(img.width, img.height) * 0.05}px Arial`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
+        // Tiled watermark logic
         const angle = -30 * (Math.PI / 180);
-        ctx.rotate(angle);
+        const spacingX = img.width * 0.4;
+        const spacingY = img.height * 0.3;
 
-        const stepX = img.width * 0.3;
-        const stepY = img.height * 0.2;
-
-        // Draw grid of watermarks
-        for (let x = -img.width; x < img.width * 2; x += stepX) {
-          for (let y = -img.height; y < img.height * 2; y += stepY) {
-            ctx.fillText("Mailaverse", x, y);
+        for (let x = -img.width; x < img.width * 2; x += spacingX) {
+          for (let y = -img.height; y < img.height * 2; y += spacingY) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillText("Mailaverse", 0, 0);
+            ctx.restore();
           }
         }
         ctx.restore();
