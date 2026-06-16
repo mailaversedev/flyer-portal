@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Step1Background from "../../../components/Flyer/Query/Step1Background";
 import Step2Survey from "../../../components/Flyer/Query/Step2Survey";
-import TargetBudget, {
-  validateTargetBudgetStep,
-} from "../../../components/Flyer/TargetBudget";
+import TargetBudget from "../../../components/Flyer/TargetBudget";
+import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router";

@@ -4,9 +4,8 @@ import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
 
-import TargetBudget, {
-  validateTargetBudgetStep,
-} from "../../../components/Flyer/TargetBudget";
+import TargetBudget from "../../../components/Flyer/TargetBudget";
+import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
 import "./QRGeneration.css";
