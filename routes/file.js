@@ -1,10 +1,9 @@
 const express = require("express");
 const multer = require("multer");
-const { Storage } = require("@google-cloud/storage");
+const admin = require("firebase-admin");
 
 const router = express.Router();
 const bucketName = "flyer-genie.firebasestorage.app";
-const storage = new Storage();
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -34,7 +33,8 @@ router.post("/file", upload.single("file"), (req, res) => {
     const { category = "general" } = req.body;
     const file = req.file;
 
-    const blob = storage
+    const blob = admin
+      .storage()
       .bucket(bucketName)
       .file(`${category}/${Date.now()}_${file.originalname}`);
     const blobStream = blob.createWriteStream({
@@ -72,6 +72,7 @@ router.post("/file", upload.single("file"), (req, res) => {
 
     blobStream.end(file.buffer);
   } catch (error) {
+    console.error("Error uploading file:", error);
     res.status(400).json({
       success: false,
       message: "Failed to upload file",
