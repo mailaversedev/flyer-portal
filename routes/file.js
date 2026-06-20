@@ -33,52 +33,57 @@ router.post("/file", upload.single("file"), (req, res) => {
     const { category = "general" } = req.body;
     const file = req.file;
 
-    const blob = admin
-      .storage()
-      .bucket(bucketName)
-      .file(`${category}/${Date.now()}_${file.originalname}`);
-    const blobStream = blob.createWriteStream({
+    console.log(`Starting upload: bucket=${bucketName}, category=${category}, filename=${file.originalname}`);
+
+    const bucket = admin.storage().bucket(bucketName);
+    const blob = bucket.file(`${category}/${Date.now()}_${file.originalname}`);
+    
+    console.log("Attempting upload via blob.save()...");
+
+    await blob.save(file.buffer, {
+      resumable: false,
+      contentType: file.mimetype,
+      public: true, // This will attempt to make it public during upload
       metadata: {
-        contentType: file.mimetype,
-      },
+        category: category,
+      }
     });
 
-    blobStream.on("error", (err) => {
-      console.error("Error uploading file to cloud storage:", err);
+    console.log("Upload successful, getting public URL...");
+    const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
+    console.log(`File available at: ${publicUrl}`);
+
+    const response = {
+      success: true,
+      fileId: blob.name,
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      category: category,
+      url: publicUrl,
+      uploadedAt: new Date().toISOString(),
+      size: file.size,
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    // Log full error details for debugging
+    const errorDetails = {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      errors: error.errors
+    };
+    console.error("Full Error Details:", JSON.stringify(errorDetails, null, 2));
+
+    if (!res.headersSent) {
       res.status(500).json({
         success: false,
         message: "Failed to upload file to cloud storage",
-        error: err.message,
+        error: error.message,
+        details: errorDetails
       });
-    });
-
-    blobStream.on("finish", async () => {
-      // Make the file public (optional, depending on your requirements)
-      await blob.makePublic();
-      const publicUrl = `https://storage.googleapis.com/${bucketName}/${blob.name}`;
-
-      const response = {
-        success: true,
-        fileId: blob.name,
-        fileName: file.originalname,
-        fileType: file.mimetype,
-        category: category,
-        url: publicUrl,
-        uploadedAt: new Date().toISOString(),
-        size: file.size,
-      };
-
-      res.status(201).json(response);
-    });
-
-    blobStream.end(file.buffer);
-  } catch (error) {
-    console.error("Error uploading file:", error);
-    res.status(400).json({
-      success: false,
-      message: "Failed to upload file",
-      error: error.message,
-    });
+    }
   }
 });
 

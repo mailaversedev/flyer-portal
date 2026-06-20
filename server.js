@@ -2,10 +2,24 @@ const path = require("path");
 const express = require("express");
 const admin = require("firebase-admin");
 
+const fs = require("fs");
+
 // must be initialized before importing routes
+const serviceAccountPath = path.join(__dirname, "flyer-genie.json");
+let credential;
+
+if (fs.existsSync(serviceAccountPath)) {
+  console.log("Using service account from flyer-genie.json");
+  credential = admin.credential.cert(serviceAccountPath);
+} else {
+  console.log("Using application default credentials");
+  credential = admin.credential.applicationDefault();
+}
+
 admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
+  credential: credential,
   databaseURL: "https://flyer-genie.firebaseio.com",
+  storageBucket: "flyer-genie.firebasestorage.app",
 });
 
 // Configure Firestore to ignore undefined properties globally
