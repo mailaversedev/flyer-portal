@@ -421,6 +421,34 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
 
         <div className="form-grid">
           <div className="form-group full-width">
+            <label className="form-label">{t("leafletPro.copyLine")}</label>
+            <input
+              type="text"
+              className={`form-input ${errors.header ? "error" : ""}`}
+              placeholder={t("leafletPro.copyLinePlaceholder")}
+              value={data.header || ""}
+              onChange={(e) => handleInputChange("header", e.target.value)}
+            />
+            {errors.header && (
+              <span className="error-message">{errors.header}</span>
+            )}
+          </div>
+
+          <div className="form-group full-width">
+            <label className="form-label">{t("leafletPro.adContent")}</label>
+            <textarea
+              className={`form-textarea ${errors.adContent ? "error" : ""}`}
+              placeholder={t("leafletPro.adContentPlaceholder")}
+              rows={4}
+              value={data.adContent || ""}
+              onChange={(e) => handleInputChange("adContent", e.target.value)}
+            />
+            {errors.adContent && (
+              <span className="error-message">{errors.adContent}</span>
+            )}
+          </div>
+
+          <div className="form-group full-width">
             <label className="form-label">{t("leafletPro.prompts")}</label>
             <textarea
               className={`form-textarea ${errors.flyerPrompts ? "error" : ""}`}
