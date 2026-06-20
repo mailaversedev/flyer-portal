@@ -21,7 +21,7 @@ const upload = multer({
 });
 
 // POST /api/file - Upload file/image
-router.post("/file", upload.single("file"), (req, res) => {
+router.post("/file", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
