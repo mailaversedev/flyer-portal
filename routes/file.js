@@ -44,6 +44,7 @@ router.post("/file", upload.single("file"), (req, res) => {
     });
 
     blobStream.on("error", (err) => {
+      console.error("Error uploading file to cloud storage:", err);
       res.status(500).json({
         success: false,
         message: "Failed to upload file to cloud storage",
