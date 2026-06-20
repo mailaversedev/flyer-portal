@@ -618,7 +618,6 @@ router.put("/flyer/:flyerId", authenticateToken, async (req, res) => {
       const editableFieldsByType = {
         leaflet: [
           "header",
-          "subheader",
           "adContent",
           "promotionMessage",
           "productDescriptions",

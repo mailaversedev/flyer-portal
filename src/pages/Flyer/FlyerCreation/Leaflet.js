@@ -23,7 +23,6 @@ const DEFAULT_LEAFLET_DATA = {
   referenceFlyer: null,
   backgroundPhoto: null,
   header: "",
-  subheader: "",
   adContent: "",
   flyerPrompts: "",
   promotionMessage: "",
@@ -40,7 +39,6 @@ const DEFAULT_LEAFLET_DATA = {
 
 const buildLeafletEditPayload = (data) => ({
   header: data.header,
-  subheader: data.subheader,
   adContent: data.adContent,
   promotionMessage: data.promotionMessage,
   productDescriptions: data.productDescriptions,
@@ -85,17 +83,6 @@ const LeafletEditForm = ({ data, onUpdate, t }) => {
               placeholder={t("qrGeneration.pleaseEnter")}
               value={data.header || ""}
               onChange={(event) => onUpdate({ header: event.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{t("leafletStandard.subheader")}</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder={t("qrGeneration.pleaseEnter")}
-              value={data.subheader || ""}
-              onChange={(event) => onUpdate({ subheader: event.target.value })}
             />
           </div>
 
