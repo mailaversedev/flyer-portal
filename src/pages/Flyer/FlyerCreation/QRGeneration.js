@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import QRCode from "qrcode";
 
 import TargetBudget from "../../../components/Flyer/TargetBudget";
@@ -215,7 +216,7 @@ const QRGeneration = () => {
         t,
       });
       if (!validation.isValid) {
-        alert(
+        toast.error(
           `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
         );
         return;
@@ -236,7 +237,7 @@ const QRGeneration = () => {
         t,
       });
       if (!validation.isValid) {
-        alert(
+        toast.error(
           `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
         );
         return;
@@ -280,11 +281,11 @@ const QRGeneration = () => {
           },
         });
       } else {
-        alert(t("qrGeneration.createFailed"));
+        toast.error(t("qrGeneration.createFailed"));
       }
     } catch (error) {
       console.error("Error creating QR flyer:", error);
-      alert(t("qrGeneration.createError"));
+      toast.error(t("qrGeneration.createError"));
     } finally {
       setLoading("");
     }
@@ -306,11 +307,11 @@ const QRGeneration = () => {
       if (response.success) {
         navigate("/dashboard");
       } else {
-        alert(t("qrGeneration.createFailed"));
+        toast.error(t("qrGeneration.createFailed"));
       }
     } catch (error) {
       console.error("Error updating QR flyer:", error);
-      alert(t("qrGeneration.createError"));
+      toast.error(t("qrGeneration.createError"));
     } finally {
       setLoading("");
     }

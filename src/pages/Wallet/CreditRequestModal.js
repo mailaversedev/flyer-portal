@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 import ApiService from "../../services/ApiService";
 import "./CreditRequestModal.css";
 
@@ -7,22 +8,20 @@ const CreditRequestModal = ({ onClose, onSuccess }) => {
   const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || amount <= 0) {
-      setError("Please enter a valid amount.");
+      toast.error("Please enter a valid amount.");
       return;
     }
     if (!file) {
-      setError("Please upload a receipt.");
+      toast.error("Please upload a receipt.");
       return;
     }
 
     try {
       setLoading(true);
-      setError("");
 
       // 1. Upload receipt
       const uploadRes = await ApiService.uploadFile(file, "receipts");
@@ -44,7 +43,7 @@ const CreditRequestModal = ({ onClose, onSuccess }) => {
       onSuccess();
     } catch (err) {
       console.error(err);
-      setError(err.message || "An error occurred");
+      toast.error(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -57,7 +56,6 @@ const CreditRequestModal = ({ onClose, onSuccess }) => {
           &times;
         </button>
         <h3>Request Credit</h3>
-        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Request Amount (HKD)</label>

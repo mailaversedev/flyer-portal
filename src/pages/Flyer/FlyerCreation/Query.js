@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import Step1Background from "../../../components/Flyer/Query/Step1Background";
 import Step2Survey from "../../../components/Flyer/Query/Step2Survey";
 import TargetBudget from "../../../components/Flyer/TargetBudget";
@@ -45,7 +46,7 @@ const QueryCreation = () => {
     });
 
     if (!validation.isValid) {
-      alert(
+      toast.error(
         `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
       );
       return false;
@@ -122,11 +123,11 @@ const QueryCreation = () => {
         });
       } else {
         console.error("Failed to create flyer:", response.message);
-        alert(t("queryCreation.createFailed"));
+        toast.error(t("queryCreation.createFailed"));
       }
     } catch (error) {
       console.error("Error creating flyer:", error);
-      alert(t("queryCreation.createError"));
+      toast.error(t("queryCreation.createError"));
     } finally {
       setLoading("");
     }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 
 import ApiService from "../../services/ApiService";
 import i18n, { applyLocale, normalizeLocale } from "../../i18n";
@@ -28,8 +29,6 @@ const StaffLogin = () => {
     normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
   );
 
-  const [error, setError] = useState("");
-  const [isSuccessMessage, setIsSuccessMessage] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -68,8 +67,6 @@ const StaffLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setIsSuccessMessage(false);
     setLoading(true);
 
     try {
@@ -88,7 +85,7 @@ const StaffLogin = () => {
               throw new Error("Failed to upload company icon");
             }
           } catch (uploadError) {
-            setError(
+            toast.error(
               t("login.uploadCompanyIconFailed", {
                 message: uploadError.message,
               }),
@@ -120,8 +117,7 @@ const StaffLogin = () => {
       if (response.success) {
         if (isRegistering) {
           setIsRegistering(false);
-          setError(response.message || t("login.registrationSuccess"));
-          setIsSuccessMessage(true);
+          toast.success(response.message || t("login.registrationSuccess"));
           setPassword("");
         } else {
           // Login success
@@ -140,17 +136,15 @@ const StaffLogin = () => {
           navigate("/dashboard");
         }
       } else {
-        setError(
+        toast.error(
           response.message ||
             (isRegistering
               ? t("login.registrationFailed")
               : t("login.loginFailed")),
         );
-        setIsSuccessMessage(false);
       }
     } catch (err) {
-      setError(err.message || "An error occurred");
-      setIsSuccessMessage(false);
+      toast.error(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -158,8 +152,6 @@ const StaffLogin = () => {
 
   const toggleMode = () => {
     setIsRegistering(!isRegistering);
-    setError("");
-    setIsSuccessMessage(false);
   };
 
   const handleLocaleChange = async (event) => {
@@ -190,14 +182,6 @@ const StaffLogin = () => {
             ? t("login.companyOnboarding")
             : t("login.portalLogin")}
         </h2>
-
-        {error && (
-          <div
-            className={`error-message ${isSuccessMessage ? "success-message" : ""}`}
-          >
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -318,7 +302,7 @@ const StaffLogin = () => {
                         file.type !== "image/png" &&
                         file.type !== "image/jpeg"
                       ) {
-                        alert("Only PNG and JPEG images are allowed.");
+                        toast.error("Only PNG and JPEG images are allowed.");
                         e.target.value = null;
                         return;
                       }

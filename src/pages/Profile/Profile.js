@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import ApiService from "../../services/ApiService";
 import i18n, {
   applyLocale,
@@ -30,8 +31,6 @@ const Profile = () => {
   );
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [companyDisplayName, setCompanyDisplayName] = useState("");
 
   useEffect(() => {
@@ -105,8 +104,6 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     setLoading(true);
 
     try {
@@ -158,7 +155,7 @@ const Profile = () => {
       await ApiService.updateStaffProfile({ locale });
 
       if (response.success) {
-        setSuccess(t("profilePage.profileUpdated"));
+        toast.success(t("profilePage.profileUpdated"));
 
         // Update local storage and ApiService
         const storedCompany = JSON.parse(localStorage.getItem("company") || "{}");
@@ -189,7 +186,7 @@ const Profile = () => {
       }
     } catch (err) {
       clearPendingLocale(locale);
-      setError(err.message || "An error occurred");
+      toast.error(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -198,7 +195,7 @@ const Profile = () => {
   const handleCompanyCoverPhotosChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length > MAX_COMPANY_COVER_PHOTOS) {
-      alert(
+      toast.error(
         t("profilePage.companyCoverPhotosLimit", {
           count: MAX_COMPANY_COVER_PHOTOS,
         }),
@@ -211,7 +208,7 @@ const Profile = () => {
       (file) => !file.type.startsWith("image/"),
     );
     if (hasInvalidFile) {
-      alert(t("profilePage.companyCoverPhotosInvalid"));
+      toast.error(t("profilePage.companyCoverPhotosInvalid"));
       e.target.value = null;
       return;
     }
@@ -223,9 +220,6 @@ const Profile = () => {
     <div className="profile-container">
       <div className="profile-card">
         <h2>{t("profilePage.title")}</h2>
-
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="error-message success-message">{success}</div>}
 
         <form onSubmit={handleSubmit} className="profile-form">
           <div className="form-group">
@@ -305,7 +299,7 @@ const Profile = () => {
                 const file = e.target.files[0];
                 if (file) {
                   if (file.type !== "image/png" && file.type !== "image/jpeg") {
-                    alert("Only PNG and JPEG images are allowed.");
+                    toast.error("Only PNG and JPEG images are allowed.");
                     e.target.value = null;
                     return;
                   }

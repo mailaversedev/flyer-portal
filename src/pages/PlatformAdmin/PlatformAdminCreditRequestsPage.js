@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router";
+import { toast } from "react-toastify";
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import "../../components/Dashboard/CampaignTable.css";
@@ -42,14 +43,14 @@ const PlatformAdminCreditRequestsPage = () => {
       setGrantingId(id);
       const res = await ApiService.grantCreditRequest(id);
       if (res.success) {
-        alert("Credit granted successfully");
+        toast.success("Credit granted successfully");
         fetchRequests(); 
       } else {
         throw new Error(res.message || "Failed to grant credit");
       }
     } catch (err) {
       console.error(err);
-      alert(err.message || "Error granting credit");
+      toast.error(err.message || "Error granting credit");
     } finally {
       setGrantingId(null);
     }

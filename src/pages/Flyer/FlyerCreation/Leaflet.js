@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router";
 
@@ -272,7 +273,7 @@ const LeafletCreation = () => {
 
   const handleCreditRequestSuccess = () => {
     setShowCreditModal(false);
-    alert("Thank you. The Amount will be credited within 12hours. Please kindly email us if you have any troubles.");
+    toast.success("Thank you. The Amount will be credited within 12hours. Please kindly email us if you have any troubles.");
   };
 
   const handleNext = async () => {
@@ -282,7 +283,7 @@ const LeafletCreation = () => {
       }
 
       if (!isSuperAdminUser && walletSummary && !canGenerate) {
-        alert(t("leafletCreation.tokenIndicatorLowBalance"));
+        toast.error(t("leafletCreation.tokenIndicatorLowBalance"));
         return;
       }
 
@@ -338,24 +339,24 @@ const LeafletCreation = () => {
           return;
         }
 
-        alert(t("leafletCreation.createFailed"));
+        toast.error(t("leafletCreation.createFailed"));
       } catch (error) {
         console.error("Error generating leaflet:", error);
-        alert(error.message || t("leafletCreation.createError"));
+        toast.error(error.message || t("leafletCreation.createError"));
       } finally {
         setLoading("");
       }
       return;
     }
 
-    if (currentStep === 2) {
+      if (currentStep === 2) {
       const validation = validateTargetBudgetStep({
         data: leafletData,
         isDirectUpload: location.state?.isDirectUpload,
         t,
       });
       if (!validation.isValid) {
-        alert(
+        toast.error(
           `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
         );
         return;
@@ -429,11 +430,11 @@ const LeafletCreation = () => {
           },
         });
       } else {
-        alert(t("leafletCreation.createFailed"));
+        toast.error(t("leafletCreation.createFailed"));
       }
     } catch (error) {
       console.error("Error creating flyer:", error);
-      alert(t("leafletCreation.createError"));
+      toast.error(t("leafletCreation.createError"));
     } finally {
       setLoading("");
     }
@@ -451,11 +452,11 @@ const LeafletCreation = () => {
       if (response.success) {
         navigate("/dashboard");
       } else {
-        alert(t("leafletCreation.createFailed"));
+        toast.error(t("leafletCreation.createFailed"));
       }
     } catch (error) {
       console.error("Error updating leaflet flyer:", error);
-      alert(t("leafletCreation.createError"));
+      toast.error(t("leafletCreation.createError"));
     } finally {
       setLoading("");
     }
