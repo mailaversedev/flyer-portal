@@ -17,10 +17,12 @@ const StaffLogin = () => {
   const [companyDisplayName, setCompanyDisplayName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyNature, setCompanyNature] = useState("");
+  const [district, setDistrict] = useState("");
   const [companyIconFile, setCompanyIconFile] = useState(null);
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
   const [companyIndustries, setCompanyIndustries] = useState([]);
+  const [districtOptions, setDistrictOptions] = useState([]);
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
   const [locale, setLocale] = useState(
     normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
@@ -49,7 +51,19 @@ const StaffLogin = () => {
       }
     };
 
+    const fetchDistricts = async () => {
+      try {
+        const res = await ApiService.getDistricts();
+        if (res.success && res.data) {
+          setDistrictOptions(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to load district options", error);
+      }
+    };
+
     fetchCompanyIndustries();
+    fetchDistricts();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -95,6 +109,7 @@ const StaffLogin = () => {
           companyIcon: companyIconUrl,
           address,
           contact,
+          district,
           role: "admin", // Default role for self-onboarding
           locale,
         });
@@ -321,6 +336,29 @@ const StaffLogin = () => {
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder={t("login.companyAddressPlaceholder")}
                 />
+              </div>
+              <div className="form-group">
+                <label htmlFor="district">{t("login.districtOptional")}</label>
+                <select
+                  id="district"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="form-control"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    marginTop: "5px",
+                    borderRadius: "4px",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  <option value="">{t("qrGeneration.pleaseSelect") || t("login.selectDistrict")}</option>
+                  {districtOptions.map((dist, idx) => (
+                    <option key={idx} value={dist}>
+                      {dist}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label htmlFor="contact">{t("login.contactOptional")}</label>

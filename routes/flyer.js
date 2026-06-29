@@ -332,6 +332,10 @@ router.post("/flyer", authenticateToken, async (req, res) => {
             companyInfo.companyDisplayName || companyInfo.displayName || null;
           flyerData.companyName = companyInfo.name;
           flyerData.companyNature = companyInfo.nature;
+          if (companyInfo.district) {
+            flyerData.targetBudget = flyerData.targetBudget || {};
+            flyerData.targetBudget.district = companyInfo.district;
+          }
         }
       }
     } catch (error) {
