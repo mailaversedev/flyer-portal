@@ -123,6 +123,12 @@ const WalletPage = () => {
           <h2>{t("walletPage.title")}</h2>
           <p>{t("walletPage.subtitle")}</p>
         </div>
+        <button
+          className="wallet-request-credit-btn"
+          onClick={() => setShowCreditModal(true)}
+        >
+          Request Credit
+        </button>
       </div>
 
       {feedback ? (
@@ -156,13 +162,6 @@ const WalletPage = () => {
                 HK${availableCreditBalanceHkd.toFixed(2)}
               </strong>
               <p>{t("walletPage.creditBalanceHint")}</p>
-              <button
-                className="wallet-request-credit-btn"
-                onClick={() => setShowCreditModal(true)}
-                style={{ marginTop: "10px", padding: "8px 16px", background: "#28a745", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
-              >
-                Request Credit
-              </button>
             </div>
           </div>
 
