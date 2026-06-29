@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useParams } from "react-router";
 
 import Step1ContentPro from "../../../components/Flyer/Leaflet/Step1ContentPro";
 import TargetBudget from "../../../components/Flyer/TargetBudget";
+import CreditRequestModal from "../../Wallet/CreditRequestModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
@@ -190,6 +191,7 @@ const LeafletCreation = () => {
   const [isFreeAttempt, setIsFreeAttempt] = useState(false);
   const [generatedHistory, setGeneratedHistory] = useState([]);
   const [walletSummary, setWalletSummary] = useState(null);
+  const [showCreditModal, setShowCreditModal] = useState(false);
   const step1Ref = useRef();
   const navigate = useNavigate();
   const location = useLocation();
@@ -267,6 +269,11 @@ const LeafletCreation = () => {
 
     fetchWallet();
   }, [isEditMode, isSuperAdminUser]);
+
+  const handleCreditRequestSuccess = () => {
+    setShowCreditModal(false);
+    alert("Thank you. The Amount will be credited within 12hours. Please kindly email us if you have any troubles.");
+  };
 
   const handleNext = async () => {
     if (currentStep === 1) {
@@ -352,6 +359,17 @@ const LeafletCreation = () => {
           `${t("targetBudget.completeRequiredFields")} ${validation.missingFields.join(", ")}`,
         );
         return;
+      }
+
+      const noReward = Boolean(leafletData?.targetBudget?.noReward || leafletData?.noReward);
+      if (!noReward && !isSuperAdminUser) {
+        const budget = Number(leafletData?.targetBudget?.budget || leafletData?.budget || 0);
+        const creditBalanceHkd = Number(walletSummary?.creditBalanceHkd) || 0;
+        
+        if (budget > creditBalanceHkd) {
+          setShowCreditModal(true);
+          return;
+        }
       }
 
       setCurrentStep(3);
@@ -693,6 +711,13 @@ const LeafletCreation = () => {
             </>
           )}
         </div>
+
+        {showCreditModal && (
+          <CreditRequestModal 
+            onClose={() => setShowCreditModal(false)}
+            onSuccess={handleCreditRequestSuccess}
+          />
+        )}
       </div>
     </div>
   );

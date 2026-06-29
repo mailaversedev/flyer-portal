@@ -346,6 +346,26 @@ class ApiService {
     });
   }
 
+  static async submitCreditRequest(data) {
+    return this.makeRequest("/api/payment/credit-request", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async getCreditRequests(status) {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+
+    return this.makeRequest(`/api/admin/credit-requests?${params.toString()}`);
+  }
+
+  static async grantCreditRequest(id) {
+    return this.makeRequest(`/api/admin/credit-requests/${id}/grant`, {
+      method: "POST",
+    });
+  }
+
   // POST /api/file - Upload file/image
   static async uploadFile(file, category = "general") {
     const formData = new FormData();

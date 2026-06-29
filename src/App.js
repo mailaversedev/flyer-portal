@@ -13,6 +13,7 @@ import Profile from "./pages/Profile/Profile";
 import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
 import PlatformAdminUsersPage from "./pages/PlatformAdmin/PlatformAdminUsersPage";
 import PlatformAdminCompaniesPage from "./pages/PlatformAdmin/PlatformAdminCompaniesPage";
+import PlatformAdminCreditRequestsPage from "./pages/PlatformAdmin/PlatformAdminCreditRequestsPage";
 import PlatformVouchersListPage from "./pages/PlatformVouchers/PlatformVouchersListPage";
 import PlatformVouchersCreatePage from "./pages/PlatformVouchers/PlatformVouchersCreatePage";
 import CrmCampaignListPage from "./pages/CrmCampaigns/CrmCampaignListPage";
@@ -106,6 +107,10 @@ function App() {
                     <Route
                       path="/platform-admin/companies"
                       element={<PlatformAdminCompaniesPage />}
+                    />
+                    <Route
+                      path="/platform-admin/credit-requests"
+                      element={<PlatformAdminCreditRequestsPage />}
                     />
                     <Route path="/platform-vouchers" element={<PlatformVouchersListPage />} />
                     <Route path="/platform-vouchers/create" element={<PlatformVouchersCreatePage />} />

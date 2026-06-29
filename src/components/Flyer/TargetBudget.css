@@ -183,6 +183,19 @@
   margin-bottom: 8px;
 }
 
+.wallet-balance-display {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+}
+
+.wallet-balance-amount {
+  color: #3b82f6;
+  font-weight: bold;
+}
+
 .budget-amount {
   font-size: 20px;
   font-weight: 700;

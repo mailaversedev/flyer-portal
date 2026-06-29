@@ -597,4 +597,49 @@ router.get(
   },
 );
 
+// POST /api/payment/credit-request - Submit a credit request
+router.post("/credit-request", authenticateToken, async (req, res) => {
+  try {
+    const { amount, paymentMethod, receiptUrl } = req.body;
+    const userId = req.user.userId;
+
+    if (!amount || amount <= 0 || !paymentMethod || !receiptUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount, paymentMethod, and receiptUrl are required",
+      });
+    }
+
+    const timestamp = new Date().toISOString();
+
+    const requestData = {
+      userId,
+      amount: Number(amount),
+      paymentMethod,
+      receiptUrl,
+      status: "pending",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    const docRef = await db.collection("creditRequests").add(requestData);
+
+    res.status(201).json({
+      success: true,
+      message: "Credit request submitted successfully",
+      data: {
+        id: docRef.id,
+        ...requestData,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating credit request:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during credit request",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;

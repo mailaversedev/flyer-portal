@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
+import CreditRequestModal from "./CreditRequestModal";
 import "./WalletPage.css";
 
 const formatDate = (value) => {
@@ -26,6 +27,7 @@ const WalletPage = () => {
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [purchasingBundleCode, setPurchasingBundleCode] = useState("");
+  const [showCreditModal, setShowCreditModal] = useState(false);
 
   const loadWallet = useCallback(async () => {
     try {
@@ -106,6 +108,14 @@ const WalletPage = () => {
     }
   };
 
+  const handleCreditRequestSuccess = () => {
+    setShowCreditModal(false);
+    setFeedback({
+      type: "success",
+      message: "Thank you. The Amount will be credited within 12hours. Please kindly email us if you have any troubles.",
+    });
+  };
+
   return (
     <div className="wallet-page">
       <div className="wallet-page-header">
@@ -146,6 +156,13 @@ const WalletPage = () => {
                 HK${availableCreditBalanceHkd.toFixed(2)}
               </strong>
               <p>{t("walletPage.creditBalanceHint")}</p>
+              <button
+                className="wallet-request-credit-btn"
+                onClick={() => setShowCreditModal(true)}
+                style={{ marginTop: "10px", padding: "8px 16px", background: "#28a745", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
+              >
+                Request Credit
+              </button>
             </div>
           </div>
 
@@ -230,6 +247,13 @@ const WalletPage = () => {
             </div>
           </section>
         </>
+      )}
+
+      {showCreditModal && (
+        <CreditRequestModal
+          onClose={() => setShowCreditModal(false)}
+          onSuccess={handleCreditRequestSuccess}
+        />
       )}
     </div>
   );

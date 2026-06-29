@@ -44,6 +44,8 @@ const TargetBudget = ({
   const [buildingOptions, setBuildingOptions] = useState([]);
   const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [wallet, setWallet] = useState(null);
+
   const companyNature =
     data?.companyNature || ApiService.getCurrentCompany()?.nature || getStoredCompanyNature();
   const spreadingCoefficient = getSpreadingCoefficientByIndustry(companyNature);
@@ -65,6 +67,21 @@ const TargetBudget = ({
       }
     };
     fetchDistricts();
+  }, []);
+
+  // Fetch wallet on mount
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await ApiService.getCompanyWallet();
+        if (res.success && res.data) {
+          setWallet(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to load company wallet", error);
+      }
+    };
+    fetchWallet();
   }, []);
 
   // Fetch all buildings automatically when district changes
@@ -391,6 +408,14 @@ const TargetBudget = ({
           {!formData.noReward && (
             <div className="form-group">
               <label className="form-label">{t("targetBudget.budgetHkd")}</label>
+              
+              {wallet && (
+                <div className="wallet-balance-display">
+                  <span>Current Wallet Balance:</span>
+                  <strong className="wallet-balance-amount">HK${(Number(wallet.creditBalanceHkd) || 0).toFixed(2)}</strong>
+                </div>
+              )}
+
               <div className="budget-slider-container">
                 <input
                   type="range"

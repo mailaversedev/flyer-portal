@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
@@ -143,6 +144,12 @@ export const PlatformAdminSummary = ({
     <div className="platform-admin-card">
       <span className="platform-admin-label">{t("adminPage.totalCompanies")}</span>
       <strong className="platform-admin-value">{companies.length}</strong>
+    </div>
+    <div className="platform-admin-card">
+      <Link to="/platform-admin/credit-requests" style={{textDecoration: 'none', color: 'inherit'}}>
+        <span className="platform-admin-label">Credit Requests</span>
+        <strong className="platform-admin-value">View &rarr;</strong>
+      </Link>
     </div>
   </div>
 );
