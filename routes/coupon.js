@@ -104,6 +104,8 @@ router.post("/claim", async (req, res) => {
       status: "active", // active, used, expired
       claimedAt: new Date().toISOString(),
       isUsed: false,
+      usedAmount: null,
+      receiptImageUrl: null,
     };
 
     await db.runTransaction(async (transaction) => {
@@ -265,13 +267,21 @@ router.get("/my-coupons", async (req, res) => {
 // POST /use - User uses a coupon
 router.post("/use", async (req, res) => {
   try {
-    const { couponId } = req.body;
+    const { couponId, usedAmount, receiptImageUrl } = req.body;
     const userId = req.user.userId;
 
     if (!couponId) {
       return res.status(400).json({
         success: false,
         message: "Coupon ID is required",
+      });
+    }
+
+    const parsedUsedAmount = Number(usedAmount);
+    if (!Number.isFinite(parsedUsedAmount) || parsedUsedAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid used amount is required",
       });
     }
 
@@ -297,11 +307,18 @@ router.post("/use", async (req, res) => {
       });
     }
 
-    await couponRef.update({
+    const updateData = {
       isUsed: true,
       usedAt: new Date().toISOString(),
       status: "used",
-    });
+      usedAmount: parsedUsedAmount,
+    };
+
+    if (typeof receiptImageUrl === "string" && receiptImageUrl.trim()) {
+      updateData.receiptImageUrl = receiptImageUrl.trim();
+    }
+
+    await couponRef.update(updateData);
 
     res.status(200).json({
       success: true,
