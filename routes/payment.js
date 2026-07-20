@@ -601,7 +601,7 @@ router.get(
 router.post("/credit-request", authenticateToken, async (req, res) => {
   try {
     const { amount, paymentMethod, receiptUrl } = req.body;
-    const userId = req.user.userId;
+    const { userId, username, companyId } = req.user;
 
     if (!amount || amount <= 0 || !paymentMethod || !receiptUrl) {
       return res.status(400).json({
@@ -611,9 +611,25 @@ router.post("/credit-request", authenticateToken, async (req, res) => {
     }
 
     const timestamp = new Date().toISOString();
+    let companyName = "";
+    let companyDisplayName = "";
+
+    if (companyId) {
+      const companyDoc = await db.collection("companies").doc(companyId).get();
+
+      if (companyDoc.exists) {
+        const companyData = companyDoc.data() || {};
+        companyName = companyData.name || "";
+        companyDisplayName = companyData.companyDisplayName || "";
+      }
+    }
 
     const requestData = {
       userId,
+      username,
+      companyId,
+      companyName,
+      companyDisplayName,
       amount: Number(amount),
       paymentMethod,
       receiptUrl,

@@ -74,7 +74,8 @@ const PlatformAdminCreditRequestsPage = () => {
             <table className="campaigns-table">
               <thead>
                 <tr>
-                  <th>User ID</th>
+                  <th>Username</th>
+                  <th>Company Name</th>
                   <th>Amount (HKD)</th>
                   <th>Method</th>
                   <th>Receipt</th>
@@ -86,7 +87,8 @@ const PlatformAdminCreditRequestsPage = () => {
               <tbody>
                 {requests.map((req) => (
                   <tr key={req.id}>
-                    <td>{req.userId}</td>
+                    <td>{req.username}</td>
+                    <td>{req.companyDisplayName || req.companyName || "-"}</td>
                     <td>HK${Number(req.amount).toFixed(2)}</td>
                     <td>{req.paymentMethod}</td>
                     <td>

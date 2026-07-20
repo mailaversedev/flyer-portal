@@ -919,27 +919,29 @@ router.post("/credit-requests/:id/grant", authenticateToken, requireSuperAdmin, 
         throw new Error(`Credit request is already ${requestData.status}`);
       }
 
-      // Find user wallet first (outside transaction tracking for the query, but we re-fetch doc inside)
-      const walletQuery = await db.collection("wallets").where("userId", "==", requestData.userId).where("isActive", "==", true).limit(1).get();
-      
-      if (walletQuery.empty) {
-        throw new Error("User wallet not found");
-      }
-      
-      const walletDocRef = walletQuery.docs[0].ref;
-      const walletDoc = await transaction.get(walletDocRef);
-      
-      if (!walletDoc.exists) {
-        throw new Error("User wallet not found during transaction");
-      }
+      const companyId = requestData.companyId;
+      const companyDoc = await db.collection("companies").doc(companyId).get();
+      const companyData = companyDoc.exists ? companyDoc.data() || {} : {};
 
-      const walletData = walletDoc.data();
+      const companyWallet = await ensureCompanyWalletInTransaction({
+        transaction,
+        companyId,
+        companyName: companyData?.name || "",
+        companyDisplayName:
+          companyData?.companyDisplayName || "",
+        initialBalance: 0,
+        timestamp,
+      });
+
+      const walletRef = companyWallet.ref || companyWallet.doc.ref;
+      const walletData = companyWallet.data;
+      const walletOwnerType = "company";
       
       // Update credit balance
       const currentCreditBalanceHkd = Number(walletData.creditBalanceHkd) || 0;
       const newCreditBalanceHkd = currentCreditBalanceHkd + Number(requestData.amount);
       
-      transaction.update(walletDoc.ref, {
+      transaction.update(walletRef, {
         creditBalanceHkd: newCreditBalanceHkd,
         updatedAt: timestamp,
         version: (walletData.version || 0) + 1,
@@ -950,7 +952,9 @@ router.post("/credit-requests/:id/grant", authenticateToken, requireSuperAdmin, 
       transaction.set(txRef, {
         transactionId: admin.firestore.AutoId ? admin.firestore.AutoId() : txRef.id,
         userId: requestData.userId,
-        walletId: walletDoc.id,
+        walletId: walletRef.id,
+        companyId: companyId || null,
+        ownerType: walletOwnerType,
         type: "ADD",
         amount: requestData.amount,
         unit: "HKD",
@@ -972,6 +976,9 @@ router.post("/credit-requests/:id/grant", authenticateToken, requireSuperAdmin, 
         status: "granted",
         grantedAt: timestamp,
         grantedBy: adminId,
+        grantedWalletId: walletRef.id,
+        grantedCompanyId: companyId || null,
+        grantedOwnerType: walletOwnerType,
         updatedAt: timestamp,
       });
 
