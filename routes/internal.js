@@ -211,7 +211,7 @@ router.post("/notification", authenticateToken, async (req, res) => {
 });
 
 // GET /api/internal/districts - Get list of HK Districts
-router.get("/districts", authenticateToken, (req, res) => {
+router.get("/districts", (req, res) => {
   const districts = [
     "Central & Western", "Wan Chai", "Eastern", "Southern",
     "Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong",

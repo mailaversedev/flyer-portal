@@ -8,6 +8,27 @@ import i18n, { applyLocale, normalizeLocale } from "../../i18n";
 
 import "./StaffLogin.css";
 
+const FALLBACK_HK_DISTRICTS = [
+  "Central & Western",
+  "Wan Chai",
+  "Eastern",
+  "Southern",
+  "Yau Tsim Mong",
+  "Sham Shui Po",
+  "Kowloon City",
+  "Wong Tai Sin",
+  "Kwun Tong",
+  "Tsuen Wan",
+  "Tuen Mun",
+  "Yuen Long",
+  "North",
+  "Tai Po",
+  "Sai Kung",
+  "Sha Tin",
+  "Kwai Tsing",
+  "Islands",
+];
+
 const StaffLogin = () => {
   const { t } = useTranslation();
   const [isRegistering, setIsRegistering] = useState(false);
@@ -53,11 +74,14 @@ const StaffLogin = () => {
     const fetchDistricts = async () => {
       try {
         const res = await ApiService.getDistricts();
-        if (res.success && res.data) {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
           setDistrictOptions(res.data);
+        } else {
+          setDistrictOptions(FALLBACK_HK_DISTRICTS);
         }
       } catch (error) {
         console.error("Failed to load district options", error);
+        setDistrictOptions(FALLBACK_HK_DISTRICTS);
       }
     };
 

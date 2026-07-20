@@ -20,6 +20,14 @@
   border-radius: 16px;
 }
 
+.platform-admin-card-link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
 .platform-admin-label {
   color: #9ca3af;
   font-size: 13px;

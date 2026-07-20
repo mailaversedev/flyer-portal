@@ -146,7 +146,10 @@ export const PlatformAdminSummary = ({
       <strong className="platform-admin-value">{companies.length}</strong>
     </div>
     <div className="platform-admin-card">
-      <Link to="/platform-admin/credit-requests" style={{textDecoration: 'none', color: 'inherit'}}>
+      <Link
+        to="/platform-admin/credit-requests"
+        className="platform-admin-card-link"
+      >
         <span className="platform-admin-label">Credit Requests</span>
         <strong className="platform-admin-value">View &rarr;</strong>
       </Link>

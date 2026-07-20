@@ -936,11 +936,11 @@ router.post("/credit-requests/:id/grant", authenticateToken, requireSuperAdmin, 
       const walletRef = companyWallet.ref || companyWallet.doc.ref;
       const walletData = companyWallet.data;
       const walletOwnerType = "company";
-      
+
       // Update credit balance
       const currentCreditBalanceHkd = Number(walletData.creditBalanceHkd) || 0;
       const newCreditBalanceHkd = currentCreditBalanceHkd + Number(requestData.amount);
-      
+
       transaction.update(walletRef, {
         creditBalanceHkd: newCreditBalanceHkd,
         updatedAt: timestamp,
