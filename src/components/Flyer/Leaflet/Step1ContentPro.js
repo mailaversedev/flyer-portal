@@ -6,12 +6,13 @@ import { getProLeafletValidationErrors } from "../../../utils/LeafletValidationU
 import { normalizeTypographyEntries } from "../../../utils/LeafletNormalizationUtil";
 import "./Step1Content.css";
 
-const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
-  const { t } = useTranslation();
-  const [newTag, setNewTag] = useState("");
-  const [errors, setErrors] = useState({});
-  const tags = data.tags || [];
-  const typographyEntries = normalizeTypographyEntries(data.typography);
+const Step1ContentPro = forwardRef(
+  ({ data, onUpdate, isSuperAdminUser = false, merchantOptions = [] }, ref) => {
+    const { t } = useTranslation();
+    const [newTag, setNewTag] = useState("");
+    const [errors, setErrors] = useState({});
+    const tags = data.tags || [];
+    const typographyEntries = normalizeTypographyEntries(data.typography);
 
   const proAspectRatios = [
     { value: "1:1", label: "1:1 (1080 x 1080)" },
@@ -25,74 +26,78 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
     { value: "16:9", label: "16:9 (1920 x 1080)" },
     { value: "21:9", label: "21:9 (2520 x 1080)" },
   ];
-  const validateRequiredFields = () => {
-    const newErrors = getProLeafletValidationErrors(data);
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  useImperativeHandle(ref, () => ({
-    validateRequiredFields,
-  }));
-
-  const handleInputChange = (field, value) => {
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
+    const validateRequiredFields = () => {
+      const newErrors = getProLeafletValidationErrors(data, {
+        requireCompanySelection: isSuperAdminUser,
       });
-    }
 
-    const updatedData = {
-      ...data,
-      [field]: value,
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
     };
-    onUpdate(updatedData);
-  };
 
-  const handleAddTag = () => {
-    const nextTag = newTag.trim();
+    useImperativeHandle(ref, () => ({
+      validateRequiredFields,
+    }));
 
-    if (!nextTag || tags.includes(nextTag)) {
-      return;
-    }
+    const handleInputChange = (field, value) => {
+      if (errors[field]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
 
-    onUpdate({
-      ...data,
-      tags: [...tags, nextTag],
-    });
-    setNewTag("");
-  };
+      const updatedData = {
+        ...data,
+        [field]: value,
+      };
+      onUpdate(updatedData);
+    };
 
-  const handleRemoveTag = (tagToRemove) => {
-    onUpdate({
-      ...data,
-      tags: tags.filter((tag) => tag !== tagToRemove),
-    });
-  };
+    const selectedCompanyId = data.companyId || "";
 
-  const handleTypographyChange = (index, field, value) => {
-    const updatedTypography = typographyEntries.map((entry, rowIndex) =>
-      rowIndex === index ? { ...entry, [field]: value } : entry,
-    );
+    const handleAddTag = () => {
+      const nextTag = newTag.trim();
 
-    handleInputChange("typography", updatedTypography);
-  };
+      if (!nextTag || tags.includes(nextTag)) {
+        return;
+      }
 
-  const handleAddTypographyRow = () => {
-    handleInputChange("typography", [...typographyEntries, { key: "", value: "" }]);
-  };
+      onUpdate({
+        ...data,
+        tags: [...tags, nextTag],
+      });
+      setNewTag("");
+    };
 
-  const handleRemoveTypographyRow = (index) => {
-    if (index < 2) {
-      return;
-    }
+    const handleRemoveTag = (tagToRemove) => {
+      onUpdate({
+        ...data,
+        tags: tags.filter((tag) => tag !== tagToRemove),
+      });
+    };
 
-    const updatedTypography = typographyEntries.filter((_, rowIndex) => rowIndex !== index);
-    handleInputChange("typography", updatedTypography);
-  };
+    const handleTypographyChange = (index, field, value) => {
+      const updatedTypography = typographyEntries.map((entry, rowIndex) =>
+        rowIndex === index ? { ...entry, [field]: value } : entry,
+      );
+
+      handleInputChange("typography", updatedTypography);
+    };
+
+    const handleAddTypographyRow = () => {
+      handleInputChange("typography", [...typographyEntries, { key: "", value: "" }]);
+    };
+
+    const handleRemoveTypographyRow = (index) => {
+      if (index < 2) {
+        return;
+      }
+
+      const updatedTypography = typographyEntries.filter((_, rowIndex) => rowIndex !== index);
+      handleInputChange("typography", updatedTypography);
+    };
 
   const handleFileUpload = (field) => {
     const input = document.createElement("input");
@@ -219,6 +224,31 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   return (
     <div className="step1-content">
       <div className="form-grid">
+        {isSuperAdminUser && (
+          <div className="form-group full-width">
+            <label className="form-label">{t("common.merchant")}</label>
+            <div className="select-wrapper">
+              <select
+                className={`form-select ${errors.companyId ? "error" : ""}`}
+                value={selectedCompanyId}
+                onChange={(e) => handleInputChange("companyId", e.target.value)}
+                disabled={merchantOptions.length === 0}
+              >
+                <option value="">{t("common.pleaseSelect")}</option>
+                {merchantOptions.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.companyDisplayName || company.name || company.id}
+                  </option>
+                ))}
+              </select>
+              <ChevronRight className="select-icon" size={16} />
+            </div>
+            {errors.companyId && (
+              <span className="error-message">{errors.companyId}</span>
+            )}
+          </div>
+        )}
+
         <div className="form-group">
           <label className="form-label">{t("leafletPro.aspectRatio")}</label>
           <div className="select-wrapper">
@@ -514,8 +544,15 @@ const Step1ContentPro = forwardRef(({ data, onUpdate }, ref) => {
   );
 });
 
-Step1ContentPro.validateRequiredFields = (data, setErrorsCallback = null) => {
-  const errors = getProLeafletValidationErrors(data);
+Step1ContentPro.validateRequiredFields = (
+  data,
+  setErrorsCallback = null,
+  options = {},
+) => {
+  const errors = getProLeafletValidationErrors(data, {
+    requireCompanySelection:
+      Boolean(options.requireCompanySelection) || Boolean(data?.isSuperAdminUser),
+  });
 
   if (setErrorsCallback) {
     setErrorsCallback(errors);

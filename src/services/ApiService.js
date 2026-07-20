@@ -23,10 +23,10 @@ const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 class ApiService {
   static _currentCompany = null;
 
-  static async getCurrentCompanyIconFile() {
-    console.log("Getting icon for company:", ApiService._currentCompany);
-    if (ApiService._currentCompany && ApiService._currentCompany.id) {
-      const url = ApiService._currentCompany.icon;
+  static async getCurrentCompanyIconFile(company = ApiService._currentCompany) {
+    console.log("Getting icon for company:", company);
+    if (company && company.id) {
+      const url = company.icon;
       try {
         // Add cache busting to avoid cached CORS errors
         const fetchUrl = url.includes("?")
@@ -48,7 +48,7 @@ class ApiService {
         }
 
         // Use the company id as the filename
-        return new File([blob], `${ApiService._currentCompany.id}.png`, {
+        return new File([blob], `${company.id}.png`, {
           type: blob.type,
         });
       } catch (error) {
@@ -379,7 +379,7 @@ class ApiService {
   }
 
   // POST /api/leaflet - Generate leaflet
-  static async generateLeaflet(leafletData) {
+  static async generateLeaflet(leafletData, options = {}) {
     const formData = new FormData();
 
     const userQuery = `${leafletData.flyerPrompts || ""}`.trim();
@@ -415,7 +415,9 @@ class ApiService {
     if (leafletData.logoImage && leafletData.logoImage.file) {
       formData.append("logos", leafletData.logoImage.file);
     } else {
-      const companyIcon = await ApiService.getCurrentCompanyIconFile();
+      const companyIcon = await ApiService.getCurrentCompanyIconFile(
+        options.company || leafletData.company || ApiService.getCurrentCompany(),
+      );
       if (companyIcon) {
         formData.append("logos", companyIcon);
       }

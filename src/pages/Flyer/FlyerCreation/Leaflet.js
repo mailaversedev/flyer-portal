@@ -20,6 +20,7 @@ import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
 const DEFAULT_LEAFLET_DATA = {
+  companyId: "",
   aspectRatio: "4:5",
   adType: "",
   referenceFlyer: null,
@@ -193,6 +194,7 @@ const LeafletCreation = () => {
   const [generatedHistory, setGeneratedHistory] = useState([]);
   const [walletSummary, setWalletSummary] = useState(null);
   const [showCreditModal, setShowCreditModal] = useState(false);
+  const [merchantOptions, setMerchantOptions] = useState([]);
   const step1Ref = useRef();
   const navigate = useNavigate();
   const location = useLocation();
@@ -252,6 +254,24 @@ const LeafletCreation = () => {
   }, [flyerId, isEditMode, navigate]);
 
   useEffect(() => {
+    if (isEditMode || !isSuperAdminUser) {
+      return;
+    }
+
+    const loadMerchants = async () => {
+      try {
+        const response = await ApiService.getAdminCompanies();
+        setMerchantOptions(response.success ? response.data || [] : []);
+      } catch (error) {
+        console.error("Failed to load merchant options:", error);
+        setMerchantOptions([]);
+      }
+    };
+
+    loadMerchants();
+  }, [isEditMode, isSuperAdminUser]);
+
+  useEffect(() => {
     if (isEditMode) {
       return;
     }
@@ -291,7 +311,12 @@ const LeafletCreation = () => {
 
       try {
         const isFree = !isSuperAdminUser && freeAttemptsRemaining > 0;
-        const response = await ApiService.generateLeaflet(leafletData);
+        const selectedMerchant = merchantOptions.find(
+          (company) => company.id === leafletData.companyId,
+        );
+        const response = await ApiService.generateLeaflet(leafletData, {
+          company: isSuperAdminUser ? selectedMerchant : null,
+        });
         const generatedUrls = Array.isArray(response?.images)
           ? response.images.map((image) => image?.url).filter(Boolean)
           : [];
@@ -402,11 +427,13 @@ const LeafletCreation = () => {
         productPhoto,
         backgroundPhoto,
         coupon,
+        companyId,
         ...remainingData
       } = leafletData;
 
       const finalData = {
         ...remainingData,
+        companyId: companyId || undefined,
         tags: Array.isArray(leafletData.tags) ? leafletData.tags : [],
         coupon: {
           ...(coupon || {}),
@@ -419,6 +446,7 @@ const LeafletCreation = () => {
 
       const response = await ApiService.createFlyer({
         type: "leaflet",
+        companyId: companyId || undefined,
         data: finalData,
       });
 
@@ -531,6 +559,8 @@ const LeafletCreation = () => {
                     ref={step1Ref}
                     data={leafletData}
                     onUpdate={updateLeafletData}
+                    isSuperAdminUser={isSuperAdminUser}
+                    merchantOptions={merchantOptions}
                   />
 
                   <div
