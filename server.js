@@ -26,17 +26,17 @@ admin.initializeApp({
 admin.firestore().settings({ ignoreUndefinedProperties: true });
 
 // Import Routes
-const flyerRoutes = require("./routes/flyer");
+const flyerRoutes = require("./routes/flyer/index");
 const fileRoutes = require("./routes/file");
-const { router: authRoutes, authenticateToken } = require("./routes/auth");
-const staffAuthRoutes = require("./routes/staffAuth");
+const { router: authRoutes, authenticateToken } = require("./routes/auth/index");
+const staffAuthRoutes = require("./routes/staffAuth/index");
 const userRoutes = require("./routes/user");
 const paymentRoutes = require("./routes/payment");
 const lotteryRoutes = require("./routes/lottery");
 const internalRoutes = require("./routes/internal");
 const couponRoutes = require("./routes/coupon");
 const metadataRoutes = require("./routes/metadata");
-const adminRoutes = require("./routes/admin");
+const adminRoutes = require("./routes/admin/index");
 const voucherRoutes = require("./routes/voucher");
 
 const app = express();
