@@ -60,6 +60,24 @@ const PlatformVouchersCreatePage = () => {
   const previewValue = formData.value.trim() || "100";
   const previewCost = formData.cost.trim() || "50000";
   const previewExpiryDate = formatDate(formData.expiryDate) || "-";
+  const requiresVoucherRange = formData.voucherType === "numbered";
+
+  const parseVoucherSequence = (voucherNumber, prefix) => {
+    const normalizedPrefix = `${prefix || ""}`.trim();
+    const normalizedVoucherNumber = `${voucherNumber || ""}`.trim();
+
+    if (!normalizedPrefix) {
+      return { error: t("voucherAdminPage.voucherPrefixRequired") };
+    }
+
+    if (!/^\d+$/.test(normalizedVoucherNumber)) {
+      return { error: t("voucherAdminPage.voucherNumericSuffixRequired") };
+    }
+
+    return {
+      sequence: Number.parseInt(normalizedVoucherNumber, 10),
+    };
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -76,6 +94,40 @@ const PlatformVouchersCreatePage = () => {
     setSubmitting(true);
 
     try {
+      const totalNumber = Number.parseInt(formData.totalNumber, 10);
+
+      if (!Number.isFinite(totalNumber) || totalNumber <= 0) {
+        throw new Error(t("voucherAdminPage.totalNumberInvalid"));
+      }
+
+      const prefix = formData.voucherPrefix.trim();
+      const startVoucherNumber = formData.voucherNumberStart.trim();
+      const endVoucherNumber = formData.voucherNumberEnd.trim();
+
+      if (requiresVoucherRange) {
+        const startResult = parseVoucherSequence(startVoucherNumber, prefix);
+
+        if (startResult.error) {
+          throw new Error(startResult.error);
+        }
+
+        const endResult = parseVoucherSequence(endVoucherNumber, prefix);
+
+        if (endResult.error) {
+          throw new Error(endResult.error);
+        }
+
+        if (startResult.sequence > endResult.sequence) {
+          throw new Error(t("voucherAdminPage.voucherRangeInvalid"));
+        }
+
+        const rangeCount = endResult.sequence - startResult.sequence + 1;
+
+        if (rangeCount !== totalNumber) {
+          throw new Error(t("voucherAdminPage.voucherRangeCountMismatch"));
+        }
+      }
+
       let merchantIconUrl = "";
       let voucherImageUrl = "";
       let qrCodeUrl = "";
@@ -126,7 +178,11 @@ const PlatformVouchersCreatePage = () => {
         value: formData.value.trim(),
         cost: formData.cost,
         expiryDate: formData.expiryDate,
-        totalNumber: formData.totalNumber,
+        totalNumber,
+        voucherType: formData.voucherType,
+        voucherPrefix: requiresVoucherRange ? prefix : "",
+        voucherNumberStart: requiresVoucherRange ? startVoucherNumber : "",
+        voucherNumberEnd: requiresVoucherRange ? endVoucherNumber : "",
         promotionCode: formData.promotionCode.trim(),
         qrCode: qrCodeUrl,
         terms: formData.terms.trim(),
@@ -213,6 +269,33 @@ const PlatformVouchersCreatePage = () => {
               <span>{t("voucherAdminPage.totalNumber")}</span>
               <input name="totalNumber" type="number" min="1" value={formData.totalNumber} onChange={handleChange} required />
             </label>
+            <label>
+              <span>{t("voucherAdminPage.voucherType")}</span>
+              <select
+                name="voucherType"
+                value={formData.voucherType}
+                onChange={handleChange}
+              >
+                <option value="static">{t("voucherAdminPage.voucherTypeStatic")}</option>
+                <option value="numbered">{t("voucherAdminPage.voucherTypeNumbered")}</option>
+              </select>
+            </label>
+            {requiresVoucherRange ? (
+              <>
+                <label>
+                  <span>{t("voucherAdminPage.voucherPrefix")}</span>
+                  <input name="voucherPrefix" value={formData.voucherPrefix} onChange={handleChange} required />
+                </label>
+                <label>
+                  <span>{t("voucherAdminPage.voucherNumberStart")}</span>
+                  <input name="voucherNumberStart" value={formData.voucherNumberStart} onChange={handleChange} required />
+                </label>
+                <label>
+                  <span>{t("voucherAdminPage.voucherNumberEnd")}</span>
+                  <input name="voucherNumberEnd" value={formData.voucherNumberEnd} onChange={handleChange} required />
+                </label>
+              </>
+            ) : null}
             <label className="full-width">
               <span>{t("voucherAdminPage.promotionCode")}</span>
               <input name="promotionCode" value={formData.promotionCode} onChange={handleChange} />

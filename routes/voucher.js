@@ -19,6 +19,11 @@ const normalizeLimit = (value) => {
 
 const serializeVoucher = (doc) => {
   const data = doc.data() || {};
+  const totalNumber =
+    Number.isFinite(Number(data.totalNumber)) ? Number(data.totalNumber) : 0;
+  const redeemedCount =
+    Number.isFinite(Number(data.redeemedCount)) ? Number(data.redeemedCount) : 0;
+  const remainingCount = Math.max(0, totalNumber - redeemedCount);
 
   return {
     id: doc.id,
@@ -26,9 +31,15 @@ const serializeVoucher = (doc) => {
     cost: Number.isFinite(Number(data.cost)) ? Number(data.cost) : 0,
     merchant: data.merchant || "",
     merchantIcon: data.merchantIcon || "",
+    voucherImage: data.voucherImage || "",
+    voucherType: data.voucherType || "static",
     expiryDate: data.expiryDate || "",
-    totalNumber:
-      Number.isFinite(Number(data.totalNumber)) ? Number(data.totalNumber) : 0,
+    totalNumber,
+    redeemedCount,
+    remainingCount,
+    voucherPrefix: data.voucherPrefix || "",
+    voucherNumberStart: data.voucherNumberStart || "",
+    voucherNumberEnd: data.voucherNumberEnd || "",
     qrCode: data.qrCode || "",
     promotionCode: data.promotionCode || "",
     colors: Array.isArray(data.colors) ? data.colors : [],
@@ -44,7 +55,7 @@ const isVoucherAvailable = (voucher) => {
     return false;
   }
 
-  if (voucher.totalNumber <= 0) {
+  if (voucher.remainingCount <= 0) {
     return false;
   }
 

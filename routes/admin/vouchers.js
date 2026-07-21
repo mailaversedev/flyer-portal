@@ -2,6 +2,28 @@ const express = require("express");
 
 const { serializeVoucher } = require("../voucher");
 
+const NUMERIC_SEGMENT_REGEX = /^\d+$/;
+
+const parseVoucherSequence = ({ voucherCode }) => {
+  const normalizedCode = `${voucherCode || ""}`.trim();
+
+  if (!normalizedCode || !NUMERIC_SEGMENT_REGEX.test(normalizedCode)) {
+    return {
+      error: "Voucher code must be numeric",
+    };
+  }
+
+  const sequence = Number.parseInt(normalizedCode, 10);
+
+  if (!Number.isFinite(sequence)) {
+    return { error: "Voucher number is invalid" };
+  }
+
+  return {
+    sequence,
+  };
+};
+
 module.exports = function createVouchersRouter(context) {
   const { db, normalizeLimit } = context;
 
@@ -40,6 +62,10 @@ module.exports = function createVouchersRouter(context) {
         merchant,
         merchantIcon,
         voucherImage,
+        voucherType,
+        voucherPrefix,
+        voucherNumberStart,
+        voucherNumberEnd,
         expiryDate,
         totalNumber,
         qrCode,
@@ -52,6 +78,10 @@ module.exports = function createVouchersRouter(context) {
       const normalizedMerchant = `${merchant || ""}`.trim();
       const normalizedMerchantIcon = `${merchantIcon || ""}`.trim();
       const normalizedVoucherImage = `${voucherImage || ""}`.trim();
+      const normalizedVoucherType = `${voucherType || "static"}`.trim() || "static";
+      const normalizedVoucherPrefix = `${voucherPrefix || ""}`.trim();
+      const normalizedVoucherNumberStart = `${voucherNumberStart || ""}`.trim();
+      const normalizedVoucherNumberEnd = `${voucherNumberEnd || ""}`.trim();
       const normalizedPromotionCode = `${promotionCode || ""}`.trim();
       const normalizedTerms = `${terms || ""}`.trim();
       const normalizedQrCode = `${qrCode || ""}`.trim();
@@ -86,6 +116,27 @@ module.exports = function createVouchersRouter(context) {
         });
       }
 
+      let parsedStartSequence = null;
+      let parsedEndSequence = null;
+
+      if (
+        normalizedVoucherPrefix &&
+        normalizedVoucherNumberStart &&
+        normalizedVoucherNumberEnd
+      ) {
+        const startSequenceResult = parseVoucherSequence({
+          voucherCode: normalizedVoucherNumberStart,
+        });
+        const endSequenceResult = parseVoucherSequence({
+          voucherCode: normalizedVoucherNumberEnd,
+        });
+
+        if (!startSequenceResult.error && !endSequenceResult.error) {
+          parsedStartSequence = startSequenceResult.sequence;
+          parsedEndSequence = endSequenceResult.sequence;
+        }
+      }
+
       if (normalizedExpiryDate) {
         const parsedExpiryDate = new Date(normalizedExpiryDate);
 
@@ -105,8 +156,15 @@ module.exports = function createVouchersRouter(context) {
         merchant: normalizedMerchant,
         merchantIcon: normalizedMerchantIcon,
         voucherImage: normalizedVoucherImage,
+        voucherType: normalizedVoucherType,
+        voucherPrefix: normalizedVoucherPrefix,
+        voucherNumberStart: normalizedVoucherNumberStart,
+        voucherNumberEnd: normalizedVoucherNumberEnd,
+        voucherStartSequence: parsedStartSequence,
+        voucherEndSequence: parsedEndSequence,
         expiryDate: normalizedExpiryDate,
         totalNumber: normalizedTotalNumber,
+        redeemedCount: 0,
         qrCode: normalizedQrCode,
         promotionCode: normalizedPromotionCode,
         colors:

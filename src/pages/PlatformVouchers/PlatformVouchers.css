@@ -169,6 +169,15 @@
   font-size: 12px;
 }
 
+.platform-vouchers-preview-stock-row {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #e5e7eb;
+  font-size: 12px;
+}
+
 .platform-vouchers-preview-cta {
   flex: 1;
   height: 46px;
@@ -248,6 +257,7 @@
 }
 
 .platform-vouchers-form input,
+.platform-vouchers-form select,
 .platform-vouchers-form textarea {
   border: 1px solid #4b5563;
   border-radius: 10px;

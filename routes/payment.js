@@ -20,10 +20,50 @@ const router = express.Router();
 const db = admin.firestore();
 
 const roundMoneyAmount = (value) => Math.round(Number(value) * 100) / 100;
+const NUMERIC_SEGMENT_REGEX = /^\d+$/;
 
 // Helper function to generate transaction ID
 const generateTransactionId = () => {
   return uuidv4();
+};
+
+const buildAssignedVoucherNumber = ({
+  prefix,
+  startSequence,
+  endSequence,
+  redeemedCount,
+  startCode,
+}) => {
+  const normalizedPrefix = `${prefix || ""}`.trim();
+
+  if (!normalizedPrefix) {
+    throw new Error("__VOUCHER_PREFIX_MISSING__");
+  }
+
+  const normalizedStartCode = `${startCode || ""}`.trim();
+  const suffixWidth = normalizedStartCode.length > 0 ? normalizedStartCode.length : 1;
+
+  const start = Number.parseInt(startSequence, 10);
+  const end = Number.parseInt(endSequence, 10);
+  const redeemed = Number.parseInt(redeemedCount, 10);
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || !Number.isFinite(redeemed)) {
+    throw new Error("__VOUCHER_RANGE_INVALID__");
+  }
+
+  const assignedSequence = start + redeemed;
+
+  if (assignedSequence > end) {
+    throw new Error("__VOUCHER_SOLD_OUT__");
+  }
+
+  const suffix = `${assignedSequence}`.padStart(suffixWidth, "0");
+
+  if (!NUMERIC_SEGMENT_REGEX.test(suffix)) {
+    throw new Error("__VOUCHER_RANGE_INVALID__");
+  }
+
+  return `${normalizedPrefix}${suffix}`;
 };
 
 // Helper function to get wallet by user ID
@@ -282,6 +322,260 @@ router.post("/deduct-tokens", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error during token deduction",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/payment/redeem-voucher - Deduct tokens and assign a specific voucher number (idempotent)
+router.post("/redeem-voucher", authenticateToken, async (req, res) => {
+  try {
+    const { voucherId, idempotencyKey, description } = req.body || {};
+    const userId = req.user.userId;
+
+    if (!voucherId || !idempotencyKey) {
+      return res.status(400).json({
+        success: false,
+        message: "voucherId and idempotencyKey are required",
+      });
+    }
+
+    const timestamp = new Date().toISOString();
+    const redemptionRef = db
+      .collection("voucherRedemptions")
+      .doc(`${userId}_${idempotencyKey}`);
+
+    const result = await db.runTransaction(async (transaction) => {
+      const existingRedemption = await transaction.get(redemptionRef);
+
+      if (existingRedemption.exists) {
+        const existingData = existingRedemption.data() || {};
+        return existingData.result;
+      }
+
+      const voucherRef = db.collection("vouchers").doc(voucherId);
+      const voucherDoc = await transaction.get(voucherRef);
+
+      if (!voucherDoc.exists) {
+        throw new Error("__VOUCHER_NOT_FOUND__");
+      }
+
+      const voucherData = voucherDoc.data() || {};
+      const voucherCost = Number(voucherData.cost);
+
+      if (!Number.isFinite(voucherCost) || voucherCost <= 0) {
+        throw new Error("__VOUCHER_COST_INVALID__");
+      }
+
+      if (voucherData.isActive === false) {
+        throw new Error("__VOUCHER_INACTIVE__");
+      }
+
+      if (voucherData.expiryDate) {
+        const expiryDate = new Date(voucherData.expiryDate);
+
+        if (Number.isNaN(expiryDate.getTime()) || expiryDate.getTime() < Date.now()) {
+          throw new Error("__VOUCHER_EXPIRED__");
+        }
+      }
+
+      const totalNumber = Number.parseInt(voucherData.totalNumber, 10);
+      const redeemedCount = Number.parseInt(voucherData.redeemedCount || 0, 10);
+
+      if (!Number.isFinite(totalNumber) || totalNumber <= 0) {
+        throw new Error("__VOUCHER_STOCK_INVALID__");
+      }
+
+      if (!Number.isFinite(redeemedCount) || redeemedCount < 0) {
+        throw new Error("__VOUCHER_STOCK_INVALID__");
+      }
+
+      if (redeemedCount >= totalNumber) {
+        throw new Error("__VOUCHER_SOLD_OUT__");
+      }
+
+      const voucherType = `${voucherData.voucherType || "static"}`.trim() || "static";
+      const assignedVoucherNumber =
+        voucherType === "numbered"
+          ? buildAssignedVoucherNumber({
+              prefix: voucherData.voucherPrefix,
+              startSequence: voucherData.voucherStartSequence,
+              endSequence: voucherData.voucherEndSequence,
+              redeemedCount,
+              startCode: voucherData.voucherNumberStart,
+            })
+          : "";
+
+      const wallet = await getWalletByUserId(userId);
+      const walletRef = db.collection("wallets").doc(wallet.doc.id);
+      const walletSnapshot = await transaction.get(walletRef);
+
+      if (!walletSnapshot.exists) {
+        throw new Error("__WALLET_NOT_FOUND__");
+      }
+
+      const walletData = walletSnapshot.data() || {};
+      const previousBalance = Number(walletData.balance) || 0;
+
+      if (previousBalance < voucherCost) {
+        throw new Error("__INSUFFICIENT_BALANCE__");
+      }
+
+      const newBalance = previousBalance - voucherCost;
+      const newVersion = (Number(walletData.version) || 0) + 1;
+
+      transaction.update(walletRef, {
+        balance: newBalance,
+        updatedAt: timestamp,
+        version: newVersion,
+      });
+
+      const transactionId = generateTransactionId();
+      const walletTransactionData = {
+        transactionId,
+        userId,
+        walletId: wallet.doc.id,
+        type: "DEDUCT",
+        amount: voucherCost,
+        previousBalance,
+        newBalance,
+        description:
+          description ||
+          `Redeemed ${voucherData.value || ""} ${voucherData.merchant || ""} Voucher`,
+        status: "COMPLETED",
+        idempotencyKey,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        metadata: {
+          source: "voucher_redeem",
+          voucherId,
+          assignedVoucherNumber,
+        },
+      };
+
+      transaction.set(db.collection("transactions").doc(), walletTransactionData);
+
+      const nextRedeemedCount = redeemedCount + 1;
+      transaction.set(
+        voucherRef,
+        {
+          redeemedCount: nextRedeemedCount,
+          updatedAt: timestamp,
+        },
+        { merge: true },
+      );
+
+      const resultData = {
+        transactionId,
+        amount: voucherCost,
+        previousBalance,
+        newBalance,
+        status: "COMPLETED",
+        assignedVoucherNumber,
+        voucher: {
+          id: voucherDoc.id,
+          value: voucherData.value || "",
+          cost: voucherCost,
+          merchant: voucherData.merchant || "",
+          merchantIcon: voucherData.merchantIcon || "",
+          voucherImage: voucherData.voucherImage || "",
+          voucherType,
+          expiryDate: voucherData.expiryDate || "",
+          totalNumber,
+          redeemedCount: nextRedeemedCount,
+          remainingCount: Math.max(0, totalNumber - nextRedeemedCount),
+          qrCode:
+            voucherType === "numbered"
+              ? assignedVoucherNumber
+              : (voucherData.qrCode || ""),
+          promotionCode:
+            voucherType === "numbered"
+              ? assignedVoucherNumber
+              : (voucherData.promotionCode || ""),
+          claimedVoucherNumber: assignedVoucherNumber,
+          colors: Array.isArray(voucherData.colors) ? voucherData.colors : [],
+          terms: voucherData.terms || "",
+          isActive: voucherData.isActive !== false,
+        },
+      };
+
+      transaction.set(redemptionRef, {
+        userId,
+        voucherId,
+        idempotencyKey,
+        assignedVoucherNumber,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        result: resultData,
+      });
+
+      return resultData;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Voucher redeemed successfully",
+      data: result,
+    });
+  } catch (error) {
+    if (error.message === "__VOUCHER_NOT_FOUND__") {
+      return res.status(404).json({
+        success: false,
+        message: "Voucher not found",
+      });
+    }
+
+    if (error.message === "__WALLET_NOT_FOUND__") {
+      return res.status(404).json({
+        success: false,
+        message: "Wallet not found",
+      });
+    }
+
+    if (error.message === "__INSUFFICIENT_BALANCE__") {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance in wallet",
+      });
+    }
+
+    if (error.message === "__VOUCHER_SOLD_OUT__") {
+      return res.status(409).json({
+        success: false,
+        message: "Voucher is sold out",
+      });
+    }
+
+    if (error.message === "__VOUCHER_EXPIRED__") {
+      return res.status(409).json({
+        success: false,
+        message: "Voucher is expired",
+      });
+    }
+
+    if (error.message === "__VOUCHER_INACTIVE__") {
+      return res.status(409).json({
+        success: false,
+        message: "Voucher is inactive",
+      });
+    }
+
+    if (
+      error.message === "__VOUCHER_PREFIX_MISSING__" ||
+      error.message === "__VOUCHER_RANGE_INVALID__" ||
+      error.message === "__VOUCHER_STOCK_INVALID__" ||
+      error.message === "__VOUCHER_COST_INVALID__"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Voucher configuration is invalid",
+      });
+    }
+
+    console.error("Error redeeming voucher:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error during voucher redemption",
       error: error.message,
     });
   }

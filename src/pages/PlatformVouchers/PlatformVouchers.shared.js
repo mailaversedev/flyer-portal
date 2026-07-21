@@ -6,6 +6,10 @@ export const DEFAULT_FORM = {
   cost: "",
   expiryDate: "",
   totalNumber: "",
+  voucherType: "static",
+  voucherPrefix: "",
+  voucherNumberStart: "",
+  voucherNumberEnd: "",
   promotionCode: "",
   terms: "",
   voucherImage: "",
@@ -40,6 +44,15 @@ export function PlatformVoucherCard({
   const merchant = value.merchant?.trim() || t("voucherAdminPage.previewMerchant");
   const validity = value.validity || formatDate(value.expiryDate) || "-";
   const hasVoucherImage = Boolean(value.voucherImage);
+  const redeemedCount = Number.isFinite(Number(value.redeemedCount))
+    ? Number(value.redeemedCount)
+    : 0;
+  const totalNumber = Number.isFinite(Number(value.totalNumber))
+    ? Number(value.totalNumber)
+    : 0;
+  const remainingCount = Number.isFinite(Number(value.remainingCount))
+    ? Number(value.remainingCount)
+    : Math.max(0, totalNumber - redeemedCount);
   const surfaceClassName =
     variant === "editor"
       ? "platform-vouchers-preview-surface platform-vouchers-preview-surface--editor"
@@ -97,6 +110,14 @@ export function PlatformVoucherCard({
           </div>
           <div className="platform-vouchers-preview-validity">
             {t("voucherAdminPage.validUntil", { date: validity })}
+          </div>
+          <div className="platform-vouchers-preview-stock-row">
+            <span>
+              {t("voucherAdminPage.redeemedCount", { count: redeemedCount })}
+            </span>
+            <span>
+              {t("voucherAdminPage.remainingCount", { count: remainingCount })}
+            </span>
           </div>
           <div className="platform-vouchers-preview-actions">
             <button type="button" className="platform-vouchers-preview-cta">
