@@ -15,6 +15,7 @@ const PlatformVouchersListPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [deletingVoucherId, setDeletingVoucherId] = useState("");
 
   const loadVouchers = useCallback(async () => {
     try {
@@ -28,6 +29,47 @@ const PlatformVouchersListPage = () => {
       setLoading(false);
     }
   }, [t]);
+
+  const handleDeleteVoucher = useCallback(
+    async (voucher) => {
+      const voucherId = voucher?.id;
+
+      if (!voucherId) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        t("voucherAdminPage.deleteVoucherConfirm", {
+          merchant: voucher.merchant || t("voucherAdminPage.previewMerchant"),
+        }),
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setDeletingVoucherId(voucherId);
+        setError("");
+        setSuccess("");
+
+        const response = await ApiService.deleteAdminVoucher(voucherId);
+
+        if (!response?.success) {
+          throw new Error(response?.message || t("voucherAdminPage.deleteVoucherError"));
+        }
+
+        setVouchers((current) => current.filter((entry) => entry.id !== voucherId));
+        setSuccess(t("voucherAdminPage.deleteVoucherSuccess"));
+      } catch (deleteError) {
+        console.error("Failed to delete voucher", deleteError);
+        setError(deleteError.message || t("voucherAdminPage.deleteVoucherError"));
+      } finally {
+        setDeletingVoucherId("");
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     loadVouchers();
@@ -83,6 +125,7 @@ const PlatformVouchersListPage = () => {
                   ...voucher,
                   validity: formatDate(voucher.expiryDate),
                 }}
+                onDelete={deletingVoucherId === voucher.id ? null : handleDeleteVoucher}
               />
             ))}
           </div>

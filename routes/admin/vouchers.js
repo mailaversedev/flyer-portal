@@ -135,5 +135,42 @@ module.exports = function createVouchersRouter(context) {
     }
   });
 
+  router.delete("/vouchers/:voucherId", async (req, res) => {
+    try {
+      const { voucherId } = req.params;
+
+      if (!voucherId) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher ID is required",
+        });
+      }
+
+      const voucherRef = db.collection("vouchers").doc(voucherId);
+      const voucherDoc = await voucherRef.get();
+
+      if (!voucherDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: "Voucher not found",
+        });
+      }
+
+      await voucherRef.delete();
+
+      res.status(200).json({
+        success: true,
+        message: "Voucher deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting voucher:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete voucher",
+        error: error.message,
+      });
+    }
+  });
+
   return router;
 };

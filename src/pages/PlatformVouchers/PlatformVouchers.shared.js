@@ -31,6 +31,7 @@ export function PlatformVoucherCard({
   t,
   value,
   variant = "list",
+  onDelete,
 }) {
   const colors = Array.isArray(value.colors) && value.colors.length >= 2
     ? value.colors
@@ -79,9 +80,20 @@ export function PlatformVoucherCard({
           <div className="platform-vouchers-preview-validity">
             {t("voucherAdminPage.validUntil", { date: validity })}
           </div>
-          <button type="button" className="platform-vouchers-preview-cta">
-            {t("voucherAdminPage.previewCta", { count: value.cost })}
-          </button>
+          <div className="platform-vouchers-preview-actions">
+            <button type="button" className="platform-vouchers-preview-cta">
+              {t("voucherAdminPage.previewCta", { count: value.cost })}
+            </button>
+            {typeof onDelete === "function" ? (
+              <button
+                type="button"
+                className="platform-vouchers-preview-delete"
+                onClick={() => onDelete(value)}
+              >
+                {t("common.deleteFlyer")}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </article>

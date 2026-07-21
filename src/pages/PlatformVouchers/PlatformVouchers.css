@@ -122,6 +122,12 @@
   margin-top: auto;
 }
 
+.platform-vouchers-preview-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+}
+
 .platform-vouchers-preview-price-row {
   display: flex;
   justify-content: flex-end;
@@ -148,8 +154,7 @@
 }
 
 .platform-vouchers-preview-cta {
-  margin-top: 16px;
-  width: 100%;
+  flex: 1;
   height: 46px;
   border: none;
   border-radius: 10px;
@@ -157,6 +162,23 @@
   color: #111827;
   font-size: 16px;
   font-weight: 700;
+}
+
+.platform-vouchers-preview-delete {
+  min-width: 96px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.18);
+  color: #fee2e2;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.platform-vouchers-preview-delete:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .platform-vouchers-card-grid {

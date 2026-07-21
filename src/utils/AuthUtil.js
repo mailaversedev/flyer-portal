@@ -1,5 +1,5 @@
-export const isTokenExpired = (token) => {
-  if (!token) return true;
+export const getTokenExpiryMs = (token) => {
+  if (!token) return null;
 
   try {
     const base64Url = token.split(".")[1];
@@ -7,10 +7,24 @@ export const isTokenExpired = (token) => {
     const jsonPayload = window.atob(base64);
     const payload = JSON.parse(jsonPayload);
 
-    return payload.exp * 1000 < Date.now();
+    if (!payload?.exp) {
+      return null;
+    }
+
+    return payload.exp * 1000;
   } catch {
+    return null;
+  }
+};
+
+export const isTokenExpired = (token) => {
+  const expiryMs = getTokenExpiryMs(token);
+
+  if (!expiryMs) {
     return true;
   }
+
+  return expiryMs <= Date.now();
 };
 
 export const getStoredUser = () => {

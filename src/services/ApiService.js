@@ -73,10 +73,11 @@ class ApiService {
   static async makeRequest(endpoint, options = {}) {
     try {
       const token = localStorage.getItem("token");
+      const shouldAttachToken = options.skipAuth !== true;
 
       const defaultHeaders = {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(shouldAttachToken && token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       };
 
@@ -90,32 +91,8 @@ class ApiService {
         ...options,
       });
 
-      if (response.status === 401 || response.status === 403) {
-        // Token expired or invalid
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("company");
-
-        // Don't reload if we're already on the login page
-        if (!window.location.pathname.includes("/staff/login")) {
-          window.location.href = "/staff/login";
-        }
-
-        throw new Error("Session expired. Please login again.");
-      }
-
       if (!response.ok) {
-        let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-
-        try {
-          const errorPayload = await response.json();
-          errorMessage =
-            errorPayload?.message || errorPayload?.error || errorMessage;
-        } catch (_error) {
-          // Ignore non-JSON error payloads and keep the default message.
-        }
-
-        throw new Error(errorMessage);
+        return await ApiService._handleErrorResponse(response);
       }
 
       return await response.json();
@@ -123,6 +100,44 @@ class ApiService {
       console.error(`API Request failed for ${endpoint}:`, error);
       throw error;
     }
+  }
+
+  static async _handleErrorResponse(response) {
+    const errorMessage = await ApiService._extractErrorMessage(response);
+
+    if (response.status === 401) {
+      await ApiService._logoutSession();
+      throw new Error("Session expired. Please login again.");
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  static async _extractErrorMessage(response) {
+    let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+
+    try {
+      const errorPayload = await response.json();
+      errorMessage = errorPayload?.message || errorPayload?.error || errorMessage;
+    } catch (_error) {
+      // Ignore non-JSON error payloads and keep the default message.
+    }
+
+    return errorMessage;
+  }
+
+  static async _logoutSession() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("company");
+
+    if (!window.location.pathname.includes("/staff/login")) {
+      window.location.href = "/staff/login";
+    }
+  }
+
+  static async logoutSession() {
+    await ApiService._logoutSession();
   }
 
   // POST /api/auth/staff/login - Staff Login
@@ -188,7 +203,7 @@ class ApiService {
     );
 
     if (!response.ok) {
-      // If refresh fails (401/404), the caller should handle logout
+      // If refresh fails (401/404/500), the caller should handle logout
       throw new Error(`Token refresh failed: ${response.status}`);
     }
 
@@ -276,6 +291,12 @@ class ApiService {
     return this.makeRequest("/api/admin/vouchers", {
       method: "POST",
       body: JSON.stringify(voucherData),
+    });
+  }
+
+  static async deleteAdminVoucher(voucherId) {
+    return this.makeRequest(`/api/admin/vouchers/${voucherId}`, {
+      method: "DELETE",
     });
   }
 
@@ -424,7 +445,9 @@ class ApiService {
     }
 
     if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
-      formData.append("reference_images", leafletData.referenceFlyer.file);
+        const error = new Error(`Token refresh failed: ${response.status}`);
+        error.status = response.status;
+        throw error;
     }
 
     if (leafletData.productPhoto && leafletData.productPhoto.length > 0) {

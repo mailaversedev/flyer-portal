@@ -1,0 +1,20 @@
+.session-refresh-modal {
+  width: 440px;
+  max-width: 92%;
+}
+
+.session-refresh-message {
+  margin: 0 0 10px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.session-refresh-error {
+  margin: 4px 0 12px;
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+.session-refresh-button {
+  margin-top: 8px;
+}
