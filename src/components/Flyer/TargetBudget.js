@@ -71,6 +71,10 @@ const TargetBudget = ({
 
   // Fetch wallet on mount
   useEffect(() => {
+    if (showNoRewardOption) {
+      return undefined;
+    }
+
     const fetchWallet = async () => {
       try {
         const res = await ApiService.getCompanyWallet();

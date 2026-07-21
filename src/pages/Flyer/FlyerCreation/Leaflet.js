@@ -276,6 +276,11 @@ const LeafletCreation = () => {
       return;
     }
 
+    if (isSuperAdminUser) {
+      setWalletSummary(null);
+      return;
+    }
+
     const fetchWallet = async () => {
       try {
         const response = await ApiService.getCompanyWallet();

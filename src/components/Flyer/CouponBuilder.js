@@ -3,6 +3,7 @@ import { Upload, Calendar, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
+import { isSuperAdmin } from "../../utils/AuthUtil";
 
 import "./CouponBuilder.css";
 
@@ -220,6 +221,15 @@ const CouponBuilder = ({ data, onUpdate }) => {
 
   useEffect(() => {
     let isMounted = true;
+
+    if (isSuperAdmin()) {
+      setSavedCoupons([]);
+      setCouponLoadError("");
+      setIsLoadingCoupons(false);
+      return () => {
+        isMounted = false;
+      };
+    }
 
     const loadSavedCoupons = async () => {
       setIsLoadingCoupons(true);
