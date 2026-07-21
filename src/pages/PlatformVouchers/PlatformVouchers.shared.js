@@ -8,6 +8,7 @@ export const DEFAULT_FORM = {
   totalNumber: "",
   promotionCode: "",
   terms: "",
+  voucherImage: "",
   primaryColor: "#ef3239",
   secondaryColor: "#f76b1c",
 };
@@ -38,10 +39,27 @@ export function PlatformVoucherCard({
     : [DEFAULT_FORM.primaryColor, DEFAULT_FORM.secondaryColor];
   const merchant = value.merchant?.trim() || t("voucherAdminPage.previewMerchant");
   const validity = value.validity || formatDate(value.expiryDate) || "-";
+  const hasVoucherImage = Boolean(value.voucherImage);
   const surfaceClassName =
     variant === "editor"
       ? "platform-vouchers-preview-surface platform-vouchers-preview-surface--editor"
       : "platform-vouchers-preview-surface platform-vouchers-preview-surface--list";
+
+  if (hasVoucherImage) {
+    return (
+      <article key={cardKey} className="platform-vouchers-cash-card">
+        <div className={surfaceClassName}>
+          <div className="platform-vouchers-image-card">
+            <img
+              src={value.voucherImage}
+              alt={merchant}
+              className="platform-vouchers-image-card__img"
+            />
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article key={cardKey} className="platform-vouchers-cash-card">

@@ -66,6 +66,21 @@
   flex-direction: column;
 }
 
+.platform-vouchers-image-card {
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 320px;
+  background: #111827;
+}
+
+.platform-vouchers-image-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  object-fit: cover;
+}
+
 .platform-vouchers-preview-surface--editor {
   margin-top: 20px;
   min-height: 340px;

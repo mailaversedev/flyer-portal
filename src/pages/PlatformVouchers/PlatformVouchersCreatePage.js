@@ -16,8 +16,10 @@ const PlatformVouchersCreatePage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [merchantIconFile, setMerchantIconFile] = useState(null);
+  const [voucherImageFile, setVoucherImageFile] = useState(null);
   const [qrCodeFile, setQrCodeFile] = useState(null);
   const [merchantIconPreviewUrl, setMerchantIconPreviewUrl] = useState("");
+  const [voucherImagePreviewUrl, setVoucherImagePreviewUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -35,6 +37,20 @@ const PlatformVouchersCreatePage = () => {
       URL.revokeObjectURL(objectUrl);
     };
   }, [merchantIconFile]);
+
+  useEffect(() => {
+    if (!voucherImageFile) {
+      setVoucherImagePreviewUrl("");
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(voucherImageFile);
+    setVoucherImagePreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [voucherImageFile]);
 
   if (!isSuperAdmin()) {
     return <Navigate to="/platform-admin" replace />;
@@ -61,6 +77,7 @@ const PlatformVouchersCreatePage = () => {
 
     try {
       let merchantIconUrl = "";
+      let voucherImageUrl = "";
       let qrCodeUrl = "";
 
       if (merchantIconFile) {
@@ -74,6 +91,19 @@ const PlatformVouchersCreatePage = () => {
         }
 
         merchantIconUrl = uploadResponse.url;
+      }
+
+      if (voucherImageFile) {
+        const uploadResponse = await ApiService.uploadFile(
+          voucherImageFile,
+          "voucherImage",
+        );
+
+        if (!uploadResponse?.success || !uploadResponse?.url) {
+          throw new Error(t("voucherAdminPage.uploadVoucherImageError"));
+        }
+
+        voucherImageUrl = uploadResponse.url;
       }
 
       if (qrCodeFile) {
@@ -92,6 +122,7 @@ const PlatformVouchersCreatePage = () => {
       const response = await ApiService.createAdminVoucher({
         merchant: formData.merchant.trim(),
         merchantIcon: merchantIconUrl ?? "",
+        voucherImage: voucherImageUrl,
         value: formData.value.trim(),
         cost: formData.cost,
         expiryDate: formData.expiryDate,
@@ -156,6 +187,16 @@ const PlatformVouchersCreatePage = () => {
                 }
               />
             </label>
+            <label className="full-width">
+              <span>{t("voucherAdminPage.voucherImage")}</span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                onChange={(event) =>
+                  setVoucherImageFile(event.target.files?.[0] || null)
+                }
+              />
+            </label>
             <label>
               <span>{t("voucherAdminPage.value")}</span>
               <input name="value" value={formData.value} onChange={handleChange} required />
@@ -214,6 +255,7 @@ const PlatformVouchersCreatePage = () => {
               value={{
                 merchant: previewMerchant,
                 merchantIcon: merchantIconPreviewUrl,
+                voucherImage: voucherImagePreviewUrl,
                 value: previewValue,
                 cost: previewCost,
                 validity: previewExpiryDate,

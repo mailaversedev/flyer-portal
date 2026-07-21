@@ -39,6 +39,7 @@ module.exports = function createVouchersRouter(context) {
         cost,
         merchant,
         merchantIcon,
+        voucherImage,
         expiryDate,
         totalNumber,
         qrCode,
@@ -50,6 +51,7 @@ module.exports = function createVouchersRouter(context) {
       const normalizedValue = `${value || ""}`.trim();
       const normalizedMerchant = `${merchant || ""}`.trim();
       const normalizedMerchantIcon = `${merchantIcon || ""}`.trim();
+      const normalizedVoucherImage = `${voucherImage || ""}`.trim();
       const normalizedPromotionCode = `${promotionCode || ""}`.trim();
       const normalizedTerms = `${terms || ""}`.trim();
       const normalizedQrCode = `${qrCode || ""}`.trim();
@@ -102,6 +104,7 @@ module.exports = function createVouchersRouter(context) {
         cost: normalizedCost,
         merchant: normalizedMerchant,
         merchantIcon: normalizedMerchantIcon,
+        voucherImage: normalizedVoucherImage,
         expiryDate: normalizedExpiryDate,
         totalNumber: normalizedTotalNumber,
         qrCode: normalizedQrCode,

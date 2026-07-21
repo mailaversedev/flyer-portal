@@ -212,6 +212,7 @@
     "cashVoucher": "Cash Voucher",
     "merchant": "Merchant",
     "merchantIcon": "Merchant Icon",
+    "voucherImage": "Voucher Image",
     "value": "Voucher Value",
     "cost": "Token Cost",
     "expiryDate": "Expiry Date",
@@ -233,6 +234,7 @@
     "deleteVoucherConfirm": "Delete \"{{merchant}}\"? This will remove the voucher from the platform.",
     "uploadError": "Failed to upload QR code.",
     "uploadMerchantIconError": "Failed to upload merchant icon.",
+    "uploadVoucherImageError": "Failed to upload voucher image.",
     "qrAvailable": "Uploaded",
     "validUntil": "Valid until {{date}}",
     "previewCta": "{{count}} TOKENS"

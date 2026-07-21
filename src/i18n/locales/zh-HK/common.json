@@ -212,6 +212,7 @@
     "cashVoucher": "現金禮券",
     "merchant": "商戶",
     "merchantIcon": "商戶圖示",
+    "voucherImage": "禮券圖片",
     "value": "禮券面值",
     "cost": "代幣成本",
     "expiryDate": "到期日",
@@ -233,6 +234,7 @@
     "deleteVoucherConfirm": "確定要刪除「{{merchant}}」？此操作會將該禮券從平台移除。",
     "uploadError": "上傳 QR Code 失敗。",
     "uploadMerchantIconError": "上傳商戶圖示失敗。",
+    "uploadVoucherImageError": "上傳禮券圖片失敗。",
     "qrAvailable": "已上傳",
     "validUntil": "有效至 {{date}}",
     "previewCta": "{{count}} 代幣"
