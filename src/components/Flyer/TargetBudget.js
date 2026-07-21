@@ -22,6 +22,8 @@ const TargetBudget = ({
   history = [],
   isDirectUpload = false,
   isFreeAttempt = false,
+  isSuperAdminUser = false,
+  merchantOptions = [],
 }) => {
   const { t, i18n } = useTranslation();
   const showNoRewardOption = isSuperAdmin();
@@ -251,6 +253,30 @@ const TargetBudget = ({
 
           {isDirectUpload && (
             <>
+              {isSuperAdminUser && (
+                <div className="form-group">
+                  <label className="form-label">{t("common.merchant")}</label>
+                  <div className="select-wrapper">
+                    <select
+                      className="form-select"
+                      value={data.companyId || ""}
+                      onChange={(e) =>
+                        handleContentChange("companyId", e.target.value)
+                      }
+                      disabled={merchantOptions.length === 0}
+                      required
+                    >
+                      <option value="">{t("common.pleaseSelect")}</option>
+                      {merchantOptions.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.companyDisplayName || company.name || company.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">{t("targetBudget.header")}</label>
                 <input

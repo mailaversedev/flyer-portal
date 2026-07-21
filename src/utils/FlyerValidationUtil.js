@@ -2,7 +2,12 @@ export const MIN_BUDGET = 500;
 export const MAX_BUDGET = 50000;
 export const DEFAULT_BUDGET = 1000;
 
-export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) => {
+export const validateTargetBudgetStep = ({
+  data,
+  isDirectUpload = false,
+  requireCompanySelection = false,
+  t,
+}) => {
   const formData = {
     district: data?.targetBudget?.district || data?.district || "",
     propertyEstate:
@@ -16,6 +21,10 @@ export const validateTargetBudgetStep = ({ data, isDirectUpload = false, t }) =>
   };
 
   const missingFields = [];
+
+  if (requireCompanySelection && !data?.companyId) {
+    missingFields.push(t("common.merchant"));
+  }
 
   if (isDirectUpload) {
     if (!data?.header?.trim()) {
