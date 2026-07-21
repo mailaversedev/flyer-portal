@@ -1,0 +1,29 @@
+# VCS / editor metadata
+.git/
+.github/
+.gitignore
+.DS_Store
+
+# Frontend dev-only artifacts
+node_modules/
+
+# Tests and docs
+test/
+tests/
+docs/
+
+# Setup, scripts, and one-off tooling
+setup/
+scripts/
+
+# Local config and secrets
+.env
+.env.*
+*.local
+
+# Logs and reports
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
