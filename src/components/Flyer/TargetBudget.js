@@ -7,7 +7,6 @@ import {
   MIN_BUDGET,
   MAX_BUDGET,
   DEFAULT_BUDGET,
-  validateTargetBudgetStep,
 } from "../../utils/FlyerValidationUtil";
 import {
   getSpreadingCoefficientByIndustry,

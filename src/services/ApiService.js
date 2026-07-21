@@ -445,9 +445,7 @@ class ApiService {
     }
 
     if (leafletData.referenceFlyer && leafletData.referenceFlyer.file) {
-        const error = new Error(`Token refresh failed: ${response.status}`);
-        error.status = response.status;
-        throw error;
+      formData.append("reference_images", leafletData.referenceFlyer.file);
     }
 
     if (leafletData.productPhoto && leafletData.productPhoto.length > 0) {

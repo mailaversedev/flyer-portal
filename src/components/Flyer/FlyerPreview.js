@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Download, Minus, Plus } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import React, { useEffect, useRef } from "react";
+import { Download } from "lucide-react";
 
 const FlyerPreview = ({
   coverPhoto,
@@ -9,7 +8,6 @@ const FlyerPreview = ({
   isFreeAttempt = false,
   t,
 }) => {
-  const { i18n } = useTranslation();
   const canvasRef = useRef(null);
 
   useEffect(() => {
