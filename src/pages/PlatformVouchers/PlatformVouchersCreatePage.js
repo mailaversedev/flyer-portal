@@ -183,7 +183,7 @@ const PlatformVouchersCreatePage = () => {
         voucherPrefix: requiresVoucherRange ? prefix : "",
         voucherNumberStart: requiresVoucherRange ? startVoucherNumber : "",
         voucherNumberEnd: requiresVoucherRange ? endVoucherNumber : "",
-        promotionCode: formData.promotionCode.trim(),
+        promotionCode: requiresVoucherRange ? "" : formData.promotionCode.trim(),
         qrCode: qrCodeUrl,
         terms: formData.terms.trim(),
         colors: [formData.primaryColor, formData.secondaryColor],
@@ -296,10 +296,12 @@ const PlatformVouchersCreatePage = () => {
                 </label>
               </>
             ) : null}
-            <label className="full-width">
-              <span>{t("voucherAdminPage.promotionCode")}</span>
-              <input name="promotionCode" value={formData.promotionCode} onChange={handleChange} />
-            </label>
+            {!requiresVoucherRange ? (
+              <label className="full-width">
+                <span>{t("voucherAdminPage.promotionCode")}</span>
+                <input name="promotionCode" value={formData.promotionCode} onChange={handleChange} />
+              </label>
+            ) : null}
             <label>
               <span>{t("voucherAdminPage.primaryColor")}</span>
               <input name="primaryColor" type="color" value={formData.primaryColor} onChange={handleChange} />
