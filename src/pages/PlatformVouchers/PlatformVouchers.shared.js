@@ -90,7 +90,7 @@ export function PlatformVoucherCard({
                 className="platform-vouchers-preview-delete"
                 onClick={() => onDelete(value)}
               >
-                {t("common.deleteFlyer")}
+                {t("adminPage.deleteFlyer")}
               </button>
             ) : null}
           </div>

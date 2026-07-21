@@ -125,7 +125,8 @@
 .platform-vouchers-preview-actions {
   margin-top: 16px;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .platform-vouchers-preview-price-row {
@@ -165,7 +166,7 @@
 }
 
 .platform-vouchers-preview-delete {
-  min-width: 96px;
+  width: 100%;
   height: 46px;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 10px;
