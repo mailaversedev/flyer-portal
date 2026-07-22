@@ -15,7 +15,9 @@
     "language": "Language",
     "english": "English",
     "traditionalChinese": "繁體中文",
-    "logout": "Logout"
+    "logout": "Logout",
+    "merchant": "Merchant",
+    "pleaseSelect": "Please select"
   },
   "header": {
     "flyerTypes": "Create Your Flyer",

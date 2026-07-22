@@ -15,7 +15,9 @@
     "language": "語言",
     "english": "English",
     "traditionalChinese": "繁體中文",
-    "logout": "登出"
+    "logout": "登出",
+    "merchant": "商戶",
+    "pleaseSelect": "請選擇"
   },
   "header": {
     "flyerTypes": "建立電子傳單",
