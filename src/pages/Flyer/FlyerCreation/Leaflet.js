@@ -28,9 +28,7 @@ const DEFAULT_LEAFLET_DATA = {
   header: "",
   adContent: "",
   flyerPrompts: "",
-  promotionMessage: "",
   productPhoto: [],
-  productDescriptions: "",
   tags: [],
   resolution: "2K",
   primaryColor: "",
@@ -43,8 +41,6 @@ const DEFAULT_LEAFLET_DATA = {
 const buildLeafletEditPayload = (data) => ({
   header: data.header,
   adContent: data.adContent,
-  promotionMessage: data.promotionMessage,
-  productDescriptions: data.productDescriptions,
   tags: data.tags,
 });
 
@@ -97,32 +93,6 @@ const LeafletEditForm = ({ data, onUpdate, t }) => {
               rows={4}
               value={data.adContent || ""}
               onChange={(event) => onUpdate({ adContent: event.target.value })}
-            />
-          </div>
-
-          <div className="form-group full-width">
-            <label className="form-label">{t("leafletStandard.promotionMessage")}</label>
-            <textarea
-              className="form-textarea"
-              placeholder={t("qrGeneration.pleaseEnter")}
-              rows={3}
-              value={data.promotionMessage || ""}
-              onChange={(event) =>
-                onUpdate({ promotionMessage: event.target.value })
-              }
-            />
-          </div>
-
-          <div className="form-group full-width">
-            <label className="form-label">{t("leafletStandard.productDescriptions")}</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder={t("qrGeneration.pleaseEnter")}
-              value={data.productDescriptions || ""}
-              onChange={(event) =>
-                onUpdate({ productDescriptions: event.target.value })
-              }
             />
           </div>
 

@@ -561,8 +561,6 @@ module.exports = function createCreationRouter(context) {
           leaflet: [
             "header",
             "adContent",
-            "promotionMessage",
-            "productDescriptions",
             "tags",
           ],
           query: [],
