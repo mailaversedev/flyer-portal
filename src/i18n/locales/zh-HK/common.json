@@ -481,7 +481,6 @@
     "off": "折扣",
     "store": "商店",
     "entirePurchase": "整張訂單適用",
-    "itemDescriptionFallback": "商品描述",
     "offerValidUntil": "優惠有效至 {{date}}",
     "title": "優惠券建立器",
     "savedCoupons": "重用現有優惠券",

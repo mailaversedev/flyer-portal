@@ -197,9 +197,7 @@ const DigitalCoupon = ({
             lineHeight: "1.2",
           }}
         >
-          {couponType === "free"
-            ? t("couponBuilder.entirePurchase")
-            : description || t("couponBuilder.itemDescriptionFallback")}
+          {description || t("couponBuilder.itemDescription")}
         </div>
 
         <div style={{ color: "rgba(0,0,0,0.38)", fontSize: "12px" }}>

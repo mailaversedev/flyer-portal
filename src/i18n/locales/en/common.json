@@ -486,7 +486,6 @@
     "off": "OFF",
     "store": "Store",
     "entirePurchase": "YOUR ENTIRE PURCHASE",
-    "itemDescriptionFallback": "Item Description",
     "offerValidUntil": "Offer valid until {{date}}",
     "title": "Coupon Builder",
     "savedCoupons": "Reuse Existing Coupon",
