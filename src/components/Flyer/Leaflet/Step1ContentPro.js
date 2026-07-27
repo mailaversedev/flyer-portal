@@ -27,9 +27,7 @@ const Step1ContentPro = forwardRef(
     { value: "21:9", label: "21:9 (2520 x 1080)" },
   ];
     const validateRequiredFields = () => {
-      const newErrors = getProLeafletValidationErrors(data, {
-        requireCompanySelection: isSuperAdminUser,
-      });
+      const newErrors = getProLeafletValidationErrors(data);
 
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
@@ -547,12 +545,8 @@ const Step1ContentPro = forwardRef(
 Step1ContentPro.validateRequiredFields = (
   data,
   setErrorsCallback = null,
-  options = {},
 ) => {
-  const errors = getProLeafletValidationErrors(data, {
-    requireCompanySelection:
-      Boolean(options.requireCompanySelection) || Boolean(data?.isSuperAdminUser),
-  });
+  const errors = getProLeafletValidationErrors(data);
 
   if (setErrorsCallback) {
     setErrorsCallback(errors);

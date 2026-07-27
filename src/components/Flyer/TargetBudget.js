@@ -264,7 +264,6 @@ const TargetBudget = ({
                         handleContentChange("companyId", e.target.value)
                       }
                       disabled={merchantOptions.length === 0}
-                      required
                     >
                       <option value="">{t("common.pleaseSelect")}</option>
                       {merchantOptions.map((company) => (

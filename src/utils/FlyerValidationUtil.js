@@ -5,7 +5,6 @@ export const DEFAULT_BUDGET = 1000;
 export const validateTargetBudgetStep = ({
   data,
   isDirectUpload = false,
-  requireCompanySelection = false,
   t,
 }) => {
   const formData = {
@@ -21,10 +20,6 @@ export const validateTargetBudgetStep = ({
   };
 
   const missingFields = [];
-
-  if (requireCompanySelection && !data?.companyId) {
-    missingFields.push(t("common.merchant"));
-  }
 
   if (isDirectUpload) {
     if (!data?.header?.trim()) {

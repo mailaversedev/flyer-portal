@@ -353,8 +353,6 @@ const LeafletCreation = () => {
       const validation = validateTargetBudgetStep({
         data: leafletData,
         isDirectUpload: location.state?.isDirectUpload,
-        requireCompanySelection:
-          isSuperAdminUser && Boolean(location.state?.isDirectUpload),
         t,
       });
       if (!validation.isValid) {

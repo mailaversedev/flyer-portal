@@ -50,6 +50,7 @@ module.exports = function createCompaniesRouter(context) {
           id: doc.id,
           companyDisplayName: data.companyDisplayName || "",
           name: data.name || "",
+          icon: data.icon || "",
           nature: data.nature || "",
           contact: data.contact || "",
           address: data.address || "",

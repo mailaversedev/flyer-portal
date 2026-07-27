@@ -1,7 +1,4 @@
-export const getProLeafletValidationErrors = (
-  data,
-  { requireCompanySelection = false } = {},
-) => {
+export const getProLeafletValidationErrors = (data) => {
   const errors = {};
 
   if (!data.aspectRatio || data.aspectRatio.trim() === "") {
@@ -18,10 +15,6 @@ export const getProLeafletValidationErrors = (
 
   if (!data.flyerPrompts || data.flyerPrompts.trim() === "") {
     errors.flyerPrompts = "Context/Prompts is required";
-  }
-
-  if (requireCompanySelection && !data.companyId) {
-    errors.companyId = "Merchant is required";
   }
 
   return errors;
