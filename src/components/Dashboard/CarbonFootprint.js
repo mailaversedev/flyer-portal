@@ -9,7 +9,7 @@ const CarbonFootprint = ({ metrics }) => {
   const navigate = useNavigate();
   const counts = metrics?.typeCounts || {};
   const totalInteracted = metrics?.totalInteracted || 0;
-  const carbonKg = (totalInteracted * 3.32) / 1000;
+  const carbonKg = (totalInteracted * 2.32) / 1000;
   const carbonKgDisplay = carbonKg.toLocaleString(i18n.language, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
