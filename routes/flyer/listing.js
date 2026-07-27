@@ -44,6 +44,7 @@ module.exports = function createListingRouter(context) {
         id: flyerDoc.id,
         ...flyerData,
       };
+      delete flyer.logoImage;
 
       try {
         const lotteryDoc = await db.collection("lottery").doc(flyerId).get();
@@ -138,10 +139,12 @@ module.exports = function createListingRouter(context) {
 
       const flyers = [];
       snapshot.forEach((doc) => {
-        flyers.push({
+        const flyer = {
           id: doc.id,
           ...doc.data(),
-        });
+        };
+        delete flyer.logoImage;
+        flyers.push(flyer);
       });
 
       if (flyers.length > 0) {
