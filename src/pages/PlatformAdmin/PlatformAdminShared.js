@@ -287,6 +287,7 @@ export const PlatformAdminFlyersTable = ({
     return {
       id: flyer.id,
       flyerType: flyer.type || "",
+      thumbnail: flyer.thumbnail || "",
       companyName,
       adTitle: flyer.header || `${t("adminPage.untitledFlyer")} ${flyer.id.slice(0, 6)}`,
       status: getFlyerStatusLabel(flyer.status),
@@ -324,6 +325,45 @@ export const PlatformAdminFlyersTable = ({
 
     if (route && onOpenFlyer) {
       onOpenFlyer(route);
+    }
+  };
+
+  const handleDownloadFlyer = async (event, flyer) => {
+    event.stopPropagation();
+
+    const imageUrl = flyer.thumbnail;
+    if (!imageUrl) {
+      return;
+    }
+
+    const fileBaseName = (flyer.id || "flyer")
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const safeFileName = fileBaseName || "flyer";
+
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error("Failed to fetch image");
+      }
+
+      const blob = await response.blob();
+      const extensionFromType = blob.type.split("/")[1] || "jpg";
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = `${safeFileName}.${extensionFromType}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (_error) {
+      window.open(imageUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -415,6 +455,15 @@ export const PlatformAdminFlyersTable = ({
                   {deletingFlyerId === flyer.id
                     ? t("adminPage.deletingFlyer")
                     : t("adminPage.deleteFlyer")}
+                </button>
+                <button
+                  type="button"
+                  className="platform-admin-flyer-action-button"
+                  onClick={(event) => handleDownloadFlyer(event, flyer)}
+                  disabled={!flyer.thumbnail}
+                  title={flyer.thumbnail ? "Download flyer image" : "No flyer image available"}
+                >
+                  Download
                 </button>
               </div>
             </td>

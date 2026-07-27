@@ -43,6 +43,46 @@ const CampaignTable = ({ campaignData, loading }) => {
     }
   };
 
+  const handleDownloadFlyer = async (event, campaign) => {
+    event.stopPropagation();
+
+    const imageUrl = campaign.thumbnail;
+    if (!imageUrl) {
+      return;
+    }
+
+    const fileBaseName = (campaign.id || "flyer")
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const safeFileName = fileBaseName || "flyer";
+
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error("Failed to fetch image");
+      }
+
+      const blob = await response.blob();
+      const extensionFromType = blob.type.split("/")[1] || "jpg";
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = `${safeFileName}.${extensionFromType}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (_error) {
+      // Fallback for CORS-restricted assets: open image in new tab.
+      window.open(imageUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
     <div className="campaign-table">
       <div className="table-tabs">
@@ -75,6 +115,7 @@ const CampaignTable = ({ campaignData, loading }) => {
                 <th>{t("dashboard.costPerBrowse")}</th>
                 <th>{t("dashboard.downloadRate")}</th>
                 <th>{t("dashboard.convertedRate")}</th>
+                <th>Download</th>
               </tr>
             </thead>
             <tbody>
@@ -138,13 +179,28 @@ const CampaignTable = ({ campaignData, loading }) => {
                     <td>{campaign.costPerBrowse}</td>
                     <td>{campaign.downloadRate}</td>
                     <td>{campaign.convertedRate}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="campaign-download-button"
+                        onClick={(event) => handleDownloadFlyer(event, campaign)}
+                        disabled={!campaign.thumbnail}
+                        title={
+                          campaign.thumbnail
+                            ? "Download flyer image"
+                            : "No flyer image available"
+                        }
+                      >
+                        Download
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {filteredData.length === 0 && (
                 <tr>
                   <td
-                    colSpan="11"
+                    colSpan="12"
                     style={{ textAlign: "center", padding: "20px" }}
                   >
                     {t("dashboard.noCampaigns")}
