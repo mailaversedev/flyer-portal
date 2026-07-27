@@ -76,10 +76,34 @@ const CreditRequestModal = ({ onClose, onSuccess }) => {
             >
               <option value="bank_transfer">Bank Transfer</option>
               <option value="fps">FPS</option>
-              <option value="payme">PayMe</option>
-              <option value="credit_card">Credit Card</option>
+              <option value="payme" disabled>PayMe</option>
+              <option value="credit_card" disabled>Credit Card</option>
             </select>
           </div>
+
+          {paymentMethod === "fps" && (
+            <div className="form-group">
+              <label>FPS Payment Details</label>
+              <div>
+                <div><strong>ZA Bank</strong></div>
+                <div>FPS ID: 121508840</div>
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === "bank_transfer" && (
+            <div className="form-group">
+              <label>Bank Transfer Details</label>
+              <div>
+                <div><strong>DBS Bank</strong></div>
+                <div>Bank Code: 016</div>
+                <div>Branch Code: 478</div>
+                <div>DHBKHKHH</div>
+                <div>Account Number: 002658101</div>
+              </div>
+            </div>
+          )}
+
           <div className="form-group">
             <label>Upload Receipt</label>
             <input
