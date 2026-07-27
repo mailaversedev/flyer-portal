@@ -409,6 +409,14 @@
   box-shadow: none;
 }
 
+.download-button-secondary {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.download-button-secondary:hover {
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
+}
+
 /* Generated Flyer Styles */
 .generated-flyer {
   width: 100%;

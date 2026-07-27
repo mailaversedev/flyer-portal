@@ -501,6 +501,13 @@ class ApiService {
     });
   }
 
+  static async deductTokens(payload) {
+    return this.makeRequest("/api/payment/deduct-tokens", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   // Helper method to upload only file fields and return their URLs
   static async uploadFilesFromData(data) {
     // Extract only file-related fields

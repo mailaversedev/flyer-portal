@@ -1,5 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Download } from "lucide-react";
+
+import ApiService from "../../services/ApiService";
 
 const FlyerPreview = ({
   coverPhoto,
@@ -9,6 +11,8 @@ const FlyerPreview = ({
   t,
 }) => {
   const canvasRef = useRef(null);
+  const [isDownloadingWithoutWatermark, setIsDownloadingWithoutWatermark] =
+    useState(false);
 
   useEffect(() => {
     if (!coverPhoto) return;
@@ -58,6 +62,63 @@ const FlyerPreview = ({
     link.download = `flyer-${timestamp}.png`;
     link.href = canvasRef.current.toDataURL("image/png");
     link.click();
+  };
+
+  const downloadOriginalFlyer = async (imageUrl) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error("Failed to fetch image");
+      }
+
+      const blob = await response.blob();
+      const extensionFromType = blob.type.split("/")[1] || "png";
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = `flyer-clean-${timestamp}.${extensionFromType}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (_error) {
+      window.open(imageUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleDownloadWithoutWatermark = async () => {
+    if (!coverPhoto || isDownloadingWithoutWatermark) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Download without watermark will deduct 2 tokens. Continue?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDownloadingWithoutWatermark(true);
+
+      await ApiService.deductTokens({
+        amount: 2,
+        description: "Leaflet watermark-free download",
+        idempotencyKey: `leaflet_download_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+      });
+
+      await downloadOriginalFlyer(coverPhoto);
+    } catch (error) {
+      window.alert(
+        error?.message || "Failed to download without watermark.",
+      );
+    } finally {
+      setIsDownloadingWithoutWatermark(false);
+    }
   };
 
   return (
@@ -173,6 +234,18 @@ const FlyerPreview = ({
             <Download size={16} />
             {t("targetBudget.download")}
           </button>
+          {isFreeAttempt && (
+            <button
+              className="download-button download-button-secondary"
+              onClick={handleDownloadWithoutWatermark}
+              disabled={!coverPhoto || isDownloadingWithoutWatermark}
+            >
+              <Download size={16} />
+              {isDownloadingWithoutWatermark
+                ? "Processing..."
+                : "Download without Watermark"}
+            </button>
+          )}
         </div>
       </div>
     </div>

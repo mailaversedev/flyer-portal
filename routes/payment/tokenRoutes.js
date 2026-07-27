@@ -2,6 +2,7 @@ const express = require("express");
 
 const { authenticateToken } = require("../auth");
 const { db, generateTransactionId, getWalletByUserId } = require("./helpers");
+const { ensureCompanyWalletInTransaction } = require("../../services/companyWalletService");
 
 const router = express.Router();
 
@@ -9,27 +10,38 @@ const createTokenRoute = (type) => async (req, res) => {
   try {
     const { amount, description, idempotencyKey } = req.body;
     const userId = req.user.userId;
+    const companyId = req.user?.companyId || "";
+    const hasCompanyWalletScope = Boolean(companyId);
+    const normalizedAmount = Number(amount);
 
-    if (!amount || !idempotencyKey) {
+    if (!Number.isFinite(normalizedAmount) || !idempotencyKey) {
       return res.status(400).json({
         success: false,
         message: "Amount and idempotencyKey are required",
       });
     }
 
-    if (amount <= 0) {
+    if (normalizedAmount <= 0) {
       return res.status(400).json({
         success: false,
         message: "Amount must be positive",
       });
     }
 
-    const existingTxQuery = await db
+    if (hasCompanyWalletScope && type === "ADD") {
+      return res.status(403).json({
+        success: false,
+        message: "Adding tokens is not allowed via this route for company wallets",
+      });
+    }
+
+    const idempotencyQuery = db
       .collection("transactions")
       .where("idempotencyKey", "==", idempotencyKey)
-      .where("userId", "==", userId)
-      .limit(1)
-      .get();
+      .where(hasCompanyWalletScope ? "companyId" : "userId", "==", hasCompanyWalletScope ? companyId : userId)
+      .limit(1);
+
+    const existingTxQuery = await idempotencyQuery.get();
 
     if (!existingTxQuery.empty) {
       const existingTx = existingTxQuery.docs[0].data();
@@ -48,8 +60,22 @@ const createTokenRoute = (type) => async (req, res) => {
     const transactionId = generateTransactionId();
     const timestamp = new Date().toISOString();
     const result = await db.runTransaction(async (transaction) => {
-      const wallet = await getWalletByUserId(userId);
-      const walletRef = db.collection("wallets").doc(wallet.doc.id);
+      let wallet;
+      let walletRef;
+
+      if (hasCompanyWalletScope) {
+        wallet = await ensureCompanyWalletInTransaction({
+          transaction,
+          companyId,
+          initialBalance: 0,
+          timestamp,
+        });
+        walletRef = wallet.ref || wallet.doc.ref;
+      } else {
+        wallet = await getWalletByUserId(userId);
+        walletRef = db.collection("wallets").doc(wallet.doc.id);
+      }
+
       const currentWallet = await transaction.get(walletRef);
 
       if (!currentWallet.exists) {
@@ -57,14 +83,17 @@ const createTokenRoute = (type) => async (req, res) => {
       }
 
       const walletData = currentWallet.data();
+      const currentBalance = Number(walletData.balance) || 0;
 
-      if (type === "DEDUCT" && walletData.balance < amount) {
+      if (type === "DEDUCT" && currentBalance < normalizedAmount) {
         throw new Error("Insufficient balance");
       }
 
       const newBalance =
-        type === "ADD" ? walletData.balance + amount : walletData.balance - amount;
-      const newVersion = walletData.version + 1;
+        type === "ADD"
+          ? currentBalance + normalizedAmount
+          : currentBalance - normalizedAmount;
+      const newVersion = (Number(walletData.version) || 0) + 1;
 
       transaction.update(walletRef, {
         balance: newBalance,
@@ -74,11 +103,11 @@ const createTokenRoute = (type) => async (req, res) => {
 
       transaction.set(db.collection("transactions").doc(), {
         transactionId,
-        userId,
-        walletId: wallet.doc.id,
+        ...(hasCompanyWalletScope ? { companyId, ownerType: "company" } : { userId }),
+        walletId: walletRef.id,
         type,
-        amount,
-        previousBalance: walletData.balance,
+        amount: normalizedAmount,
+        previousBalance: currentBalance,
         newBalance,
         description: description || `${type === "ADD" ? "Add" : "Deduct"} tokens ${type === "ADD" ? "to" : "from"} wallet`,
         status: "COMPLETED",
@@ -90,8 +119,8 @@ const createTokenRoute = (type) => async (req, res) => {
 
       return {
         transactionId,
-        amount,
-        previousBalance: walletData.balance,
+        amount: normalizedAmount,
+        previousBalance: currentBalance,
         newBalance,
         status: "COMPLETED",
       };
