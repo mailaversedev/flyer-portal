@@ -218,7 +218,7 @@
     "value": "Voucher Value",
     "cost": "Token Cost",
     "expiryDate": "Expiry Date",
-    "totalNumber": "Total Number",
+    "totalNumber": "Quantity",
     "voucherType": "Voucher Type",
     "voucherTypeStatic": "Static Voucher",
     "voucherTypeNumbered": "Numbered Voucher",
