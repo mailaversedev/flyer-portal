@@ -389,6 +389,17 @@ const LeafletCreation = () => {
   };
 
   const handleCreate = async () => {
+    const noReward = Boolean(leafletData?.targetBudget?.noReward || leafletData?.noReward);
+    if (!noReward && !isSuperAdminUser) {
+      const budget = Number(leafletData?.targetBudget?.budget || leafletData?.budget || 0);
+      const creditBalanceHkd = Number(walletSummary?.creditBalanceHkd) || 0;
+
+      if (budget > creditBalanceHkd) {
+        setShowCreditModal(true);
+        return;
+      }
+    }
+
     try {
       setLoading(t("leafletCreation.creatingWait"));
 
@@ -439,7 +450,7 @@ const LeafletCreation = () => {
       }
     } catch (error) {
       console.error("Error creating flyer:", error);
-      toast.error(t("leafletCreation.createError"));
+      toast.error(error.message || t("leafletCreation.createError"));
     } finally {
       setLoading("");
     }

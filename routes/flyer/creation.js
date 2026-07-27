@@ -367,6 +367,7 @@ module.exports = function createCreationRouter(context) {
       await db.runTransaction(async (transaction) => {
         let statsDoc = null;
         let currentWallet = null;
+        const budgetHkd = roundMoneyAmount(Number(data?.targetBudget?.budget) || 0);
 
         if (statsRef) {
           statsDoc = await transaction.get(statsRef);
@@ -380,6 +381,13 @@ module.exports = function createCreationRouter(context) {
             companyDisplayName: flyerData.companyDisplayName || "",
             initialBalance: 0,
           });
+
+          const currentCreditBalanceHkd =
+            Number(currentWallet.data.creditBalanceHkd) || 0;
+
+          if (budgetHkd > 0 && currentCreditBalanceHkd < budgetHkd) {
+            throw new Error("__INSUFFICIENT_CREDIT__");
+          }
         }
 
         transaction.set(flyerRef, flyerData);
@@ -428,7 +436,6 @@ module.exports = function createCreationRouter(context) {
         }
 
         if (currentWallet) {
-          const budgetHkd = roundMoneyAmount(Number(data?.targetBudget?.budget) || 0);
           const currentCreditBalanceHkd =
             Number(currentWallet.data.creditBalanceHkd) || 0;
 
@@ -515,6 +522,13 @@ module.exports = function createCreationRouter(context) {
         console.error("Failed to schedule flyer job:", flyerJobError);
       });
     } catch (error) {
+      if (error.message === "__INSUFFICIENT_CREDIT__") {
+        return res.status(402).json({
+          success: false,
+          message: "Insufficient HKD credit to cover target budget",
+        });
+      }
+
       console.error("Error creating flyer:", error);
       res.status(400).json({
         success: false,
