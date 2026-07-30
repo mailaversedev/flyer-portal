@@ -20,6 +20,8 @@ scripts/
 .env
 .env.*
 *.local
+.agents
+skills-lock.json
 
 # Logs and reports
 *.log
@@ -27,3 +29,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 coverage/
+
+# firebase
+.firebaserc
+functions
+firebsae.json
