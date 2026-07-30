@@ -2,6 +2,9 @@ const {setGlobalOptions} = require("firebase-functions");
 const {onObjectFinalized} = require("firebase-functions/v2/storage");
 const {compressFlyerImageHandler} = require("./src/compressFlyerImage");
 
+const SOURCE_BUCKET = "flyer-genie.firebasestorage.app";
+const SOURCE_BUCKET_REGION = "us-east1";
+
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
 // traffic spikes by instead downgrading performance. This limit is a
@@ -14,4 +17,10 @@ const {compressFlyerImageHandler} = require("./src/compressFlyerImage");
 // this will be the maximum concurrent request count.
 setGlobalOptions({maxInstances: 10});
 
-exports.compressFlyerImage = onObjectFinalized(compressFlyerImageHandler);
+exports.compressFlyerImage = onObjectFinalized(
+    {
+      region: SOURCE_BUCKET_REGION,
+      bucket: SOURCE_BUCKET,
+    },
+    compressFlyerImageHandler,
+);
