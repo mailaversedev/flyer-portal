@@ -4,12 +4,9 @@ const sharp = require("sharp");
 
 const storage = new Storage();
 
-const SOURCE_BUCKET =
-  process.env.SOURCE_BUCKET || "flyer-genie.firebasestorage.app";
-const SOURCE_PREFIX =
-  (process.env.SOURCE_PREFIX || "flyer/").replace(/^\/+/, "");
-const DEST_PREFIX =
-  (process.env.DEST_PREFIX || "flyer-thumbnail/").replace(/^\/+/, "");
+const SOURCE_BUCKET = "flyer-genie.firebasestorage.app";
+const SOURCE_PREFIX = "flyers/";
+const DEST_PREFIX = "flyer-thumbnails/";
 
 const IMAGE_CONTENT_TYPES = new Set([
   "image/jpeg",
