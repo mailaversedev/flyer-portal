@@ -145,7 +145,7 @@ const StaffLogin = () => {
           setPassword("");
         } else {
           // Login success
-          localStorage.setItem("token", response.data.token);
+          ApiService.setAccessToken(response.data.token);
           localStorage.setItem("user", JSON.stringify(response.data.user));
           await applyLocale(response.data.user?.locale || locale);
 

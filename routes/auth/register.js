@@ -7,16 +7,20 @@ module.exports = function createRegisterRouter(context) {
     db,
     JWT_SECRET,
     JWT_OPTIONS,
+    LEGACY_JWT_OPTIONS,
+    ROTATING_SESSION_MODE,
     normalizeEmail,
     isValidEmail,
     findUserByEmail,
+    createRefreshSession,
   } = context;
 
   const router = express.Router();
 
   router.post("/register", async (req, res) => {
     try {
-      const { username, password, email } = req.body;
+      const { username, password, email, sessionMode } = req.body;
+      const usesRotatingSession = sessionMode === ROTATING_SESSION_MODE;
       const normalizedUsername = username?.trim();
       const normalizedEmail = normalizeEmail(email);
 
@@ -105,13 +109,33 @@ module.exports = function createRegisterRouter(context) {
         locale: null,
       };
 
-      const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
+      const token = jwt.sign(
+        tokenPayload,
+        JWT_SECRET,
+        usesRotatingSession ? JWT_OPTIONS : LEGACY_JWT_OPTIONS,
+      );
+      const session = usesRotatingSession
+        ? await createRefreshSession({
+            db,
+            userId: result.userId,
+            subjectType: "user",
+            rollingDays: 30,
+            absoluteDays: 90,
+            metadata: { userAgent: req.get("user-agent") || null },
+          })
+        : null;
 
       res.status(201).json({
         success: true,
         message: "User registered successfully and wallet created",
         data: {
           token,
+          ...(session
+            ? {
+                refreshToken: session.refreshToken,
+                refreshTokenExpiresAt: session.expiresAt,
+              }
+            : {}),
           user: tokenPayload,
         },
       });

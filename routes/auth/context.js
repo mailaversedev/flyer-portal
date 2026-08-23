@@ -2,16 +2,31 @@ const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
 
 const { DEFAULT_FROM, createMailTransport } = require("../../services/mailService");
+const {
+  createRefreshSession,
+  rotateRefreshSession,
+  revokeRefreshSession,
+  revokeAllRefreshSessions,
+} = require("./session");
 
 const db = admin.firestore();
 
-const JWT_SECRET = process.env.JWT_SECRET || "flyer-portal-secret-key-2024";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 
 const JWT_OPTIONS = {
-  expiresIn: "24h",
+  expiresIn: "15m",
   issuer: "flyer-portal",
   audience: "flyer-portal-users",
 };
+const LEGACY_JWT_OPTIONS = {
+  ...JWT_OPTIONS,
+  expiresIn: "24h",
+};
+const ROTATING_SESSION_MODE = "rotating";
 
 const RESET_OTP_COLLECTION = "passwordResetOtps";
 
@@ -106,7 +121,15 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+  jwt.verify(
+    token,
+    JWT_SECRET,
+    {
+      algorithms: ["HS256"],
+      issuer: JWT_OPTIONS.issuer,
+      audience: [JWT_OPTIONS.audience, "flyer-portal-staff"],
+    },
+    (err, decoded) => {
     if (err) {
       return res.status(401).json({
         success: false,
@@ -114,15 +137,18 @@ const authenticateToken = (req, res, next) => {
       });
     }
 
-    req.user = decoded;
-    next();
-  });
+      req.user = decoded;
+      next();
+    },
+  );
 };
 
 module.exports = {
   db,
   JWT_SECRET,
   JWT_OPTIONS,
+  LEGACY_JWT_OPTIONS,
+  ROTATING_SESSION_MODE,
   RESET_OTP_COLLECTION,
   normalizeEmail,
   isValidEmail,
@@ -131,5 +157,9 @@ module.exports = {
   findUserByEmail,
   storePasswordResetOtp,
   consumePasswordResetOtp,
+  createRefreshSession,
+  rotateRefreshSession,
+  revokeRefreshSession,
+  revokeAllRefreshSessions,
   authenticateToken,
 };

@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 module.exports = function createLoginRouter(context) {
-  const { db, JWT_SECRET, JWT_OPTIONS } = context;
+  const { db, JWT_SECRET, JWT_OPTIONS, createRefreshSession } = context;
 
   const router = express.Router();
 
@@ -152,6 +152,22 @@ module.exports = function createLoginRouter(context) {
       };
 
       const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
+      const session = await createRefreshSession({
+        db,
+        userId: staffDoc.id,
+        subjectType: "staff",
+        rollingDays: 14,
+        absoluteDays: 30,
+        metadata: { userAgent: req.get("user-agent") || null },
+      });
+
+      res.cookie("staff_refresh_token", session.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/api/auth/staff",
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+      });
 
       await db.collection("staffs").doc(staffDoc.id).update({
         lastLoginAt: new Date().toISOString(),

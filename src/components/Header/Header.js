@@ -115,10 +115,8 @@ const Header = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("company");
+  const handleLogout = async () => {
+    await ApiService.logoutSession();
     localStorage.removeItem("locale");
     navigate("/staff/login");
   };

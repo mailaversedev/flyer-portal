@@ -11,6 +11,7 @@ module.exports = function createPasswordResetRouter(context) {
     storePasswordResetOtp,
     sendPasswordResetEmail,
     consumePasswordResetOtp,
+    revokeAllRefreshSessions,
   } = context;
 
   const router = express.Router();
@@ -98,6 +99,12 @@ module.exports = function createPasswordResetRouter(context) {
       await db.collection("users").doc(userDoc.id).update({
         password: hashedPassword,
         updatedAt: new Date().toISOString(),
+      });
+      await revokeAllRefreshSessions({
+        db,
+        userId: userDoc.id,
+        subjectType: "user",
+        reason: "password_reset",
       });
 
       return res.status(200).json({

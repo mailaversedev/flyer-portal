@@ -22,6 +22,15 @@ const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 class ApiService {
   static _currentCompany = null;
+  static _accessToken = null;
+
+  static getAccessToken() {
+    return ApiService._accessToken;
+  }
+
+  static setAccessToken(token) {
+    ApiService._accessToken = token;
+  }
 
   static async getCurrentCompanyIconFile(company = ApiService._currentCompany) {
     console.log("Getting icon for company:", company);
@@ -72,7 +81,7 @@ class ApiService {
   // Helper method for making API requests
   static async makeRequest(endpoint, options = {}) {
     try {
-      const token = localStorage.getItem("token");
+      const token = ApiService.getAccessToken();
       const shouldAttachToken = options.skipAuth !== true;
 
       const defaultHeaders = {
@@ -88,10 +97,24 @@ class ApiService {
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: defaultHeaders,
+        credentials: "include",
         ...options,
       });
 
       if (!response.ok) {
+        if (response.status === 401 && shouldAttachToken && !options._retried) {
+          try {
+            await ApiService.restoreStaffSession();
+            return ApiService.makeRequest(endpoint, {
+              ...options,
+              _retried: true,
+            });
+          } catch (_error) {
+            await ApiService._logoutSession({ revokeSession: false });
+            throw new Error("Session expired. Please login again.");
+          }
+        }
+
         return await ApiService._handleErrorResponse(response);
       }
 
@@ -126,8 +149,19 @@ class ApiService {
     return errorMessage;
   }
 
-  static async _logoutSession() {
-    localStorage.removeItem("token");
+  static async _logoutSession({ revokeSession = true } = {}) {
+    if (revokeSession) {
+      try {
+        await fetch(`${API_BASE_URL}/api/auth/staff/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (error) {
+        console.warn("Failed to revoke staff session:", error);
+      }
+    }
+
+    ApiService.setAccessToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("company");
 
@@ -188,17 +222,19 @@ class ApiService {
   }
 
   // POST /api/auth/staff/refresh-token - Refresh Staff Token
-  static async refreshStaffToken(token) {
-    // We use fetch directly here to avoid circular dependency with makeRequest's error handling
-    // and because we need specific handling for this endpoint
+  static async refreshStaffToken() {
+    return ApiService.restoreStaffSession();
+  }
+
+  static async restoreStaffSession() {
     const response = await fetch(
       `${API_BASE_URL}/api/auth/staff/refresh-token`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
       },
     );
 
@@ -207,7 +243,11 @@ class ApiService {
       throw new Error(`Token refresh failed: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    if (result?.success && result?.data?.token) {
+      ApiService.setAccessToken(result.data.token);
+    }
+    return result;
   }
 
   // POST /api/flyer - Create flyer (leaflet, query, or qr code)

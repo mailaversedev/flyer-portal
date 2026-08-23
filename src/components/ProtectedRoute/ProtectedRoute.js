@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation } from "react-router";
 import ApiService from "../../services/ApiService";
 import { applyLocale, getPendingLocale } from "../../i18n";
@@ -27,8 +27,13 @@ const formatCountdown = (remainingMs) => {
 };
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
   const location = useLocation();
+  const [token, setToken] = useState(() => ApiService.getAccessToken());
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
+  const [isRecoveringExpiredToken, setIsRecoveringExpiredToken] =
+    useState(false);
+  const [expiredTokenRefreshAttempted, setExpiredTokenRefreshAttempted] =
+    useState(false);
   const [remainingSessionMs, setRemainingSessionMs] = useState(() =>
     getRemainingSessionMs(token),
   );
@@ -36,8 +41,72 @@ const ProtectedRoute = ({ children }) => {
   const [refreshError, setRefreshError] = useState("");
 
   useEffect(() => {
+    const restoreSession = async () => {
+      if (ApiService.getAccessToken()) {
+        setIsRestoringSession(false);
+        return;
+      }
+
+      try {
+        const result = await ApiService.restoreStaffSession();
+        if (result?.data?.token) {
+          setToken(result.data.token);
+          if (result.data.user) {
+            localStorage.setItem("user", JSON.stringify(result.data.user));
+          }
+        }
+      } catch (_error) {
+        // An absent or expired HttpOnly session cookie requires login.
+      } finally {
+        setIsRestoringSession(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
+
+  useEffect(() => {
+    if (
+      isRestoringSession ||
+      !token ||
+      !isTokenExpired(token) ||
+      expiredTokenRefreshAttempted
+    ) {
+      return;
+    }
+
+    let isActive = true;
+    setExpiredTokenRefreshAttempted(true);
+    setIsRecoveringExpiredToken(true);
+
+    ApiService.restoreStaffSession()
+      .then((result) => {
+        if (isActive && result?.data?.token) {
+          setToken(result.data.token);
+          setRemainingSessionMs(getRemainingSessionMs(result.data.token));
+          setExpiredTokenRefreshAttempted(false);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          ApiService.setAccessToken(null);
+          setToken(null);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsRecoveringExpiredToken(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [expiredTokenRefreshAttempted, isRestoringSession, token]);
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
-      const currentToken = localStorage.getItem("token");
+      const currentToken = ApiService.getAccessToken();
       setRemainingSessionMs(getRemainingSessionMs(currentToken));
     }, 1000);
 
@@ -80,8 +149,8 @@ const ProtectedRoute = ({ children }) => {
     [remainingSessionMs],
   );
 
-  const handleManualRefresh = async () => {
-    const currentToken = localStorage.getItem("token");
+  const handleManualRefresh = useCallback(async () => {
+    const currentToken = ApiService.getAccessToken();
 
     if (!currentToken || isTokenExpired(currentToken)) {
       await ApiService.logoutSession();
@@ -92,13 +161,14 @@ const ProtectedRoute = ({ children }) => {
       setIsRefreshingToken(true);
       setRefreshError("");
 
-      const result = await ApiService.refreshStaffToken(currentToken);
+      const result = await ApiService.refreshStaffToken();
 
       if (!result?.success || !result?.data?.token) {
         throw new Error("Failed to refresh session");
       }
 
-      localStorage.setItem("token", result.data.token);
+      ApiService.setAccessToken(result.data.token);
+      setToken(result.data.token);
 
       if (result.data.user) {
         localStorage.setItem("user", JSON.stringify(result.data.user));
@@ -116,11 +186,36 @@ const ProtectedRoute = ({ children }) => {
     } finally {
       setIsRefreshingToken(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (
+      !shouldShowSessionOverlay ||
+      isRefreshingToken ||
+      remainingSessionMs > 60 * 1000
+    ) {
+      return;
+    }
+
+    handleManualRefresh();
+  }, [
+    isRefreshingToken,
+    handleManualRefresh,
+    remainingSessionMs,
+    shouldShowSessionOverlay,
+    token,
+  ]);
+
+  if (
+    isRestoringSession ||
+    isRecoveringExpiredToken ||
+    (token && isTokenExpired(token) && !expiredTokenRefreshAttempted)
+  ) {
+    return null;
+  }
 
   if (!token || isTokenExpired(token)) {
-    // Clear invalid token
-    localStorage.removeItem("token");
+    ApiService.setAccessToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("company");
 

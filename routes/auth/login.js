@@ -3,13 +3,21 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 module.exports = function createLoginRouter(context) {
-  const { db, JWT_SECRET, JWT_OPTIONS } = context;
+  const {
+    db,
+    JWT_SECRET,
+    JWT_OPTIONS,
+    LEGACY_JWT_OPTIONS,
+    ROTATING_SESSION_MODE,
+    createRefreshSession,
+  } = context;
 
   const router = express.Router();
 
   router.post("/login", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username, password, sessionMode } = req.body;
+      const usesRotatingSession = sessionMode === ROTATING_SESSION_MODE;
 
       if (!username || !password) {
         return res.status(400).json({
@@ -56,7 +64,21 @@ module.exports = function createLoginRouter(context) {
         locale: userData.profile?.locale || null,
       };
 
-      const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
+      const token = jwt.sign(
+        tokenPayload,
+        JWT_SECRET,
+        usesRotatingSession ? JWT_OPTIONS : LEGACY_JWT_OPTIONS,
+      );
+      const session = usesRotatingSession
+        ? await createRefreshSession({
+            db,
+            userId: userDoc.id,
+            subjectType: "user",
+            rollingDays: 30,
+            absoluteDays: 90,
+            metadata: { userAgent: req.get("user-agent") || null },
+          })
+        : null;
 
       await db.collection("users").doc(userDoc.id).update({
         lastLoginAt: new Date().toISOString(),
@@ -68,6 +90,12 @@ module.exports = function createLoginRouter(context) {
         message: "Login successful",
         data: {
           token,
+          ...(session
+            ? {
+                refreshToken: session.refreshToken,
+                refreshTokenExpiresAt: session.expiresAt,
+              }
+            : {}),
           user: tokenPayload,
         },
       });

@@ -9,13 +9,17 @@ const {
 
 const db = admin.firestore();
 
-const JWT_SECRET = process.env.JWT_SECRET || "flyer-portal-secret-key-2024";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 
 const normalizeEmail = (value = "") => value.trim().toLowerCase();
 const isValidEmail = (value = "") => /\S+@\S+\.\S+/.test(value);
 
 const JWT_OPTIONS = {
-  expiresIn: "12h",
+  expiresIn: "15m",
   issuer: "flyer-portal",
   audience: "flyer-portal-staff",
 };
@@ -33,4 +37,8 @@ module.exports = {
   INITIAL_COMPANY_TOKENS,
   createCompanyWallet,
   createCompanyWalletTransaction,
+  createRefreshSession: require("../auth/session").createRefreshSession,
+  rotateRefreshSession: require("../auth/session").rotateRefreshSession,
+  revokeRefreshSession: require("../auth/session").revokeRefreshSession,
+  revokeAllRefreshSessions: require("../auth/session").revokeAllRefreshSessions,
 };
