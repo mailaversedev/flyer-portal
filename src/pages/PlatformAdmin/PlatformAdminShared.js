@@ -51,7 +51,11 @@ export const usePlatformAdminData = () => {
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [flyers, setFlyers] = useState([]);
-  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [collectionTotals, setCollectionTotals] = useState({
+    users: 0,
+    companies: 0,
+    flyers: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -61,10 +65,11 @@ export const usePlatformAdminData = () => {
         setLoading(true);
         setError("");
 
-        const [usersResponse, companiesResponse, flyersResponse] = await Promise.all([
+        const [usersResponse, companiesResponse, flyersResponse, totalsResponse] = await Promise.all([
           ApiService.getAdminUsers(),
           ApiService.getAdminCompanies(),
           ApiService.getAdminFlyers(),
+          ApiService.getAdminCollectionTotals(),
         ]);
 
         const nextUsers = usersResponse?.success
@@ -74,10 +79,14 @@ export const usePlatformAdminData = () => {
         setUsers(nextUsers);
         setCompanies(companiesResponse.success ? companiesResponse.data : []);
         setFlyers(flyersResponse.success ? flyersResponse.data : []);
-        setTotalUsersCount(
-          usersResponse?.success
-            ? Number(usersResponse.summary?.totalAudience) || nextUsers.length
-            : 0,
+        setCollectionTotals(
+          totalsResponse?.success
+            ? {
+                users: Number(totalsResponse.data?.users) || 0,
+                companies: Number(totalsResponse.data?.companies) || 0,
+                flyers: Number(totalsResponse.data?.flyers) || 0,
+              }
+            : { users: 0, companies: 0, flyers: 0 },
         );
       } catch (loadError) {
         console.error("Failed to load platform admin data", loadError);
@@ -94,8 +103,9 @@ export const usePlatformAdminData = () => {
     users,
     companies,
     flyers,
-    totalUsersCount,
+    collectionTotals,
     setFlyers,
+    setCollectionTotals,
     setCompanies,
     loading,
     error,
@@ -126,24 +136,21 @@ const getUserStatusMeta = (user, t) => {
 };
 
 export const PlatformAdminSummary = ({
-  users,
-  companies,
-  flyers,
-  totalUsersCount,
+  collectionTotals,
   t,
 }) => (
   <div className="platform-admin-summary">
     <div className="platform-admin-card">
       <span className="platform-admin-label">{t("adminPage.totalUsers")}</span>
-      <strong className="platform-admin-value">{totalUsersCount ?? users.length}</strong>
+      <strong className="platform-admin-value">{collectionTotals.users}</strong>
     </div>
     <div className="platform-admin-card">
       <span className="platform-admin-label">{t("adminPage.totalFlyers")}</span>
-      <strong className="platform-admin-value">{flyers.length}</strong>
+      <strong className="platform-admin-value">{collectionTotals.flyers}</strong>
     </div>
     <div className="platform-admin-card">
       <span className="platform-admin-label">{t("adminPage.totalCompanies")}</span>
-      <strong className="platform-admin-value">{companies.length}</strong>
+      <strong className="platform-admin-value">{collectionTotals.companies}</strong>
     </div>
     <div className="platform-admin-card">
       <Link

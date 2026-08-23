@@ -17,11 +17,10 @@ const PlatformAdmin = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
-    users,
-    companies,
     flyers,
-    totalUsersCount,
+    collectionTotals,
     setFlyers,
+    setCollectionTotals,
     loading,
     error,
   } = usePlatformAdminData();
@@ -80,6 +79,10 @@ const PlatformAdmin = () => {
       await ApiService.deleteAdminFlyer(flyer.id);
 
       setFlyers((prev) => prev.filter((entry) => entry.id !== flyer.id));
+      setCollectionTotals((prev) => ({
+        ...prev,
+        flyers: Math.max(0, prev.flyers - 1),
+      }));
       setStatusFeedback({
         type: "success",
         message: t("adminPage.flyerDeleteSuccess"),
@@ -116,10 +119,7 @@ const PlatformAdmin = () => {
       )}
 
       <PlatformAdminSummary
-        users={users}
-        companies={companies}
-        flyers={flyers}
-        totalUsersCount={totalUsersCount}
+        collectionTotals={collectionTotals}
         t={t}
       />
 
