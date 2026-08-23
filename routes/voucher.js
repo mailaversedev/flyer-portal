@@ -50,12 +50,8 @@ const serializeVoucher = (doc) => {
   };
 };
 
-const isVoucherAvailable = (voucher) => {
+const isVoucherVisible = (voucher) => {
   if (!voucher.isActive) {
-    return false;
-  }
-
-  if (voucher.remainingCount <= 0) {
     return false;
   }
 
@@ -83,7 +79,7 @@ router.get("/vouchers", async (req, res) => {
 
     const vouchers = snapshot.docs
       .map((doc) => serializeVoucher(doc))
-      .filter((voucher) => isVoucherAvailable(voucher));
+      .filter((voucher) => isVoucherVisible(voucher));
 
     res.status(200).json({
       success: true,
