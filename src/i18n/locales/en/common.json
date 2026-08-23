@@ -36,6 +36,7 @@
     "companyDisplayName": "Company Display Name",
     "companyName": "Company Name",
     "companyNature": "Company Nature / Industry",
+    "district": "District",
     "companyIcon": "Company Icon",
     "addressOptional": "Address (Optional)",
     "districtOptional": "District (Optional)",
@@ -86,6 +87,8 @@
     "profileUpdated": "Profile updated successfully!",
     "selectIndustry": "Select Industry...",
     "loadingIndustries": "Loading industries...",
+    "selectDistrict": "Select a district",
+    "loadingDistricts": "Loading districts...",
     "currentCompanyIcon": "Current Company Icon"
   },
   "walletPage": {

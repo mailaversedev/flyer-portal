@@ -15,6 +15,7 @@ const Profile = () => {
   const { t } = useTranslation();
   const [companyName, setCompanyName] = useState("");
   const [companyNature, setCompanyNature] = useState("");
+  const [district, setDistrict] = useState("");
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
   const [website, setWebsite] = useState("");
@@ -25,7 +26,9 @@ const Profile = () => {
   const [companyCoverPreviewUrls, setCompanyCoverPreviewUrls] = useState([]);
   const [currentCoverPhotos, setCurrentCoverPhotos] = useState([]);
   const [companyIndustries, setCompanyIndustries] = useState([]);
+  const [districtOptions, setDistrictOptions] = useState([]);
   const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
   const [locale, setLocale] = useState(
     normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
   );
@@ -55,6 +58,7 @@ const Profile = () => {
         const parsedCompany = JSON.parse(storedCompany);
         setCompanyName(parsedCompany.name || "");
         setCompanyNature(parsedCompany.nature || "");
+        setDistrict(parsedCompany.district || "");
         setAddress(parsedCompany.address || "");
         setContact(parsedCompany.contact || "");
         setWebsite(parsedCompany.website || "");
@@ -99,7 +103,25 @@ const Profile = () => {
       }
     };
 
+    const fetchDistricts = async () => {
+      setIsLoadingDistricts(true);
+      try {
+        const response = await ApiService.getDistricts();
+        if (response.success && Array.isArray(response.data)) {
+          setDistrictOptions(response.data);
+        } else {
+          setDistrictOptions([]);
+        }
+      } catch (fetchError) {
+        console.error("Failed to fetch districts", fetchError);
+        setDistrictOptions([]);
+      } finally {
+        setIsLoadingDistricts(false);
+      }
+    };
+
     fetchCompanyIndustries();
+    fetchDistricts();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -143,6 +165,7 @@ const Profile = () => {
         companyDisplayName: companyDisplayName.trim(),
         name: companyName,
         nature: companyNature,
+        district,
         address: address,
         contact: contact,
         icon: companyIconUrl,
@@ -164,6 +187,7 @@ const Profile = () => {
           companyDisplayName: companyDisplayName.trim(),
           name: companyName,
           nature: companyNature,
+          district,
           address: address,
           contact: contact,
           icon: companyIconUrl,
@@ -263,6 +287,26 @@ const Profile = () => {
               {companyIndustries.map((industry) => (
                 <option key={industry} value={industry}>
                   {industry}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="district">{t("profilePage.district")}</label>
+            <select
+              id="district"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+            >
+              <option value="">
+                {isLoadingDistricts
+                  ? t("profilePage.loadingDistricts")
+                  : t("profilePage.selectDistrict")}
+              </option>
+              {districtOptions.map((districtOption) => (
+                <option key={districtOption} value={districtOption}>
+                  {districtOption}
                 </option>
               ))}
             </select>

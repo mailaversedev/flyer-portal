@@ -42,6 +42,9 @@ const buildLeafletEditPayload = (data) => ({
   header: data.header,
   adContent: data.adContent,
   tags: data.tags,
+  targetBudget: {
+    district: data.targetBudget?.district || data.district || "",
+  },
 });
 
 const getLeafletTokenCost = (resolution = "2K") => {
@@ -53,7 +56,27 @@ const getLeafletTokenCost = (resolution = "2K") => {
 
 const LeafletEditForm = ({ data, onUpdate, t }) => {
   const [newTag, setNewTag] = useState("");
+  const [districtOptions, setDistrictOptions] = useState([]);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(true);
   const tags = data.tags || [];
+  const district = data.targetBudget?.district || data.district || "";
+
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      try {
+        const response = await ApiService.getDistricts();
+        if (response.success && Array.isArray(response.data)) {
+          setDistrictOptions(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load district options:", error);
+      } finally {
+        setIsLoadingDistricts(false);
+      }
+    };
+
+    fetchDistricts();
+  }, []);
 
   const handleAddTag = () => {
     const nextTag = newTag.trim();
@@ -143,6 +166,45 @@ const LeafletEditForm = ({ data, onUpdate, t }) => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="content-section">
+        <h3 className="section-title">{t("creation.targetBudget")}</h3>
+
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label" htmlFor="targetDistrict">
+              {t("targetBudget.district")}
+            </label>
+            <div className="select-wrapper">
+              <select
+                id="targetDistrict"
+                className="form-select"
+                value={district}
+                onChange={(event) =>
+                  onUpdate({
+                    targetBudget: {
+                      ...(data.targetBudget || {}),
+                      district: event.target.value,
+                    },
+                  })
+                }
+                disabled={isLoadingDistricts}
+              >
+                <option value="">
+                  {isLoadingDistricts
+                    ? t("targetBudget.loadingData")
+                    : t("qrGeneration.pleaseSelect")}
+                </option>
+                {districtOptions.map((districtOption) => (
+                  <option key={districtOption} value={districtOption}>
+                    {districtOption}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

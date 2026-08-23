@@ -36,6 +36,7 @@
     "companyDisplayName": "商戶顯示名稱",
     "companyName": "公司名稱",
     "companyNature": "公司性質 / 行業",
+    "district": "地區",
     "companyIcon": "公司圖示",
     "addressOptional": "地址（選填）",
     "districtOptional": "地區（選填）",
@@ -86,6 +87,8 @@
     "profileUpdated": "資料已成功更新！",
     "selectIndustry": "請選擇行業...",
     "loadingIndustries": "正在載入行業...",
+    "selectDistrict": "請選擇地區",
+    "loadingDistricts": "正在載入地區...",
     "currentCompanyIcon": "目前公司圖示"
   },
   "walletPage": {

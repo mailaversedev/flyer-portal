@@ -576,6 +576,7 @@ module.exports = function createCreationRouter(context) {
             "header",
             "adContent",
             "tags",
+            "targetBudget",
           ],
           query: [],
           qr: [
@@ -593,6 +594,19 @@ module.exports = function createCreationRouter(context) {
         const filteredData = Object.fromEntries(
           Object.entries(data).filter(([key]) => editableFields.includes(key)),
         );
+
+        if (existingFlyer.type === "leaflet" && filteredData.targetBudget !== undefined) {
+          const district = filteredData.targetBudget?.district;
+
+          if (typeof district === "string") {
+            filteredData.targetBudget = {
+              ...(existingFlyer.targetBudget || {}),
+              district: district.trim(),
+            };
+          } else {
+            delete filteredData.targetBudget;
+          }
+        }
 
         if (Object.keys(filteredData).length === 0) {
           throw new Error("__NO_EDITABLE_FIELDS__");

@@ -12,6 +12,7 @@ module.exports = function createCompanyRouter(context) {
         companyDisplayName,
         name,
         nature,
+        district,
         address,
         contact,
         icon,
@@ -46,6 +47,9 @@ module.exports = function createCompanyRouter(context) {
       }
       if (nature !== undefined) {
         updateData.nature = nature;
+      }
+      if (district !== undefined) {
+        updateData.district = district;
       }
       if (address !== undefined) {
         updateData.address = address;
