@@ -70,6 +70,10 @@
 }
 
 .platform-admin-name-column {
+  width: 13%;
+}
+
+.platform-admin-email-column {
   width: 15%;
 }
 
@@ -79,13 +83,13 @@
 
 .platform-admin-users-table th.platform-admin-location-column,
 .platform-admin-users-table td.platform-admin-location-column {
-  width: 33%;
+  width: 22%;
   max-width: none;
 }
 
 .platform-admin-users-table th.platform-admin-timestamp-column,
 .platform-admin-users-table td.platform-admin-timestamp-column {
-  width: 15%;
+  width: 14%;
 }
 
 .platform-admin-users-table td .status {

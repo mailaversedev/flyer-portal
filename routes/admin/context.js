@@ -98,6 +98,7 @@ const serializeAdminUser = (doc) => {
     id: doc.id,
     username: data.username || "",
     displayName: data.displayName || "",
+    email: data.email || "",
     createdAt: data.createdAt || null,
     lastLoginAt: data.lastLoginAt || null,
     status: data.isActive !== false ? "active" : "inactive",
