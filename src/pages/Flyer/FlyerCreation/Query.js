@@ -91,6 +91,8 @@ const QueryCreation = () => {
 
       const finalQueryData = {
         ...queryData,
+        scheduledAt:
+          queryData.scheduledAt || queryData.targetBudget?.scheduledAt || null,
         coverPhoto: uploadedFileUrls.coverPhoto || queryData.coverPhoto,
         coupon: queryData.coupon
           ? {

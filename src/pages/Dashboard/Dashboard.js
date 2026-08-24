@@ -40,6 +40,7 @@ const Dashboard = () => {
         "createdAt",
         "desc",
         companyId,
+        true,
       );
       if (response.success) {
         // Transform API data to table format
@@ -50,6 +51,7 @@ const Dashboard = () => {
         let typeCounts = {};
         let count = 0;
 
+        const nowMs = Date.now();
         const formattedData = response.data.map((flyer) => {
           const lottery = flyer.lottery || {};
           const coupon = flyer.coupon || {};
@@ -79,12 +81,21 @@ const Dashboard = () => {
             downloadRateVal = (coupon.downloadCount / lottery.userReached) * 100;
           }
 
+          let statusLabel = flyer.status === "active" ? "Live" : "Inactive";
+          if (
+            flyer.status === "active" &&
+            flyer.scheduledAt &&
+            new Date(flyer.scheduledAt).getTime() > nowMs
+          ) {
+            statusLabel = "Scheduled";
+          }
+
           return {
             id: flyer.id,
             flyerType: flyer.type,
             thumbnail: flyer?.coverPhoto || "📄",
             adTitle: flyer.header || `Promotion ${flyer.id.substr(0, 6)}`,
-            status: flyer.status === "active" ? "Live" : "Inactive",
+            status: statusLabel,
             adType: flyer.type.charAt(0).toUpperCase() + flyer.type.slice(1),
             totalReached: lottery.userReached || 0,
             browseRate:

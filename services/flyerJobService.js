@@ -344,11 +344,19 @@ async function findNextQueuedFlyerJobId() {
     .collection(FLYER_JOB_COLLECTION)
     .where("status", "in", ["queued", "failed"])
     .orderBy("updatedAt", "asc")
-    .limit(1)
+    .limit(10)
     .get();
 
-  if (!queuedSnapshot.empty) {
-    return queuedSnapshot.docs[0].id;
+  const nowMs = Date.now();
+  for (const doc of queuedSnapshot.docs) {
+    const jobData = doc.data() || {};
+    if (jobData.scheduledAt) {
+      const scheduledTimeMs = new Date(jobData.scheduledAt).getTime();
+      if (!Number.isNaN(scheduledTimeMs) && scheduledTimeMs > nowMs) {
+        continue;
+      }
+    }
+    return doc.id;
   }
 
   const staleProcessingSnapshot = await db
@@ -542,6 +550,7 @@ async function scheduleFlyerJob({
   flyerHeader,
   companyIcon,
   amountPerUser,
+  scheduledAt,
 }) {
   const createdAt = getCurrentIsoTimestamp();
   const jobRef = db.collection(FLYER_JOB_COLLECTION).doc();
@@ -554,6 +563,7 @@ async function scheduleFlyerJob({
     flyerHeader: flyerHeader || "",
     companyIcon: companyIcon || null,
     amountPerUser: amountPerUser || 0,
+    scheduledAt: scheduledAt || null,
     usersScanned: 0,
     tokensProcessed: 0,
     successCount: 0,
@@ -565,7 +575,10 @@ async function scheduleFlyerJob({
     updatedAt: createdAt,
   });
 
-  if (shouldProcessFlyerJobsInline()) {
+  const isScheduledFuture =
+    scheduledAt && new Date(scheduledAt).getTime() > Date.now();
+
+  if (shouldProcessFlyerJobsInline() && !isScheduledFuture) {
     setImmediate(() => {
       processFlyerJob(jobRef.id).catch(async (error) => {
         console.error("Error processing flyer job:", error);

@@ -259,16 +259,26 @@ module.exports = function createCreationRouter(context) {
       const { type, data } = req.body;
       const isSuperAdmin = req.user?.role === "super-admin";
       const noReward = isSuperAdmin && Boolean(data?.targetBudget?.noReward);
+      const rawScheduledAt =
+        data?.scheduledAt || data?.targetBudget?.scheduledAt || null;
+      const parsedScheduledAt =
+        rawScheduledAt && !Number.isNaN(new Date(rawScheduledAt).getTime())
+          ? new Date(rawScheduledAt).toISOString()
+          : null;
 
       const flyerRef = db.collection("flyers").doc();
       const flyerData = {
         type,
         ...data,
+        scheduledAt: parsedScheduledAt,
         createdAt: new Date().toISOString(),
         status: "active",
         noReward,
         hideCompanyDetail: isSuperAdmin,
       };
+      if (flyerData.targetBudget) {
+        flyerData.targetBudget.scheduledAt = parsedScheduledAt;
+      }
       flyerData.companyId = req.user.companyId || null;
 
       try {
@@ -518,6 +528,7 @@ module.exports = function createCreationRouter(context) {
         flyerHeader: flyerData.header || "",
         companyIcon: flyerData.companyIcon || null,
         amountPerUser,
+        scheduledAt: parsedScheduledAt,
       }).catch((flyerJobError) => {
         console.error("Failed to schedule flyer job:", flyerJobError);
       });
@@ -577,8 +588,9 @@ module.exports = function createCreationRouter(context) {
             "adContent",
             "tags",
             "targetBudget",
+            "scheduledAt",
           ],
-          query: [],
+          query: ["scheduledAt"],
           qr: [
             "adType",
             "location",
@@ -587,6 +599,7 @@ module.exports = function createCreationRouter(context) {
             "header",
             "productDescriptions",
             "promotionMessage",
+            "scheduledAt",
           ],
         };
 
@@ -595,13 +608,34 @@ module.exports = function createCreationRouter(context) {
           Object.entries(data).filter(([key]) => editableFields.includes(key)),
         );
 
+        if (filteredData.scheduledAt !== undefined) {
+          if (filteredData.scheduledAt) {
+            const parsedDate = new Date(filteredData.scheduledAt);
+            filteredData.scheduledAt = !Number.isNaN(parsedDate.getTime())
+              ? parsedDate.toISOString()
+              : null;
+          } else {
+            filteredData.scheduledAt = null;
+          }
+        }
+
         if (existingFlyer.type === "leaflet" && filteredData.targetBudget !== undefined) {
           const district = filteredData.targetBudget?.district;
+          const scheduledAt =
+            filteredData.scheduledAt !== undefined
+              ? filteredData.scheduledAt
+              : filteredData.targetBudget?.scheduledAt;
 
           if (typeof district === "string") {
             filteredData.targetBudget = {
               ...(existingFlyer.targetBudget || {}),
               district: district.trim(),
+              ...(scheduledAt !== undefined ? { scheduledAt } : {}),
+            };
+          } else if (scheduledAt !== undefined) {
+            filteredData.targetBudget = {
+              ...(existingFlyer.targetBudget || {}),
+              scheduledAt,
             };
           } else {
             delete filteredData.targetBudget;

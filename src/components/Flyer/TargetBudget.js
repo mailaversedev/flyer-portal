@@ -16,6 +16,18 @@ import FlyerPreview from "./FlyerPreview";
 
 import "./TargetBudget.css";
 
+const formatDateTimeLocal = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const TargetBudget = ({
   data,
   onUpdate,
@@ -39,6 +51,8 @@ const TargetBudget = ({
     paymentMethod:
       data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
     noReward: Boolean(data?.targetBudget?.noReward || data?.noReward),
+    scheduledAt:
+      data?.targetBudget?.scheduledAt || data?.scheduledAt || "",
   };
 
   const [districtOptions, setDistrictOptions] = useState([]);
@@ -87,7 +101,7 @@ const TargetBudget = ({
       }
     };
     fetchWallet();
-  }, []);
+  }, [showNoRewardOption]);
 
   // Fetch all buildings automatically when district changes
   useEffect(() => {
@@ -199,6 +213,20 @@ const TargetBudget = ({
       });
     }
   };
+
+  const handleScheduleChange = (value) => {
+    if (!value) {
+      handleInputChange("scheduledAt", null);
+      return;
+    }
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      handleInputChange("scheduledAt", date.toISOString());
+    } else {
+      handleInputChange("scheduledAt", value);
+    }
+  };
+
   const handleHistorySelect = (url) => {
     if (onUpdate) {
       onUpdate({
@@ -430,6 +458,29 @@ const TargetBudget = ({
                 />
                 <span className="checkbox-text">{t("targetBudget.noSpecific")}</span>
               </label>
+            </div>
+          </div>
+
+          {/* Scheduled Date & Time */}
+          <div className="form-group">
+            <label className="form-label">
+              {t("targetBudget.scheduledDateTime")}
+            </label>
+            <input
+              type="datetime-local"
+              className="form-input"
+              value={formatDateTimeLocal(formData.scheduledAt)}
+              onChange={(e) => handleScheduleChange(e.target.value)}
+              min={formatDateTimeLocal(new Date().toISOString())}
+            />
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#64748b",
+                marginTop: "6px",
+              }}
+            >
+              {t("targetBudget.scheduleReleaseHint")}
             </div>
           </div>
 

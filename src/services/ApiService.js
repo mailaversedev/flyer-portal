@@ -278,6 +278,7 @@ class ApiService {
     sortBy = "createdAt",
     direction = "desc",
     companyId = null,
+    includeScheduled = false,
   ) {
     let queryString = `limit=${limit}&sortBy=${sortBy}&direction=${direction}`;
     if (after) {
@@ -285,6 +286,9 @@ class ApiService {
     }
     if (companyId) {
       queryString += `&companyId=${companyId}`;
+    }
+    if (includeScheduled) {
+      queryString += `&includeScheduled=true`;
     }
     return this.makeRequest(`/api/flyers?${queryString}`);
   }

@@ -24,6 +24,7 @@ const DEFAULT_QR_DATA = {
   couponFile: null,
   termsConditions: "",
   expiredDate: "",
+  scheduledAt: null,
 };
 
 const buildQrEditPayload = (data) => ({
@@ -34,6 +35,7 @@ const buildQrEditPayload = (data) => ({
   header: data.header,
   productDescriptions: data.productDescriptions,
   promotionMessage: data.promotionMessage,
+  scheduledAt: data.scheduledAt || data.targetBudget?.scheduledAt || null,
 });
 
 const QRCodeComponent = ({ website }) => {
@@ -253,6 +255,8 @@ const QRGeneration = () => {
       });
       const finalQrData = {
         ...qrData,
+        scheduledAt:
+          qrData.scheduledAt || qrData.targetBudget?.scheduledAt || null,
         coverPhoto: uploadedFileUrls.coverPhoto || qrData.coverPhoto,
         coupon: qrData.coupon
           ? {

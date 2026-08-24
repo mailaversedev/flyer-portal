@@ -28,6 +28,8 @@ module.exports = function createListingRouter(context) {
       }
 
       const flyerData = flyerDoc.data() || {};
+      const isCompanyOwner =
+        req.user?.companyId && flyerData.companyId === req.user.companyId;
 
       if (
         !isSuperAdmin &&
@@ -38,6 +40,16 @@ module.exports = function createListingRouter(context) {
           success: false,
           message: "Flyer not found",
         });
+      }
+
+      if (!isSuperAdmin && !isCompanyOwner && flyerData.scheduledAt) {
+        const scheduledTimeMs = new Date(flyerData.scheduledAt).getTime();
+        if (!Number.isNaN(scheduledTimeMs) && scheduledTimeMs > Date.now()) {
+          return res.status(404).json({
+            success: false,
+            message: "Flyer not found",
+          });
+        }
       }
 
       const flyer = {
@@ -80,6 +92,7 @@ module.exports = function createListingRouter(context) {
         sortBy = "createdAt",
         direction = "desc",
         companyId,
+        includeScheduled,
       } = req.query;
 
       const limitNum = parseInt(limit, 10);
@@ -164,6 +177,18 @@ module.exports = function createListingRouter(context) {
         }
       }
 
+      const nowMs = Date.now();
+      const visibleFlyers =
+        includeScheduled === "true"
+          ? flyers
+          : flyers.filter((flyer) => {
+              if (!flyer.scheduledAt) {
+                return true;
+              }
+              const scheduledTimeMs = new Date(flyer.scheduledAt).getTime();
+              return Number.isNaN(scheduledTimeMs) || scheduledTimeMs <= nowMs;
+            });
+
       let nextCursor = null;
       if (flyers.length === limitNum && flyers.length > 0) {
         nextCursor = flyers[flyers.length - 1].id;
@@ -171,7 +196,7 @@ module.exports = function createListingRouter(context) {
 
       res.status(200).json({
         success: true,
-        data: flyers,
+        data: visibleFlyers,
         pagination: {
           nextCursor,
         },

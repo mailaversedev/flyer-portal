@@ -19,6 +19,18 @@ import {
 import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
+const formatDateTimeLocal = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const DEFAULT_LEAFLET_DATA = {
   companyId: "",
   aspectRatio: "4:5",
@@ -36,14 +48,17 @@ const DEFAULT_LEAFLET_DATA = {
   typography: DEFAULT_TYPOGRAPHY.map((entry) => ({ ...entry })),
   brandVoice: "",
   logoImage: null,
+  scheduledAt: null,
 };
 
 const buildLeafletEditPayload = (data) => ({
   header: data.header,
   adContent: data.adContent,
   tags: data.tags,
+  scheduledAt: data.scheduledAt || data.targetBudget?.scheduledAt || null,
   targetBudget: {
     district: data.targetBudget?.district || data.district || "",
+    scheduledAt: data.scheduledAt || data.targetBudget?.scheduledAt || null,
   },
 });
 
@@ -205,6 +220,40 @@ const LeafletEditForm = ({ data, onUpdate, t }) => {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              {t("targetBudget.scheduledDateTime")}
+            </label>
+            <input
+              type="datetime-local"
+              className="form-input"
+              value={formatDateTimeLocal(data.scheduledAt || data.targetBudget?.scheduledAt)}
+              onChange={(event) => {
+                const value = event.target.value;
+                const isoValue = value && !Number.isNaN(new Date(value).getTime())
+                  ? new Date(value).toISOString()
+                  : null;
+                onUpdate({
+                  scheduledAt: isoValue,
+                  targetBudget: {
+                    ...(data.targetBudget || {}),
+                    scheduledAt: isoValue,
+                  },
+                });
+              }}
+              min={formatDateTimeLocal(new Date().toISOString())}
+            />
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#64748b",
+                marginTop: "6px",
+              }}
+            >
+              {t("targetBudget.scheduleReleaseHint")}
             </div>
           </div>
         </div>
@@ -481,6 +530,7 @@ const LeafletCreation = () => {
 
       const finalData = {
         ...remainingData,
+        scheduledAt: leafletData.scheduledAt || leafletData.targetBudget?.scheduledAt || null,
         companyId: companyId || undefined,
         tags: Array.isArray(leafletData.tags) ? leafletData.tags : [],
         coupon: {
