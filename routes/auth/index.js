@@ -5,6 +5,7 @@ const context = require("./context");
 const createRegisterRouter = require("./register");
 const createPasswordResetRouter = require("./passwordReset");
 const createLoginRouter = require("./login");
+const createBiometricSessionRouter = require("./biometricSession");
 const createRefreshTokenRouter = require("./refreshToken");
 
 const router = express.Router();
@@ -12,6 +13,7 @@ const router = express.Router();
 router.use(createRegisterRouter(context));
 router.use(createPasswordResetRouter(context));
 router.use(createLoginRouter(context));
+router.use(createBiometricSessionRouter(context));
 router.use(createRefreshTokenRouter(context));
 
 module.exports = {
