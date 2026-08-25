@@ -81,7 +81,7 @@ export function PlatformVoucherCard({
         role={isClickable ? "button" : undefined}
         tabIndex={isClickable ? 0 : undefined}
       >
-        <div className={surfaceClassName}>
+        <div className={`${surfaceClassName} platform-vouchers-preview-surface--image`}>
           <div className="platform-vouchers-image-card">
             <img
               src={value.voucherImage}

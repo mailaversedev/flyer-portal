@@ -61,11 +61,16 @@
 
 .platform-vouchers-preview-surface {
   border-radius: 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   aspect-ratio: 3 / 4;
   min-height: 0;
   box-sizing: border-box;
+}
+
+.platform-vouchers-preview-surface--image {
+  padding: 0;
 }
 
 .platform-vouchers-image-card {
