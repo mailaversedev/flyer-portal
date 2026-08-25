@@ -12,7 +12,9 @@ export const DEFAULT_FORM = {
   voucherNumberEnd: "",
   promotionCode: "",
   terms: "",
+  merchantIcon: "",
   voucherImage: "",
+  qrCode: "",
   primaryColor: "#ef3239",
   secondaryColor: "#f76b1c",
 };
@@ -37,6 +39,7 @@ export function PlatformVoucherCard({
   value,
   variant = "list",
   onDelete,
+  onOpen,
 }) {
   const colors = Array.isArray(value.colors) && value.colors.length >= 2
     ? value.colors
@@ -57,10 +60,27 @@ export function PlatformVoucherCard({
     variant === "editor"
       ? "platform-vouchers-preview-surface platform-vouchers-preview-surface--editor"
       : "platform-vouchers-preview-surface platform-vouchers-preview-surface--list";
+  const isClickable = typeof onOpen === "function";
+
+  const handleCardKeyDown = (event) => {
+    if (!isClickable || (event.key !== "Enter" && event.key !== " ")) {
+      return;
+    }
+
+    event.preventDefault();
+    onOpen(value);
+  };
 
   if (hasVoucherImage) {
     return (
-      <article key={cardKey} className="platform-vouchers-cash-card">
+      <article
+        key={cardKey}
+        className={`platform-vouchers-cash-card${isClickable ? " platform-vouchers-cash-card--clickable" : ""}`}
+        onClick={isClickable ? () => onOpen(value) : undefined}
+        onKeyDown={handleCardKeyDown}
+        role={isClickable ? "button" : undefined}
+        tabIndex={isClickable ? 0 : undefined}
+      >
         <div className={surfaceClassName}>
           <div className="platform-vouchers-image-card">
             <img
@@ -75,7 +95,14 @@ export function PlatformVoucherCard({
   }
 
   return (
-    <article key={cardKey} className="platform-vouchers-cash-card">
+    <article
+      key={cardKey}
+      className={`platform-vouchers-cash-card${isClickable ? " platform-vouchers-cash-card--clickable" : ""}`}
+      onClick={isClickable ? () => onOpen(value) : undefined}
+      onKeyDown={handleCardKeyDown}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+    >
       <div
         className={surfaceClassName}
         style={{
@@ -127,7 +154,10 @@ export function PlatformVoucherCard({
               <button
                 type="button"
                 className="platform-vouchers-preview-delete"
-                onClick={() => onDelete(value)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete(value);
+                }}
               >
                 {t("adminPage.deleteFlyer")}
               </button>

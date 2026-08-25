@@ -126,6 +126,9 @@ const PlatformVouchersListPage = () => {
                   validity: formatDate(voucher.expiryDate),
                 }}
                 onDelete={deletingVoucherId === voucher.id ? null : handleDeleteVoucher}
+                onOpen={(selectedVoucher) =>
+                  navigate(`/platform-vouchers/${selectedVoucher.id}/edit`)
+                }
               />
             ))}
           </div>

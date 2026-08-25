@@ -24,6 +24,120 @@ const parseVoucherSequence = ({ voucherCode }) => {
   };
 };
 
+const normalizeVoucherPayload = (body = {}) => {
+  const {
+    value,
+    cost,
+    merchant,
+    merchantIcon,
+    voucherImage,
+    voucherType,
+    voucherPrefix,
+    voucherNumberStart,
+    voucherNumberEnd,
+    expiryDate,
+    totalNumber,
+    qrCode,
+    promotionCode,
+    colors,
+    terms,
+  } = body;
+  const normalizedValue = `${value || ""}`.trim();
+  const normalizedMerchant = `${merchant || ""}`.trim();
+  const normalizedMerchantIcon = `${merchantIcon || ""}`.trim();
+  const normalizedVoucherImage = `${voucherImage || ""}`.trim();
+  const normalizedVoucherType = `${voucherType || "static"}`.trim() || "static";
+  const normalizedVoucherPrefix = `${voucherPrefix || ""}`.trim();
+  const normalizedVoucherNumberStart = `${voucherNumberStart || ""}`.trim();
+  const normalizedVoucherNumberEnd = `${voucherNumberEnd || ""}`.trim();
+  const normalizedPromotionCode = `${promotionCode || ""}`.trim();
+  const normalizedTerms = `${terms || ""}`.trim();
+  const normalizedQrCode = `${qrCode || ""}`.trim();
+  const normalizedCost = Number.parseInt(cost, 10);
+  const normalizedTotalNumber = Number.parseInt(totalNumber, 10);
+  const normalizedExpiryDate = `${expiryDate || ""}`.trim();
+  const normalizedColors = Array.isArray(colors)
+    ? colors
+        .map((color) => `${color || ""}`.trim())
+        .filter((color) => color.length > 0)
+        .slice(0, 4)
+    : [];
+
+  if (!normalizedValue || !normalizedMerchant || !normalizedTerms) {
+    return {
+      error: "Value, merchant, and terms are required",
+    };
+  }
+
+  if (!Number.isFinite(normalizedCost) || normalizedCost <= 0) {
+    return {
+      error: "Cost must be a positive integer",
+    };
+  }
+
+  if (!Number.isFinite(normalizedTotalNumber) || normalizedTotalNumber <= 0) {
+    return {
+      error: "Total number must be a positive integer",
+    };
+  }
+
+  let parsedStartSequence = null;
+  let parsedEndSequence = null;
+
+  if (
+    normalizedVoucherPrefix &&
+    normalizedVoucherNumberStart &&
+    normalizedVoucherNumberEnd
+  ) {
+    const startSequenceResult = parseVoucherSequence({
+      voucherCode: normalizedVoucherNumberStart,
+    });
+    const endSequenceResult = parseVoucherSequence({
+      voucherCode: normalizedVoucherNumberEnd,
+    });
+
+    if (!startSequenceResult.error && !endSequenceResult.error) {
+      parsedStartSequence = startSequenceResult.sequence;
+      parsedEndSequence = endSequenceResult.sequence;
+    }
+  }
+
+  if (normalizedExpiryDate) {
+    const parsedExpiryDate = new Date(normalizedExpiryDate);
+
+    if (Number.isNaN(parsedExpiryDate.getTime())) {
+      return {
+        error: "Expiry date is invalid",
+      };
+    }
+  }
+
+  return {
+    data: {
+      value: normalizedValue,
+      cost: normalizedCost,
+      merchant: normalizedMerchant,
+      merchantIcon: normalizedMerchantIcon,
+      voucherImage: normalizedVoucherImage,
+      voucherType: normalizedVoucherType,
+      voucherPrefix: normalizedVoucherPrefix,
+      voucherNumberStart: normalizedVoucherNumberStart,
+      voucherNumberEnd: normalizedVoucherNumberEnd,
+      voucherStartSequence: parsedStartSequence,
+      voucherEndSequence: parsedEndSequence,
+      expiryDate: normalizedExpiryDate,
+      totalNumber: normalizedTotalNumber,
+      qrCode: normalizedQrCode,
+      promotionCode: normalizedPromotionCode,
+      colors:
+        normalizedColors.length > 0
+          ? normalizedColors
+          : ["#EF3239", "#F76B1C"],
+      terms: normalizedTerms,
+    },
+  };
+};
+
 module.exports = function createVouchersRouter(context) {
   const { db, normalizeLimit } = context;
 
@@ -54,124 +168,56 @@ module.exports = function createVouchersRouter(context) {
     }
   });
 
+  router.get("/vouchers/:voucherId", async (req, res) => {
+    try {
+      const { voucherId } = req.params;
+
+      if (!voucherId) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher ID is required",
+        });
+      }
+
+      const voucherDoc = await db.collection("vouchers").doc(voucherId).get();
+
+      if (!voucherDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: "Voucher not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: serializeVoucher(voucherDoc),
+      });
+    } catch (error) {
+      console.error("Error fetching admin voucher:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch voucher",
+        error: error.message,
+      });
+    }
+  });
+
   router.post("/vouchers", async (req, res) => {
     try {
-      const {
-        value,
-        cost,
-        merchant,
-        merchantIcon,
-        voucherImage,
-        voucherType,
-        voucherPrefix,
-        voucherNumberStart,
-        voucherNumberEnd,
-        expiryDate,
-        totalNumber,
-        qrCode,
-        promotionCode,
-        colors,
-        terms,
-      } = req.body || {};
+      const normalizedVoucher = normalizeVoucherPayload(req.body);
 
-      const normalizedValue = `${value || ""}`.trim();
-      const normalizedMerchant = `${merchant || ""}`.trim();
-      const normalizedMerchantIcon = `${merchantIcon || ""}`.trim();
-      const normalizedVoucherImage = `${voucherImage || ""}`.trim();
-      const normalizedVoucherType = `${voucherType || "static"}`.trim() || "static";
-      const normalizedVoucherPrefix = `${voucherPrefix || ""}`.trim();
-      const normalizedVoucherNumberStart = `${voucherNumberStart || ""}`.trim();
-      const normalizedVoucherNumberEnd = `${voucherNumberEnd || ""}`.trim();
-      const normalizedPromotionCode = `${promotionCode || ""}`.trim();
-      const normalizedTerms = `${terms || ""}`.trim();
-      const normalizedQrCode = `${qrCode || ""}`.trim();
-      const normalizedCost = Number.parseInt(cost, 10);
-      const normalizedTotalNumber = Number.parseInt(totalNumber, 10);
-      const normalizedExpiryDate = `${expiryDate || ""}`.trim();
-      const normalizedColors = Array.isArray(colors)
-        ? colors
-            .map((color) => `${color || ""}`.trim())
-            .filter((color) => color.length > 0)
-            .slice(0, 4)
-        : [];
-
-      if (!normalizedValue || !normalizedMerchant || !normalizedTerms) {
+      if (normalizedVoucher.error) {
         return res.status(400).json({
           success: false,
-          message: "Value, merchant, and terms are required",
+          message: normalizedVoucher.error,
         });
-      }
-
-      if (!Number.isFinite(normalizedCost) || normalizedCost <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Cost must be a positive integer",
-        });
-      }
-
-      if (!Number.isFinite(normalizedTotalNumber) || normalizedTotalNumber <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Total number must be a positive integer",
-        });
-      }
-
-      let parsedStartSequence = null;
-      let parsedEndSequence = null;
-
-      if (
-        normalizedVoucherPrefix &&
-        normalizedVoucherNumberStart &&
-        normalizedVoucherNumberEnd
-      ) {
-        const startSequenceResult = parseVoucherSequence({
-          voucherCode: normalizedVoucherNumberStart,
-        });
-        const endSequenceResult = parseVoucherSequence({
-          voucherCode: normalizedVoucherNumberEnd,
-        });
-
-        if (!startSequenceResult.error && !endSequenceResult.error) {
-          parsedStartSequence = startSequenceResult.sequence;
-          parsedEndSequence = endSequenceResult.sequence;
-        }
-      }
-
-      if (normalizedExpiryDate) {
-        const parsedExpiryDate = new Date(normalizedExpiryDate);
-
-        if (Number.isNaN(parsedExpiryDate.getTime())) {
-          return res.status(400).json({
-            success: false,
-            message: "Expiry date is invalid",
-          });
-        }
       }
 
       const timestamp = new Date().toISOString();
       const voucherRef = db.collection("vouchers").doc();
       const voucherData = {
-        value: normalizedValue,
-        cost: normalizedCost,
-        merchant: normalizedMerchant,
-        merchantIcon: normalizedMerchantIcon,
-        voucherImage: normalizedVoucherImage,
-        voucherType: normalizedVoucherType,
-        voucherPrefix: normalizedVoucherPrefix,
-        voucherNumberStart: normalizedVoucherNumberStart,
-        voucherNumberEnd: normalizedVoucherNumberEnd,
-        voucherStartSequence: parsedStartSequence,
-        voucherEndSequence: parsedEndSequence,
-        expiryDate: normalizedExpiryDate,
-        totalNumber: normalizedTotalNumber,
+        ...normalizedVoucher.data,
         redeemedCount: 0,
-        qrCode: normalizedQrCode,
-        promotionCode: normalizedPromotionCode,
-        colors:
-          normalizedColors.length > 0
-            ? normalizedColors
-            : ["#EF3239", "#F76B1C"],
-        terms: normalizedTerms,
         isActive: true,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -191,6 +237,67 @@ module.exports = function createVouchersRouter(context) {
       res.status(500).json({
         success: false,
         message: "Failed to create voucher",
+        error: error.message,
+      });
+    }
+  });
+
+  router.patch("/vouchers/:voucherId", async (req, res) => {
+    try {
+      const { voucherId } = req.params;
+
+      if (!voucherId) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher ID is required",
+        });
+      }
+
+      const voucherRef = db.collection("vouchers").doc(voucherId);
+      const voucherDoc = await voucherRef.get();
+
+      if (!voucherDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: "Voucher not found",
+        });
+      }
+
+      const normalizedVoucher = normalizeVoucherPayload(req.body);
+
+      if (normalizedVoucher.error) {
+        return res.status(400).json({
+          success: false,
+          message: normalizedVoucher.error,
+        });
+      }
+
+      const redeemedCount = Number(voucherDoc.data()?.redeemedCount) || 0;
+
+      if (normalizedVoucher.data.totalNumber < redeemedCount) {
+        return res.status(400).json({
+          success: false,
+          message: "Total number cannot be less than redeemed count",
+        });
+      }
+
+      await voucherRef.update({
+        ...normalizedVoucher.data,
+        updatedAt: new Date().toISOString(),
+      });
+
+      const updatedVoucher = await voucherRef.get();
+
+      res.status(200).json({
+        success: true,
+        message: "Voucher updated successfully",
+        data: serializeVoucher(updatedVoucher),
+      });
+    } catch (error) {
+      console.error("Error updating voucher:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update voucher",
         error: error.message,
       });
     }

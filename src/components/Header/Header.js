@@ -91,6 +91,10 @@ const Header = () => {
           return t("header.editFlyer");
         }
 
+        if (location.pathname.startsWith("/platform-vouchers/")) {
+          return t("common.vouchers");
+        }
+
         return t("common.dashboard");
     }
   };

@@ -64,12 +64,16 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
+  aspect-ratio: 3 / 4;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 .platform-vouchers-image-card {
   border-radius: 16px;
   overflow: hidden;
-  min-height: 320px;
+  min-height: 0;
+  height: 100%;
   background: #111827;
 }
 
@@ -77,17 +81,11 @@
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 320px;
   object-fit: cover;
 }
 
 .platform-vouchers-preview-surface--editor {
   margin-top: 20px;
-  min-height: 340px;
-}
-
-.platform-vouchers-preview-surface--list {
-  min-height: 320px;
 }
 
 .platform-vouchers-preview-top {
@@ -217,6 +215,16 @@
   min-width: 0;
 }
 
+.platform-vouchers-cash-card--clickable {
+  cursor: pointer;
+}
+
+.platform-vouchers-cash-card--clickable:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 4px;
+  border-radius: 18px;
+}
+
 .platform-vouchers-primary-button,
 .platform-vouchers-secondary-button {
   border: none;
@@ -307,4 +315,5 @@
   .platform-vouchers-card-grid {
     grid-template-columns: 1fr;
   }
+
 }

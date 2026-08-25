@@ -116,6 +116,7 @@ function App() {
                     />
                     <Route path="/platform-vouchers" element={<PlatformVouchersListPage />} />
                     <Route path="/platform-vouchers/create" element={<PlatformVouchersCreatePage />} />
+                    <Route path="/platform-vouchers/:voucherId/edit" element={<PlatformVouchersCreatePage />} />
                     <Route path="/crm-campaigns" element={<CrmCampaignListPage />} />
                     <Route path="/crm-campaigns/create" element={<CrmCampaignCreatePage />} />
                     <Route path="/profile" element={<Profile />} />

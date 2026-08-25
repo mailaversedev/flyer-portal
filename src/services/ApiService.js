@@ -335,9 +335,20 @@ class ApiService {
     );
   }
 
+  static async getAdminVoucher(voucherId) {
+    return this.makeRequest(`/api/admin/vouchers/${voucherId}`);
+  }
+
   static async createAdminVoucher(voucherData) {
     return this.makeRequest("/api/admin/vouchers", {
       method: "POST",
+      body: JSON.stringify(voucherData),
+    });
+  }
+
+  static async updateAdminVoucher(voucherId, voucherData) {
+    return this.makeRequest(`/api/admin/vouchers/${voucherId}`, {
+      method: "PATCH",
       body: JSON.stringify(voucherData),
     });
   }

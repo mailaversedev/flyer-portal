@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { Navigate, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
@@ -14,6 +14,8 @@ import "./PlatformVouchers.css";
 const PlatformVouchersCreatePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { voucherId } = useParams();
+  const isEditing = Boolean(voucherId);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [merchantIconFile, setMerchantIconFile] = useState(null);
   const [voucherImageFile, setVoucherImageFile] = useState(null);
@@ -21,6 +23,7 @@ const PlatformVouchersCreatePage = () => {
   const [merchantIconPreviewUrl, setMerchantIconPreviewUrl] = useState("");
   const [voucherImagePreviewUrl, setVoucherImagePreviewUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loadingVoucher, setLoadingVoucher] = useState(isEditing);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -52,8 +55,72 @@ const PlatformVouchersCreatePage = () => {
     };
   }, [voucherImageFile]);
 
+  useEffect(() => {
+    if (!isEditing) {
+      setLoadingVoucher(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadVoucher = async () => {
+      try {
+        setLoadingVoucher(true);
+        setError("");
+
+        const response = await ApiService.getAdminVoucher(voucherId);
+
+        if (!response?.success || !response.data) {
+          throw new Error(response?.message || t("voucherAdminPage.loadDetailError"));
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const voucher = response.data;
+        const colors = Array.isArray(voucher.colors) ? voucher.colors : [];
+
+        setFormData({
+          ...DEFAULT_FORM,
+          ...voucher,
+          value: `${voucher.value ?? ""}`,
+          cost: `${voucher.cost ?? ""}`,
+          totalNumber: `${voucher.totalNumber ?? ""}`,
+          expiryDate: voucher.expiryDate ? `${voucher.expiryDate}`.slice(0, 10) : "",
+          primaryColor: colors[0] || DEFAULT_FORM.primaryColor,
+          secondaryColor: colors[1] || DEFAULT_FORM.secondaryColor,
+        });
+      } catch (loadError) {
+        console.error("Failed to load voucher", loadError);
+
+        if (isMounted) {
+          setError(loadError.message || t("voucherAdminPage.loadDetailError"));
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingVoucher(false);
+        }
+      }
+    };
+
+    loadVoucher();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isEditing, t, voucherId]);
+
   if (!isSuperAdmin()) {
     return <Navigate to="/platform-admin" replace />;
+  }
+
+  if (loadingVoucher) {
+    return (
+      <div className="platform-vouchers-page">
+        <div className="platform-vouchers-state">{t("voucherAdminPage.loading")}</div>
+      </div>
+    );
   }
 
   const previewMerchant = formData.merchant.trim() || t("voucherAdminPage.previewMerchant");
@@ -128,9 +195,9 @@ const PlatformVouchersCreatePage = () => {
         }
       }
 
-      let merchantIconUrl = "";
-      let voucherImageUrl = "";
-      let qrCodeUrl = "";
+      let merchantIconUrl = formData.merchantIcon || "";
+      let voucherImageUrl = formData.voucherImage || "";
+      let qrCodeUrl = formData.qrCode || "";
 
       if (merchantIconFile) {
         const uploadResponse = await ApiService.uploadFile(
@@ -171,9 +238,9 @@ const PlatformVouchersCreatePage = () => {
         qrCodeUrl = uploadResponse.url;
       }
 
-      const response = await ApiService.createAdminVoucher({
+      const voucherData = {
         merchant: formData.merchant.trim(),
-        merchantIcon: merchantIconUrl ?? "",
+        merchantIcon: merchantIconUrl,
         voucherImage: voucherImageUrl,
         value: formData.value.trim(),
         cost: formData.cost,
@@ -187,18 +254,35 @@ const PlatformVouchersCreatePage = () => {
         qrCode: qrCodeUrl,
         terms: formData.terms.trim(),
         colors: [formData.primaryColor, formData.secondaryColor],
-      });
+      };
+
+      const response = isEditing
+        ? await ApiService.updateAdminVoucher(voucherId, voucherData)
+        : await ApiService.createAdminVoucher(voucherData);
 
       if (!response?.success) {
-        throw new Error(response?.message || t("voucherAdminPage.createError"));
+        throw new Error(
+          response?.message ||
+            t(isEditing ? "voucherAdminPage.updateError" : "voucherAdminPage.createError"),
+        );
       }
 
       navigate("/platform-vouchers", {
-        state: { successMessage: t("voucherAdminPage.createSuccess") },
+        state: {
+          successMessage: t(
+            isEditing ? "voucherAdminPage.updateSuccess" : "voucherAdminPage.createSuccess",
+          ),
+        },
       });
     } catch (submitError) {
-      console.error("Failed to create voucher", submitError);
-      setError(submitError.message || t("voucherAdminPage.createError"));
+      console.error(
+        `Failed to ${isEditing ? "update" : "create"} voucher`,
+        submitError,
+      );
+      setError(
+        submitError.message ||
+          t(isEditing ? "voucherAdminPage.updateError" : "voucherAdminPage.createError"),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -210,8 +294,16 @@ const PlatformVouchersCreatePage = () => {
         <section className="platform-vouchers-form-card">
           <div className="platform-vouchers-header-row">
             <div className="platform-vouchers-header">
-              <h2>{t("voucherAdminPage.createTitle")}</h2>
-              <p>{t("voucherAdminPage.createSubtitle")}</p>
+              <h2>
+                {t(isEditing ? "voucherAdminPage.editTitle" : "voucherAdminPage.createTitle")}
+              </h2>
+              <p>
+                {t(
+                  isEditing
+                    ? "voucherAdminPage.editSubtitle"
+                    : "voucherAdminPage.createSubtitle",
+                )}
+              </p>
             </div>
             <button
               type="button"
@@ -323,7 +415,9 @@ const PlatformVouchersCreatePage = () => {
               <textarea name="terms" rows="5" value={formData.terms} onChange={handleChange} required />
             </label>
             <button type="submit" className="platform-vouchers-submit" disabled={submitting}>
-              {submitting ? t("voucherAdminPage.submitting") : t("voucherAdminPage.submit")}
+              {submitting
+                ? t(isEditing ? "voucherAdminPage.updating" : "voucherAdminPage.submitting")
+                : t(isEditing ? "voucherAdminPage.updateSubmit" : "voucherAdminPage.submit")}
             </button>
           </form>
         </section>
@@ -339,8 +433,8 @@ const PlatformVouchersCreatePage = () => {
               t={t}
               value={{
                 merchant: previewMerchant,
-                merchantIcon: merchantIconPreviewUrl,
-                voucherImage: voucherImagePreviewUrl,
+                merchantIcon: merchantIconPreviewUrl || formData.merchantIcon,
+                voucherImage: voucherImagePreviewUrl || formData.voucherImage,
                 value: previewValue,
                 cost: previewCost,
                 validity: previewExpiryDate,
