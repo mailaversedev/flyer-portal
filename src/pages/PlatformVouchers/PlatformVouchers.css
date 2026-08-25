@@ -284,6 +284,55 @@
   padding: 6px;
 }
 
+.platform-vouchers-file-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #4b5563;
+  border-radius: 10px;
+  background: #1f2937;
+}
+
+.platform-vouchers-file-url,
+.platform-vouchers-file-placeholder,
+.platform-vouchers-file-selected {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.platform-vouchers-file-url {
+  flex: 1;
+  color: #93c5fd;
+}
+
+.platform-vouchers-file-placeholder,
+.platform-vouchers-file-selected {
+  color: #9ca3af;
+}
+
+.platform-vouchers-file-selected {
+  flex: 1;
+}
+
+.platform-vouchers-file-button {
+  flex: 0 0 auto;
+  border: 1px solid #64748b;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #374151;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.platform-vouchers-file-input {
+  display: none;
+}
+
 .platform-vouchers-submit {
   grid-column: 1 / -1;
   height: 46px;
@@ -320,4 +369,18 @@
     grid-template-columns: 1fr;
   }
 
+}
+
+@media (max-width: 640px) {
+  .platform-vouchers-file-field {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .platform-vouchers-file-url,
+  .platform-vouchers-file-placeholder,
+  .platform-vouchers-file-selected {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }

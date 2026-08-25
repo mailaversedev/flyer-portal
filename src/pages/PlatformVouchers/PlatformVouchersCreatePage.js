@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 
@@ -16,6 +16,7 @@ const PlatformVouchersCreatePage = () => {
   const navigate = useNavigate();
   const { voucherId } = useParams();
   const isEditing = Boolean(voucherId);
+  const voucherImageInputRef = useRef(null);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [merchantIconFile, setMerchantIconFile] = useState(null);
   const [voucherImageFile, setVoucherImageFile] = useState(null);
@@ -154,6 +155,12 @@ const PlatformVouchersCreatePage = () => {
     }));
   };
 
+  const handleVoucherImageChange = (event) => {
+    setVoucherImageFile(event.target.files?.[0] || null);
+    // Allow selecting the same file again after replacing an image.
+    event.target.value = "";
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -218,11 +225,17 @@ const PlatformVouchersCreatePage = () => {
           "voucherImage",
         );
 
-        if (!uploadResponse?.success || !uploadResponse?.url) {
+        const uploadedVoucherImageUrl = `${uploadResponse?.url || ""}`.trim();
+
+        if (!uploadResponse?.success || !uploadedVoucherImageUrl) {
           throw new Error(t("voucherAdminPage.uploadVoucherImageError"));
         }
 
-        voucherImageUrl = uploadResponse.url;
+        voucherImageUrl = uploadedVoucherImageUrl;
+        setFormData((current) => ({
+          ...current,
+          voucherImage: uploadedVoucherImageUrl,
+        }));
       }
 
       if (qrCodeFile) {
@@ -337,13 +350,46 @@ const PlatformVouchersCreatePage = () => {
             </label>
             <label className="full-width">
               <span>{t("voucherAdminPage.voucherImage")}</span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                onChange={(event) =>
-                  setVoucherImageFile(event.target.files?.[0] || null)
-                }
-              />
+              <div className="platform-vouchers-file-field">
+                {formData.voucherImage ? (
+                  <a
+                    href={formData.voucherImage}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="platform-vouchers-file-url"
+                    title={formData.voucherImage}
+                  >
+                    {formData.voucherImage}
+                  </a>
+                ) : (
+                  <span className="platform-vouchers-file-placeholder">
+                    {t("voucherAdminPage.noVoucherImage")}
+                  </span>
+                )}
+                {voucherImageFile ? (
+                  <span className="platform-vouchers-file-selected">
+                    {t("voucherAdminPage.selectedFile", { name: voucherImageFile.name })}
+                  </span>
+                ) : null}
+                <button
+                  type="button"
+                  className="platform-vouchers-file-button"
+                  onClick={() => voucherImageInputRef.current?.click()}
+                >
+                  {t(
+                    voucherImageFile
+                      ? "voucherAdminPage.reselectVoucherImage"
+                      : "voucherAdminPage.selectVoucherImage",
+                  )}
+                </button>
+                <input
+                  ref={voucherImageInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="platform-vouchers-file-input"
+                  onChange={handleVoucherImageChange}
+                />
+              </div>
             </label>
             <label>
               <span>{t("voucherAdminPage.value")}</span>
