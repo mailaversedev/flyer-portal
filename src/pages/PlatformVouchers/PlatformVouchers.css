@@ -61,7 +61,6 @@
 
 .platform-vouchers-preview-surface {
   border-radius: 16px;
-  padding: 16px;
   display: flex;
   flex-direction: column;
   aspect-ratio: 3 / 4;
