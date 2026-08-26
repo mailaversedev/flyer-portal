@@ -129,6 +129,8 @@ async function compressFlyerImageHandler(event) {
     },
   });
 
+  await destinationFile.makePublic();
+
   console.log("Compressed thumbnail written", {
     source: objectName,
     destination: destinationName,
