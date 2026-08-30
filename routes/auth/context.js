@@ -18,7 +18,7 @@ if (!JWT_SECRET) {
 }
 
 const JWT_OPTIONS = {
-  expiresIn: "15m",
+  expiresIn: "2h",
   issuer: "flyer-portal",
   audience: "flyer-portal-users",
 };

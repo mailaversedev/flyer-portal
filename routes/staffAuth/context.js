@@ -19,7 +19,7 @@ const normalizeEmail = (value = "") => value.trim().toLowerCase();
 const isValidEmail = (value = "") => /\S+@\S+\.\S+/.test(value);
 
 const JWT_OPTIONS = {
-  expiresIn: "15m",
+  expiresIn: "1h",
   issuer: "flyer-portal",
   audience: "flyer-portal-staff",
 };
