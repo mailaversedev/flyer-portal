@@ -1,6 +1,6 @@
-export const MIN_BUDGET = 500;
+export const MIN_BUDGET = 100;
 export const MAX_BUDGET = 50000;
-export const DEFAULT_BUDGET = 1000;
+export const DEFAULT_BUDGET = 500;
 
 export const validateTargetBudgetStep = ({
   data,

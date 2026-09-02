@@ -500,7 +500,7 @@ const TargetBudget = ({
                   type="range"
                   min={MIN_BUDGET}
                   max={MAX_BUDGET}
-                  step="1000"
+                  step="100"
                   value={formData.budget}
                   onChange={(e) => handleBudgetChange(parseInt(e.target.value))}
                   className="budget-slider"
