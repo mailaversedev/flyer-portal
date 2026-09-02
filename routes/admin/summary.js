@@ -6,8 +6,9 @@ module.exports = function createAdminSummaryRouter(context) {
 
   router.get("/summary", async (_req, res) => {
     try {
-      const [usersSnapshot, companiesSnapshot, flyersSnapshot, creditRequestsSnapshot, flyerGenerationsSnapshot] = await Promise.all([
+      const [usersSnapshot, crmContactsSnapshot, companiesSnapshot, flyersSnapshot, creditRequestsSnapshot, flyerGenerationsSnapshot] = await Promise.all([
         db.collection("users").count().get(),
+        db.collection("crm_contacts").count().get(),
         db.collection("companies").count().get(),
         db.collection("flyers").count().get(),
         db.collection("creditRequests").count().get(),
@@ -23,7 +24,9 @@ module.exports = function createAdminSummaryRouter(context) {
       res.status(200).json({
         success: true,
         data: {
-          users: usersSnapshot.data().count || 0,
+          users:
+            (usersSnapshot.data().count || 0) +
+            (crmContactsSnapshot.data().count || 0),
           companies: companiesSnapshot.data().count || 0,
           flyers: flyersSnapshot.data().count || 0,
           creditRequests: creditRequestsSnapshot.data().count || 0,
