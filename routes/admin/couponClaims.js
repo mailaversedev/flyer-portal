@@ -45,11 +45,16 @@ module.exports = function createCouponClaimsRouter(context) {
 
       const data = claims.map((claim) => {
         const flyer = flyerLookup.get(claim.flyerId) || {};
+        const flyerCoupon = flyer.coupon || {};
         return {
           ...claim,
           flyerTitle:
             flyer.header ||
             (claim.flyerId ? `Promotion ${claim.flyerId.slice(0, 6)}` : "-"),
+          flyerCoupon: {
+            downloadCount: flyerCoupon.downloadCount ?? 0,
+            quantity: flyerCoupon.quantity ?? null,
+          },
           user: userLookup.get(claim.userId) || null,
         };
       });
