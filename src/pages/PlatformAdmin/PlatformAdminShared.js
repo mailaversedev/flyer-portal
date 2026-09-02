@@ -55,6 +55,8 @@ export const usePlatformAdminData = () => {
     users: 0,
     companies: 0,
     flyers: 0,
+    creditRequests: 0,
+    flyerGenerations: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -85,8 +87,17 @@ export const usePlatformAdminData = () => {
                 users: Number(totalsResponse.data?.users) || 0,
                 companies: Number(totalsResponse.data?.companies) || 0,
                 flyers: Number(totalsResponse.data?.flyers) || 0,
+                creditRequests: Number(totalsResponse.data?.creditRequests) || 0,
+                flyerGenerations:
+                  Number(totalsResponse.data?.flyerGenerations) || 0,
               }
-            : { users: 0, companies: 0, flyers: 0 },
+            : {
+                users: 0,
+                companies: 0,
+                flyers: 0,
+                creditRequests: 0,
+                flyerGenerations: 0,
+              },
         );
       } catch (loadError) {
         console.error("Failed to load platform admin data", loadError);
@@ -149,6 +160,12 @@ export const PlatformAdminSummary = ({
       <strong className="platform-admin-value">{collectionTotals.flyers}</strong>
     </div>
     <div className="platform-admin-card">
+      <span className="platform-admin-label">{t("adminPage.totalFlyerGenerations")}</span>
+      <strong className="platform-admin-value">
+        {collectionTotals.flyerGenerations}
+      </strong>
+    </div>
+    <div className="platform-admin-card">
       <span className="platform-admin-label">{t("adminPage.totalCompanies")}</span>
       <strong className="platform-admin-value">{collectionTotals.companies}</strong>
     </div>
@@ -157,8 +174,10 @@ export const PlatformAdminSummary = ({
         to="/platform-admin/credit-requests"
         className="platform-admin-card-link"
       >
-        <span className="platform-admin-label">Credit Requests</span>
-        <strong className="platform-admin-value">View &rarr;</strong>
+        <span className="platform-admin-label">{t("adminPage.totalCreditRequests")}</span>
+        <strong className="platform-admin-value">
+          {collectionTotals.creditRequests}
+        </strong>
       </Link>
     </div>
   </div>

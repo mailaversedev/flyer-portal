@@ -12,6 +12,7 @@ import {
   Shield,
   Gift,
   Users,
+  ClipboardList,
 } from "lucide-react";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./Sidebar.css";
@@ -42,6 +43,12 @@ const Sidebar = () => {
           name: t("adminPage.companiesTab"),
           path: "/platform-admin/companies",
           icon: Building2,
+          isChild: true,
+        },
+        {
+          name: t("adminPage.creditRequestsTab"),
+          path: "/platform-admin/credit-requests",
+          icon: ClipboardList,
           isChild: true,
         },
         {
