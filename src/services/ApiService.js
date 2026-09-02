@@ -440,6 +440,28 @@ class ApiService {
     return this.makeRequest(`/api/admin/credit-requests?${params.toString()}`);
   }
 
+  static async getAdminCouponClaims({ limit = 50, cursor = "" } = {}) {
+    const params = new URLSearchParams({ limit: String(limit) });
+
+    if (cursor) {
+      params.set("cursor", cursor);
+    }
+
+    return this.makeRequest(`/api/admin/coupon-claims?${params.toString()}`);
+  }
+
+  static async getAdminVoucherRedemptions({ limit = 50, cursor = "" } = {}) {
+    const params = new URLSearchParams({ limit: String(limit) });
+
+    if (cursor) {
+      params.set("cursor", cursor);
+    }
+
+    return this.makeRequest(
+      `/api/admin/voucher-redemptions?${params.toString()}`,
+    );
+  }
+
   static async grantCreditRequest(id) {
     return this.makeRequest(`/api/admin/credit-requests/${id}/grant`, {
       method: "POST",

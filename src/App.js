@@ -15,6 +15,8 @@ import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
 import PlatformAdminUsersPage from "./pages/PlatformAdmin/PlatformAdminUsersPage";
 import PlatformAdminCompaniesPage from "./pages/PlatformAdmin/PlatformAdminCompaniesPage";
 import PlatformAdminCreditRequestsPage from "./pages/PlatformAdmin/PlatformAdminCreditRequestsPage";
+import PlatformAdminCouponClaimsPage from "./pages/PlatformAdmin/PlatformAdminCouponClaimsPage";
+import PlatformAdminVoucherRedemptionsPage from "./pages/PlatformAdmin/PlatformAdminVoucherRedemptionsPage";
 import PlatformVouchersListPage from "./pages/PlatformVouchers/PlatformVouchersListPage";
 import PlatformVouchersCreatePage from "./pages/PlatformVouchers/PlatformVouchersCreatePage";
 import CrmCampaignListPage from "./pages/CrmCampaigns/CrmCampaignListPage";
@@ -113,6 +115,14 @@ function App() {
                     <Route
                       path="/platform-admin/credit-requests"
                       element={<PlatformAdminCreditRequestsPage />}
+                    />
+                    <Route
+                      path="/platform-admin/coupon-claims"
+                      element={<PlatformAdminCouponClaimsPage />}
+                    />
+                    <Route
+                      path="/platform-admin/voucher-redemptions"
+                      element={<PlatformAdminVoucherRedemptionsPage />}
                     />
                     <Route path="/platform-vouchers" element={<PlatformVouchersListPage />} />
                     <Route path="/platform-vouchers/create" element={<PlatformVouchersCreatePage />} />

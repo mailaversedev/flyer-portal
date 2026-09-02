@@ -300,6 +300,92 @@ export const PlatformAdminCompaniesTable = ({
   </div>
 );
 
+export const PlatformAdminCouponClaimsTable = ({
+  claims = [],
+  t,
+  emptyMessage = null,
+}) => (
+  <table className="campaigns-table platform-admin-engagement-table">
+    <thead>
+      <tr>
+        <th>{t("adminPage.username")}</th>
+        <th>{t("adminPage.email")}</th>
+        <th>{t("adminPage.flyerTitle")}</th>
+        <th>{t("adminPage.couponType")}</th>
+        <th>{t("adminPage.claimedAt")}</th>
+        <th>{t("adminPage.status")}</th>
+        <th>{t("adminPage.used")}</th>
+        <th>{t("adminPage.usedAmount")}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {claims.map((claim) => (
+        <tr key={claim.id} className="campaign-row-disabled">
+          <td>{claim.user?.username || t("adminPage.deletedUser")}</td>
+          <td>{claim.user?.email || "-"}</td>
+          <td className="platform-admin-text-cell">
+            {claim.flyerTitle || "-"}
+          </td>
+          <td>{claim.couponType || "-"}</td>
+          <td>{formatDate(claim.claimedAt)}</td>
+          <td>{claim.status || "-"}</td>
+          <td>{claim.isUsed ? t("adminPage.yes") : t("adminPage.no")}</td>
+          <td>{claim.usedAmount ?? "-"}</td>
+        </tr>
+      ))}
+      {claims.length === 0 && (
+        <tr>
+          <td colSpan="8" className="platform-admin-empty-cell">
+            {emptyMessage || t("adminPage.noCouponClaims")}
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+);
+
+export const PlatformAdminVoucherRedemptionsTable = ({
+  redemptions = [],
+  t,
+  emptyMessage = null,
+}) => (
+  <table className="campaigns-table platform-admin-engagement-table">
+    <thead>
+      <tr>
+        <th>{t("adminPage.username")}</th>
+        <th>{t("adminPage.email")}</th>
+        <th>{t("adminPage.voucherMerchant")}</th>
+        <th>{t("adminPage.voucherValue")}</th>
+        <th>{t("adminPage.voucherCost")}</th>
+        <th>{t("adminPage.redemptionStatus")}</th>
+        <th>{t("adminPage.createdAt")}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {redemptions.map((redemption) => (
+        <tr key={redemption.id} className="campaign-row-disabled">
+          <td>{redemption.user?.username || t("adminPage.deletedUser")}</td>
+          <td>{redemption.user?.email || "-"}</td>
+          <td>{redemption.voucher?.merchant || "-"}</td>
+          <td>{redemption.voucher?.value || "-"}</td>
+          <td>{formatHkd(redemption.voucher?.cost)}</td>
+          <td>
+            {redemption.redemptionStatus || redemption.status || "-"}
+          </td>
+          <td>{formatDate(redemption.createdAt)}</td>
+        </tr>
+      ))}
+      {redemptions.length === 0 && (
+        <tr>
+          <td colSpan="7" className="platform-admin-empty-cell">
+            {emptyMessage || t("adminPage.noVoucherRedemptions")}
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+);
+
 export const PlatformAdminFlyersTable = ({
   flyers,
   t,

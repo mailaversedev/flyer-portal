@@ -10,6 +10,8 @@ const createVouchersRouter = require("./vouchers");
 const createFlyersRouter = require("./flyers");
 const createCreditRequestsRouter = require("./creditRequests");
 const createAdminSummaryRouter = require("./summary");
+const createCouponClaimsRouter = require("./couponClaims");
+const createVoucherRedemptionsRouter = require("./voucherRedemptions");
 
 const router = express.Router();
 
@@ -21,6 +23,8 @@ router.use(createCompaniesRouter(context));
 router.use(createVouchersRouter(context));
 router.use(createFlyersRouter(context));
 router.use(createCreditRequestsRouter(context));
+router.use(createCouponClaimsRouter(context));
+router.use(createVoucherRedemptionsRouter(context));
 router.use(createAdminSummaryRouter(context));
 
 module.exports = router;

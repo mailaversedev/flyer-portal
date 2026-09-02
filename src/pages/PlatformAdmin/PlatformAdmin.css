@@ -134,6 +134,20 @@
   font-size: 0.92rem;
 }
 
+.platform-admin-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px 20px 20px;
+  border-top: 1px solid #3a4553;
+}
+
+.platform-admin-engagement-table th,
+.platform-admin-engagement-table td {
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .platform-admin-feedback-popup {
   position: fixed;
   top: 24px;

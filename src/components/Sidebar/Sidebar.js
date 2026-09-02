@@ -13,6 +13,8 @@ import {
   Gift,
   Users,
   ClipboardList,
+  Ticket,
+  BadgeCheck,
 } from "lucide-react";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./Sidebar.css";
@@ -49,6 +51,18 @@ const Sidebar = () => {
           name: t("adminPage.creditRequestsTab"),
           path: "/platform-admin/credit-requests",
           icon: ClipboardList,
+          isChild: true,
+        },
+        {
+          name: t("adminPage.couponClaimsTab"),
+          path: "/platform-admin/coupon-claims",
+          icon: Ticket,
+          isChild: true,
+        },
+        {
+          name: t("adminPage.voucherRedemptionsTab"),
+          path: "/platform-admin/voucher-redemptions",
+          icon: BadgeCheck,
           isChild: true,
         },
         {
