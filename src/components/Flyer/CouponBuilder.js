@@ -188,17 +188,19 @@ const DigitalCoupon = ({
       >
         {renderCouponValue()}
 
-        <div
-          style={{
-            color: "rgba(0,0,0,0.54)",
-            margin: "8px 0",
-            fontSize: "14px",
-            fontWeight: "500",
-            lineHeight: "1.2",
-          }}
-        >
-          {description || t("couponBuilder.itemDescription")}
-        </div>
+        {couponType !== "free" && (
+          <div
+            style={{
+              color: "rgba(0,0,0,0.54)",
+              margin: "8px 0",
+              fontSize: "14px",
+              fontWeight: "500",
+              lineHeight: "1.2",
+            }}
+          >
+            {description || t("couponBuilder.itemDescription")}
+          </div>
+        )}
 
         <div style={{ color: "rgba(0,0,0,0.38)", fontSize: "12px" }}>
           {t("couponBuilder.offerValidUntil", { date: expire || "YYYY-MM-DD" })}
