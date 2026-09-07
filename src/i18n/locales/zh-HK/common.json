@@ -260,7 +260,7 @@
     "noVoucherImage": "未選擇禮券圖片",
     "selectedFile": "已選擇：{{name}}",
     "value": "禮券面值",
-    "cost": "代幣成本",
+    "cost": "代幣成本（每代幣 HK${{price}}）",
     "expiryDate": "到期日",
     "totalNumber": "總數量",
     "voucherType": "禮券類型",

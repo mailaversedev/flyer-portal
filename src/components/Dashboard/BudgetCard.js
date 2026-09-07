@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { tokensToHkd } from "../../config/billingConfig";
 import UserMetrics from "./UserMetrics";
 import "./BudgetCard.css";
 
@@ -53,7 +54,7 @@ const BudgetCard = ({ metrics }) => {
           <span className="currency">HK$</span>
           <span className="amount">
             {totalBudget
-              ? (totalBudget * 0.02).toLocaleString(i18n.language, {
+              ? tokensToHkd(totalBudget).toLocaleString(i18n.language, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })

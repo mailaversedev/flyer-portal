@@ -5,6 +5,7 @@ import PerformanceStats from "../../components/Dashboard/PerformanceStats";
 import CarbonFootprint from "../../components/Dashboard/CarbonFootprint";
 import CampaignTable from "../../components/Dashboard/CampaignTable";
 import ApiService from "../../services/ApiService";
+import { tokensToHkd } from "../../config/billingConfig";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -101,10 +102,10 @@ const Dashboard = () => {
             browseRate:
               browseRateVal > 0 ? browseRateVal.toFixed(2) + "%" : "-",
             totalBudget: lottery.pool
-              ? `HK$${(lottery.pool * 0.02).toFixed(2)}`
+              ? `HK$${tokensToHkd(lottery.pool).toFixed(2)}`
               : "-",
             remainingPool: lottery.remaining
-              ? `HK$${(lottery.remaining * 0.02).toFixed(2)}`
+              ? `HK$${tokensToHkd(lottery.remaining).toFixed(2)}`
               : "-",
             costPerBrowse: "-",
             downloadRate: downloadRateVal > 0 ? downloadRateVal.toFixed(2) + "%" : "-",

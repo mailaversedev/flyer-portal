@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
+import { hkdToTokens, TOKEN_PRICE_HKD } from "../../config/billingConfig";
 import { DEFAULT_FORM, formatDate } from "../../components/PlatformVouchers";
 import { PlatformVoucherCard } from "../../components/PlatformVouchers/PlatformVoucherCard";
 import "./PlatformVouchers.css";
@@ -123,9 +124,23 @@ const PlatformVouchersCreatePage = () => {
 
   const previewMerchant = formData.merchant.trim() || t("voucherAdminPage.previewMerchant");
   const previewValue = formData.value.trim() || "100";
-  const previewCost = formData.cost.trim() || "50000";
   const previewExpiryDate = formatDate(formData.expiryDate) || "-";
   const requiresVoucherRange = formData.voucherType === "numbered";
+  const startSequence = Number.parseInt(formData.voucherNumberStart, 10);
+  const endSequence = Number.parseInt(formData.voucherNumberEnd, 10);
+  const calculatedQuantity =
+    requiresVoucherRange &&
+    Number.isFinite(startSequence) &&
+    Number.isFinite(endSequence) &&
+    endSequence >= startSequence
+      ? endSequence - startSequence + 1
+      : "";
+  const voucherValue = Number.parseFloat(formData.value);
+  const calculatedCost =
+    Number.isFinite(voucherValue) && voucherValue > 0
+      ? Math.ceil(hkdToTokens(voucherValue))
+      : "";
+  const previewCost = `${calculatedCost || formData.cost || "50000"}`;
 
   const parseVoucherSequence = (voucherNumber, prefix) => {
     const normalizedPrefix = `${prefix || ""}`.trim();
@@ -165,7 +180,9 @@ const PlatformVouchersCreatePage = () => {
     setSubmitting(true);
 
     try {
-      const totalNumber = Number.parseInt(formData.totalNumber, 10);
+      const totalNumber = requiresVoucherRange
+        ? calculatedQuantity
+        : Number.parseInt(formData.totalNumber, 10);
 
       if (!Number.isFinite(totalNumber) || totalNumber <= 0) {
         throw new Error(t("voucherAdminPage.totalNumberInvalid"));
@@ -253,7 +270,7 @@ const PlatformVouchersCreatePage = () => {
         merchantIcon: merchantIconUrl,
         voucherImage: voucherImageUrl,
         value: formData.value.trim(),
-        cost: formData.cost,
+        cost: calculatedCost || formData.cost,
         expiryDate: formData.expiryDate,
         totalNumber,
         voucherType: formData.voucherType,
@@ -393,8 +410,15 @@ const PlatformVouchersCreatePage = () => {
               <input name="value" value={formData.value} onChange={handleChange} required />
             </label>
             <label>
-              <span>{t("voucherAdminPage.cost")}</span>
-              <input name="cost" type="number" min="1" value={formData.cost} onChange={handleChange} required />
+              <span>{t("voucherAdminPage.cost", { price: TOKEN_PRICE_HKD })}</span>
+              <input
+                name="cost"
+                type="number"
+                min="1"
+                value={calculatedCost}
+                readOnly
+                required
+              />
             </label>
             <label>
               <span>{t("voucherAdminPage.expiryDate")}</span>
@@ -402,7 +426,15 @@ const PlatformVouchersCreatePage = () => {
             </label>
             <label>
               <span>{t("voucherAdminPage.totalNumber")}</span>
-              <input name="totalNumber" type="number" min="1" value={formData.totalNumber} onChange={handleChange} required />
+              <input
+                name="totalNumber"
+                type="number"
+                min="1"
+                value={requiresVoucherRange ? calculatedQuantity : formData.totalNumber}
+                onChange={handleChange}
+                readOnly={requiresVoucherRange}
+                required
+              />
             </label>
             <label>
               <span>{t("voucherAdminPage.voucherType")}</span>

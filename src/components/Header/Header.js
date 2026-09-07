@@ -122,7 +122,6 @@ const Header = () => {
   const handleLogout = async () => {
     await ApiService.logoutSession();
     localStorage.removeItem("locale");
-    navigate("/staff/login");
   };
 
   return (

@@ -261,7 +261,7 @@
     "noVoucherImage": "No voucher image selected",
     "selectedFile": "Selected: {{name}}",
     "value": "Voucher Value",
-    "cost": "Token Cost",
+    "cost": "Token Cost (HK${{price}} per token)",
     "expiryDate": "Expiry Date",
     "totalNumber": "Quantity",
     "voucherType": "Voucher Type",

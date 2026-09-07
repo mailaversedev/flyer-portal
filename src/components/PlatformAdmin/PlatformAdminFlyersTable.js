@@ -1,5 +1,6 @@
 import React from "react";
 
+import { tokensToHkd } from "../../config/billingConfig";
 import { formatDate, getFlyerStatusLabel } from "./index";
 
 export const PlatformAdminFlyersTable = ({
@@ -30,8 +31,8 @@ export const PlatformAdminFlyersTable = ({
       adType: flyer.type ? flyer.type.charAt(0).toUpperCase() + flyer.type.slice(1) : "-",
       totalReached,
       browseRate: browseRate > 0 ? `${browseRate.toFixed(2)}%` : "-",
-      totalBudget: lottery.pool ? `HK$${(lottery.pool * 0.02).toFixed(2)}` : "-",
-      remainingPool: lottery.remaining ? `HK$${(lottery.remaining * 0.02).toFixed(2)}` : "-",
+      totalBudget: lottery.pool ? `HK$${tokensToHkd(lottery.pool).toFixed(2)}` : "-",
+      remainingPool: lottery.remaining ? `HK$${tokensToHkd(lottery.remaining).toFixed(2)}` : "-",
       downloadRate: downloadRate > 0 ? `${downloadRate.toFixed(2)}%` : "-",
       createdAt: formatDate(flyer.createdAt),
       rawStatus: flyer.status || "",
