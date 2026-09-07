@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Coupons from "./pages/Coupons/Coupons";
+import CouponClaims from "./pages/Coupons/CouponClaims";
 import Marketplace from "./pages/Marketplace/Marketplace";
 import Flyer from "./pages/Flyer/Flyer";
 import LeafletCreation from "./pages/Flyer/FlyerCreation/Leaflet";
@@ -69,6 +70,14 @@ function App() {
                       element={
                         <SuperAdminRedirect>
                           <Coupons />
+                        </SuperAdminRedirect>
+                      }
+                    />
+                    <Route
+                      path="/coupons/claims"
+                      element={
+                        <SuperAdminRedirect>
+                          <CouponClaims />
                         </SuperAdminRedirect>
                       }
                     />

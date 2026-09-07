@@ -99,6 +99,12 @@ const Sidebar = () => {
           icon: Percent,
         },
         {
+          name: t("common.couponClaims"),
+          path: "/coupons/claims",
+          icon: Ticket,
+          isChild: true,
+        },
+        {
           name: t("common.flyer"),
           path: "/flyer",
           icon: FileText,

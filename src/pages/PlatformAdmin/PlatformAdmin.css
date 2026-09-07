@@ -182,6 +182,11 @@
   font-size: 0.88rem;
 }
 
+.platform-admin-claim-status-used {
+  color: #86efac !important;
+  font-weight: 700;
+}
+
 .platform-admin-feedback-popup {
   position: fixed;
   top: 24px;

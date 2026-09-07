@@ -1,5 +1,11 @@
 const express = require("express");
 const admin = require("firebase-admin");
+const {
+  encodeCursor,
+  getCursorSnapshot,
+  getDocumentsByIds,
+  normalizePageLimit,
+} = require("./admin/engagementHelpers");
 
 const router = express.Router();
 const db = admin.firestore();
@@ -88,6 +94,7 @@ router.post("/claim", async (req, res) => {
     const couponData = {
       userId,
       flyerId,
+      companyId: flyerData.companyId || null,
       companyIcon: flyerData.companyIcon || "",
 
       // Coupon Details from Flyer Data
@@ -224,6 +231,70 @@ router.post("/claim", async (req, res) => {
   }
 });
 
+// GET /company-claims - Get paginated claims for flyers owned by the current company
+router.get("/company-claims", async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Company ID is required",
+      });
+    }
+
+    const limit = normalizePageLimit(req.query.limit);
+    const cursorSnapshot = await getCursorSnapshot(db, req.query.cursor, ["users/"]);
+    let query = db
+      .collectionGroup("coupons")
+      .where("companyId", "==", companyId)
+      .orderBy("claimedAt", "desc")
+      .limit(limit + 1);
+
+    if (cursorSnapshot) {
+      query = query.startAfter(cursorSnapshot);
+    }
+
+    const snapshot = await query.get();
+    const hasMore = snapshot.docs.length > limit;
+    const claimDocs = hasMore ? snapshot.docs.slice(0, limit) : snapshot.docs;
+    const claims = claimDocs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const flyerLookup = await getDocumentsByIds(
+      db,
+      "flyers",
+      claims.map((claim) => claim.flyerId),
+    );
+    const data = claims.map((claim) => {
+      const flyer = flyerLookup.get(claim.flyerId) || {};
+      const flyerCoupon = flyer.coupon || {};
+
+      return {
+        ...claim,
+        flyerTitle:
+          flyer.header ||
+          (claim.flyerId ? `Promotion ${claim.flyerId.slice(0, 6)}` : "-"),
+        flyerCoupon: {
+          downloadCount: flyerCoupon.downloadCount ?? 0,
+          quantity: flyerCoupon.quantity ?? null,
+        },
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+      nextCursor: hasMore ? encodeCursor(claimDocs.at(-1).ref.path) : null,
+    });
+  } catch (error) {
+    console.error("Error fetching company coupon claims:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch coupon claims",
+      error: error.message,
+    });
+  }
+});
+
 // GET /my-coupons - Get all coupons claimed by the user
 router.get("/my-coupons", async (req, res) => {
   try {
@@ -242,13 +313,25 @@ router.get("/my-coupons", async (req, res) => {
 
     const snapshot = await query.get();
 
-    const coupons = [];
-    snapshot.forEach((doc) => {
-      coupons.push({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
+    const coupons = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const claim = { id: doc.id, ...doc.data() };
+        const flyerDoc = claim.flyerId
+          ? await db.collection("flyers").doc(claim.flyerId).get()
+          : null;
+        const flyer = flyerDoc?.exists ? flyerDoc.data() : {};
+        const flyerCoupon = flyer.coupon || {};
+
+        return {
+          ...claim,
+          flyerTitle: flyer.header || "",
+          flyerCoupon: {
+            downloadCount: flyerCoupon.downloadCount ?? 0,
+            quantity: flyerCoupon.quantity ?? null,
+          },
+        };
+      }),
+    );
 
     res.status(200).json({
       success: true,

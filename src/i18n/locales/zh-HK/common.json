@@ -2,6 +2,7 @@
   "common": {
     "dashboard": "主頁",
     "coupons": "優惠券",
+    "couponClaims": "我的優惠券領取",
     "marketplace": "市集",
     "flyer": "傳單",
     "vouchers": "禮券",
@@ -157,6 +158,7 @@
     "unlimited": "不限",
     "used": "已使用",
     "notUsed": "未使用",
+    "claimStatus": "狀態",
     "claimedAt": "領取時間",
     "usedAmount": "使用金額",
     "voucherMerchant": "商戶",

@@ -2,6 +2,7 @@
   "common": {
     "dashboard": "Dashboard",
     "coupons": "Coupons",
+    "couponClaims": "My Coupon Claims",
     "marketplace": "Marketplace",
     "flyer": "Flyer",
     "vouchers": "Vouchers",
@@ -157,6 +158,7 @@
     "unlimited": "Unlimited",
     "used": "Used",
     "notUsed": "Not Used",
+    "claimStatus": "Status",
     "claimedAt": "Claimed At",
     "usedAmount": "Used Amount",
     "voucherMerchant": "Merchant",

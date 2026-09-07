@@ -450,6 +450,16 @@ class ApiService {
     return this.makeRequest(`/api/admin/coupon-claims?${params.toString()}`);
   }
 
+  static async getCompanyCouponClaims({ limit = 20, cursor = "" } = {}) {
+    const params = new URLSearchParams({ limit: String(limit) });
+
+    if (cursor) {
+      params.set("cursor", cursor);
+    }
+
+    return this.makeRequest(`/api/coupon/company-claims?${params.toString()}`);
+  }
+
   static async getAdminVoucherRedemptions({ limit = 50, cursor = "" } = {}) {
     const params = new URLSearchParams({ limit: String(limit) });
 

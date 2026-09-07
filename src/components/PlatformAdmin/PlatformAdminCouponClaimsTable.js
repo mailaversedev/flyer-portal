@@ -1,6 +1,11 @@
 import React from "react";
 
-export const PlatformAdminCouponClaimsTable = ({ claims = [], t, emptyMessage = null }) => {
+export const PlatformAdminCouponClaimsTable = ({
+  claims = [],
+  t,
+  emptyMessage = null,
+  userView = false,
+}) => {
   const groupedClaims = claims.reduce((groups, claim) => {
     const flyerId = claim.flyerId || claim.id;
     const group = groups.get(flyerId);
@@ -9,8 +14,8 @@ export const PlatformAdminCouponClaimsTable = ({ claims = [], t, emptyMessage = 
     return groups;
   }, new Map());
   const flyerGroups = [...groupedClaims.values()];
-  return <table className="campaigns-table platform-admin-engagement-table"><thead><tr><th>{t("adminPage.flyerTitle")}</th><th>{t("adminPage.couponType")}</th><th>{t("adminPage.downloadCount")}</th><th>{t("adminPage.quantity")}</th><th>{t("adminPage.claimedUsers")}</th></tr></thead><tbody>
-    {flyerGroups.map((group) => <tr key={group.id} className="campaign-row-disabled"><td className="platform-admin-text-cell">{group.flyerTitle || "-"}</td><td>{group.couponType || "-"}</td><td>{group.flyerCoupon.downloadCount ?? 0}</td><td>{group.flyerCoupon.quantity ?? t("adminPage.unlimited")}</td><td><div className="platform-admin-user-list">{group.claims.map((claim) => <div className="platform-admin-user-list-item" key={claim.id}><strong>{claim.user?.username || t("adminPage.deletedUser")}</strong><span>{claim.user?.email || "-"}</span><span>{claim.isUsed ? t("adminPage.used") : t("adminPage.notUsed")}{claim.usedAmount != null ? ` · ${claim.usedAmount}` : ""}</span></div>)}</div></td></tr>)}
-    {flyerGroups.length === 0 && <tr><td colSpan="5" className="platform-admin-empty-cell">{emptyMessage || t("adminPage.noCouponClaims")}</td></tr>}
+  return <table className="campaigns-table platform-admin-engagement-table"><thead><tr><th>{t("adminPage.flyerTitle")}</th><th>{t("adminPage.couponType")}</th>{userView ? <th>{t("adminPage.claimStatus")}</th> : <><th>{t("adminPage.downloadCount")}</th><th>{t("adminPage.quantity")}</th><th>{t("adminPage.claimedUsers")}</th></>}</tr></thead><tbody>
+    {flyerGroups.map((group) => <tr key={group.id} className="campaign-row-disabled"><td className="platform-admin-text-cell">{group.flyerTitle || "-"}</td><td>{group.couponType || "-"}</td>{userView ? <td><div className="platform-admin-user-list">{group.claims.map((claim) => <span className={claim.isUsed ? "platform-admin-claim-status platform-admin-claim-status-used" : "platform-admin-claim-status"} key={claim.id}>{claim.isUsed ? t("adminPage.used") : t("adminPage.notUsed")}</span>)}</div></td> : <><td>{group.flyerCoupon.downloadCount ?? 0}</td><td>{group.flyerCoupon.quantity ?? t("adminPage.unlimited")}</td><td><div className="platform-admin-user-list">{group.claims.map((claim) => <div className="platform-admin-user-list-item" key={claim.id}><strong>{claim.user?.username || t("adminPage.deletedUser")}</strong><span>{claim.user?.email || "-"}</span><span>{claim.isUsed ? t("adminPage.used") : t("adminPage.notUsed")}{claim.usedAmount != null ? ` · ${claim.usedAmount}` : ""}</span></div>)}</div></td></>}</tr>)}
+    {flyerGroups.length === 0 && <tr><td colSpan={userView ? "3" : "5"} className="platform-admin-empty-cell">{emptyMessage || t("adminPage.noCouponClaims")}</td></tr>}
   </tbody></table>;
 };

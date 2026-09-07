@@ -1,16 +1,14 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Navigate } from "react-router";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
-import { isSuperAdmin } from "../../utils/AuthUtil";
 import { PlatformAdminCouponClaimsTable } from "../../components/PlatformAdmin/PlatformAdminCouponClaimsTable";
 import "../../components/Dashboard/CampaignTable.css";
-import "./PlatformAdmin.css";
+import "../PlatformAdmin/PlatformAdmin.css";
 
 const PAGE_SIZE = 20;
 
-const PlatformAdminCouponClaimsPage = () => {
+const CouponClaims = () => {
   const { t } = useTranslation();
   const [claims, setClaims] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
@@ -18,44 +16,58 @@ const PlatformAdminCouponClaimsPage = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  const loadClaims = useCallback(async ({ cursor = "", replace = false } = {}) => {
-    try {
-      if (replace) {
-        setLoading(true);
-        setError("");
-      } else {
-        setLoadingMore(true);
-      }
+  useEffect(() => {
+    let isMounted = true;
 
-      const response = await ApiService.getAdminCouponClaims({
+    const loadClaims = async () => {
+      try {
+        const response = await ApiService.getCompanyCouponClaims({ limit: PAGE_SIZE });
+        if (!isMounted) return;
+
+        if (!response?.success) {
+          throw new Error(response?.message || t("adminPage.loadError"));
+        }
+
+        setClaims(Array.isArray(response.data) ? response.data : []);
+        setNextCursor(response.nextCursor || null);
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError.message || t("adminPage.loadError"));
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadClaims();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
+
+  const loadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+
+    try {
+      setLoadingMore(true);
+      const response = await ApiService.getCompanyCouponClaims({
         limit: PAGE_SIZE,
-        cursor,
+        cursor: nextCursor,
       });
 
       if (!response?.success) {
         throw new Error(response?.message || t("adminPage.loadError"));
       }
 
-      setClaims((previous) =>
-        replace ? response.data || [] : [...previous, ...(response.data || [])],
-      );
+      setClaims((previous) => [...previous, ...(response.data || [])]);
       setNextCursor(response.nextCursor || null);
     } catch (loadError) {
-      console.error("Failed to load admin coupon claims", loadError);
       setError(loadError.message || t("adminPage.loadError"));
     } finally {
-      setLoading(false);
       setLoadingMore(false);
     }
-  }, [t]);
-
-  useEffect(() => {
-    loadClaims({ replace: true });
-  }, [loadClaims]);
-
-  if (!isSuperAdmin()) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  };
 
   return (
     <div className="platform-admin-page">
@@ -66,7 +78,12 @@ const PlatformAdminCouponClaimsPage = () => {
           ) : error ? (
             <div className="table-loading">{error}</div>
           ) : (
-            <PlatformAdminCouponClaimsTable claims={claims} t={t} />
+            <PlatformAdminCouponClaimsTable
+              claims={claims}
+              t={t}
+              userView
+              emptyMessage={t("adminPage.noCouponClaims")}
+            />
           )}
         </div>
         {!loading && !error && nextCursor && (
@@ -74,7 +91,7 @@ const PlatformAdminCouponClaimsPage = () => {
             <button
               type="button"
               className="platform-admin-page-button"
-              onClick={() => loadClaims({ cursor: nextCursor })}
+              onClick={loadMore}
               disabled={loadingMore}
             >
               {loadingMore ? t("adminPage.loadingMore") : t("adminPage.loadMore")}
@@ -86,4 +103,4 @@ const PlatformAdminCouponClaimsPage = () => {
   );
 };
 
-export default PlatformAdminCouponClaimsPage;
+export default CouponClaims;
