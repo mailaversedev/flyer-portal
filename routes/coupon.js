@@ -4,6 +4,7 @@ const {
   encodeCursor,
   getCursorSnapshot,
   getDocumentsByIds,
+  getUserLookup,
   normalizePageLimit,
 } = require("./admin/engagementHelpers");
 
@@ -259,17 +260,24 @@ router.get("/company-claims", async (req, res) => {
     const hasMore = snapshot.docs.length > limit;
     const claimDocs = hasMore ? snapshot.docs.slice(0, limit) : snapshot.docs;
     const claims = claimDocs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    const flyerLookup = await getDocumentsByIds(
-      db,
-      "flyers",
-      claims.map((claim) => claim.flyerId),
-    );
+    const [flyerLookup, userLookup] = await Promise.all([
+      getDocumentsByIds(
+        db,
+        "flyers",
+        claims.map((claim) => claim.flyerId),
+      ),
+      getUserLookup(
+        db,
+        claims.map((claim) => claim.userId),
+      ),
+    ]);
     const data = claims.map((claim) => {
       const flyer = flyerLookup.get(claim.flyerId) || {};
       const flyerCoupon = flyer.coupon || {};
 
       return {
         ...claim,
+        user: userLookup.get(claim.userId) || null,
         flyerTitle:
           flyer.header ||
           (claim.flyerId ? `Promotion ${claim.flyerId.slice(0, 6)}` : "-"),

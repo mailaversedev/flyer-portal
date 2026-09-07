@@ -183,7 +183,24 @@
 }
 
 .platform-admin-claim-status-used {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(134, 239, 172, 0.35);
   color: #86efac !important;
+  font-weight: 700;
+}
+
+.platform-admin-claim-status-unused {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #cbd5e1 !important;
   font-weight: 700;
 }
 
