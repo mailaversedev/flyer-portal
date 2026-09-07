@@ -164,6 +164,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 48px;
   padding-bottom: 10px;
   border-bottom: 1px solid #3a4553;
 }
@@ -171,6 +172,10 @@
 .platform-admin-user-list-item:last-child {
   padding-bottom: 0;
   border-bottom: none;
+}
+
+.platform-admin-claim-status-list .platform-admin-user-list-item {
+  justify-content: center;
 }
 
 .platform-admin-user-list-item strong {
