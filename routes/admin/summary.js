@@ -11,7 +11,7 @@ module.exports = function createAdminSummaryRouter(context) {
         db.collection("crm_contacts").count().get(),
         db.collection("companies").count().get(),
         db.collection("flyers").count().get(),
-        db.collection("creditRequests").count().get(),
+        db.collection("creditRequests").get(),
         db
           .collection("transactions")
           .where("ownerType", "==", "company")
@@ -21,6 +21,11 @@ module.exports = function createAdminSummaryRouter(context) {
           .get(),
       ]);
 
+      const creditRequestAmountHkd = creditRequestsSnapshot.docs.reduce(
+        (total, doc) => total + (Number(doc.data()?.amount) || 0),
+        0,
+      );
+
       res.status(200).json({
         success: true,
         data: {
@@ -29,7 +34,8 @@ module.exports = function createAdminSummaryRouter(context) {
             (crmContactsSnapshot.data().count || 0),
           companies: companiesSnapshot.data().count || 0,
           flyers: flyersSnapshot.data().count || 0,
-          creditRequests: creditRequestsSnapshot.data().count || 0,
+          creditRequests: creditRequestsSnapshot.size || 0,
+          creditRequestAmountHkd: Math.round(creditRequestAmountHkd * 100) / 100,
           flyerGenerations: flyerGenerationsSnapshot.data().count || 0,
         },
       });

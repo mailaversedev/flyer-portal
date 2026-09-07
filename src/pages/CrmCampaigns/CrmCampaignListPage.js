@@ -2,16 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 
 import { isSuperAdmin } from "../../utils/AuthUtil";
-import {
-  CrmCampaignHero,
-  CrmCampaignListSection,
-  CrmCampaignPreviewCard,
-  CrmCampaignSelectedCard,
-  CrmCampaignSummaryGrid,
-  EMPTY_PREVIEW_TEMPLATE,
-  useCrmCampaignDashboard,
-  DEFAULT_TEMPLATE,
-} from "./CrmCampaigns.shared";
+import { CrmCampaignHero } from "../../components/CrmCampaigns/CrmCampaignHero";
+import { CrmCampaignListSection } from "../../components/CrmCampaigns/CrmCampaignListSection";
+import { CrmCampaignPreviewCard } from "../../components/CrmCampaigns/CrmCampaignPreviewCard";
+import { CrmCampaignSelectedCard } from "../../components/CrmCampaigns/CrmCampaignSelectedCard";
+import { CrmCampaignSummaryGrid } from "../../components/CrmCampaigns/CrmCampaignSummaryGrid";
+import { DEFAULT_TEMPLATE, EMPTY_PREVIEW_TEMPLATE } from "../../components/CrmCampaigns";
+import { useCrmCampaignDashboard } from "../../components/CrmCampaigns";
 import "./CrmCampaigns.css";
 
 const CrmCampaignListPage = () => {

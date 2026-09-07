@@ -5,11 +5,9 @@ import { useNavigate } from "react-router";
 
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
-import {
-  PlatformAdminFlyersTable,
-  PlatformAdminSummary,
-  usePlatformAdminData,
-} from "./PlatformAdminShared";
+import { PlatformAdminFlyersTable } from "../../components/PlatformAdmin/PlatformAdminFlyersTable";
+import { PlatformAdminSummary } from "../../components/PlatformAdmin/PlatformAdminSummary";
+import { usePlatformAdminData } from "../../components/PlatformAdmin";
 import "../../components/Dashboard/CampaignTable.css";
 import "./PlatformAdmin.css";
 

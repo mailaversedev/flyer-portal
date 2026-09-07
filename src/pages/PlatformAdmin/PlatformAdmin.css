@@ -42,6 +42,12 @@
   line-height: 1;
 }
 
+.platform-admin-secondary-value {
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .platform-admin-empty-cell {
   padding: 20px;
   text-align: center;

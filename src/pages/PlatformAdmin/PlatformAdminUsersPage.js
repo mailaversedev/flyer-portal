@@ -4,9 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
-import {
-  PlatformAdminUsersTable,
-} from "./PlatformAdminShared";
+import { PlatformAdminUsersTable } from "../../components/PlatformAdmin/PlatformAdminUsersTable";
 import "../../components/Dashboard/CampaignTable.css";
 import "./PlatformAdmin.css";
 

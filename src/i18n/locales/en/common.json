@@ -144,6 +144,7 @@
     "totalFlyers": "Total Flyers",
     "totalFlyerGenerations": "Flyer Generations",
     "totalCreditRequests": "Credit Requests",
+    "totalCreditRequestAmount": "Total Amount: {{amount}}",
     "couponClaimsTitle": "Coupon Claims",
     "couponClaimsSubtitle": "Coupon claims grouped by flyer with download limits and claimed users.",
     "voucherRedemptionsTitle": "Voucher Redemptions",

@@ -16,16 +16,12 @@ import {
 
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
-import {
-  CrmCampaignHero,
-  CrmCampaignPreviewCard,
-  CrmCampaignSelectedCard,
-  CrmCampaignSummaryGrid,
-  DEFAULT_TEMPLATE,
-  SIMPLE_EMAIL_RE,
-  stripHtml,
-  useCrmCampaignDashboard,
-} from "./CrmCampaigns.shared";
+import { CrmCampaignHero } from "../../components/CrmCampaigns/CrmCampaignHero";
+import { CrmCampaignPreviewCard } from "../../components/CrmCampaigns/CrmCampaignPreviewCard";
+import { CrmCampaignSelectedCard } from "../../components/CrmCampaigns/CrmCampaignSelectedCard";
+import { CrmCampaignSummaryGrid } from "../../components/CrmCampaigns/CrmCampaignSummaryGrid";
+import { DEFAULT_TEMPLATE, SIMPLE_EMAIL_RE, stripHtml } from "../../components/CrmCampaigns";
+import { useCrmCampaignDashboard } from "../../components/CrmCampaigns";
 import "./CrmCampaigns.css";
 
 const CrmCampaignCreatePage = () => {

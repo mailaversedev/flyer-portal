@@ -4,11 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
-import {
-  DEFAULT_FORM,
-  PlatformVoucherCard,
-  formatDate,
-} from "./PlatformVouchers.shared";
+import { DEFAULT_FORM, formatDate } from "../../components/PlatformVouchers";
+import { PlatformVoucherCard } from "../../components/PlatformVouchers/PlatformVoucherCard";
 import "./PlatformVouchers.css";
 
 const PlatformVouchersCreatePage = () => {

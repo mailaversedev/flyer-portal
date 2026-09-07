@@ -144,6 +144,7 @@
     "totalFlyers": "傳單總數",
     "totalFlyerGenerations": "傳單生成次數",
     "totalCreditRequests": "額度申請數",
+    "totalCreditRequestAmount": "申請總額：{{amount}}",
     "couponClaimsTitle": "優惠券領取",
     "couponClaimsSubtitle": "按傳單分組顯示優惠券領取紀錄、下載限制及領取用戶。",
     "voucherRedemptionsTitle": "禮券兌換",
