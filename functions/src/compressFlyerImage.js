@@ -33,40 +33,31 @@ function buildDestinationName(sourceName) {
  * Create a streaming sharp transform for the source image.
  * Streaming avoids keeping both the complete source and output buffers in
  * the Node.js heap at the same time.
- * @param {string} extension
  * @return {sharp.Sharp}
  */
-function createImageTransform(extension) {
-  const image = sharp({animated: false}).rotate();
+function createImageTransform() {
+  const image = sharp({
+    animated: false,
+    // Prevent pathological images from consuming excessive native memory.
+    limitInputPixels: 40_000_000,
+  }).rotate();
 
-  // Resize down for lightweight thumbnails while preserving aspect ratio.
+  // A 640px thumbnail is sufficient for the UI and greatly reduces file size.
   image.resize({
-    width: 1280,
-    height: 1280,
+    width: 640,
+    height: 640,
     fit: "inside",
     withoutEnlargement: true,
   });
 
-  switch ((extension || "").toLowerCase()) {
-    case ".png":
-      return image.png({
-        compressionLevel: 9,
-        quality: 70,
-        palette: true,
-      });
-    case ".webp":
-      return image.webp({quality: 72});
-    case ".avif":
-      return image.avif({quality: 50});
-    case ".tif":
-    case ".tiff":
-      return image.tiff({quality: 70});
-    case ".jpg":
-    case ".jpeg":
-    case ".gif":
-    default:
-      return image.jpeg({quality: 72, mozjpeg: true});
-  }
+  // Normalize every thumbnail to JPEG. Keeping PNG/TIFF compression settings
+  // can still produce 500KB+ files, especially for flyer artwork.
+  return image.jpeg({
+    quality: 50,
+    chromaSubsampling: "4:2:0",
+    progressive: true,
+    mozjpeg: true,
+  });
 }
 
 /**
@@ -111,12 +102,7 @@ async function compressFlyerImageHandler(event) {
   const sourceFile = bucket.file(objectName);
   const destinationFile = bucket.file(destinationName);
 
-  const extension = path.extname(objectName);
-
-  let outputContentType = contentType;
-  if ([".jpg", ".jpeg", ".gif"].includes(extension.toLowerCase())) {
-    outputContentType = "image/jpeg";
-  }
+  const outputContentType = "image/jpeg";
 
   const compressedAt = new Date().toISOString();
   const destinationStream = destinationFile.createWriteStream({
@@ -131,7 +117,7 @@ async function compressFlyerImageHandler(event) {
   // source and compressed output in memory.
   await pipeline(
       sourceFile.createReadStream(),
-      createImageTransform(extension),
+      createImageTransform(),
       destinationStream,
   );
 
