@@ -15,6 +15,7 @@ export const PlatformAdminCouponClaimsTable = ({
         id: flyerId,
         flyerId,
         flyerTitle: claim.flyerTitle,
+        companyName: claim.companyName,
         couponType: claim.couponType,
         flyerCoupon: claim.flyerCoupon || {},
         claims: [claim],
@@ -27,6 +28,7 @@ export const PlatformAdminCouponClaimsTable = ({
       <thead>
         <tr>
           <th>{t("adminPage.flyerTitle")}</th>
+          {!userView && <th>{t("adminPage.company")}</th>}
           <th>{t("adminPage.couponType")}</th>
           {userView ? (
             <>
@@ -48,6 +50,7 @@ export const PlatformAdminCouponClaimsTable = ({
             <td className="platform-admin-text-cell">
               {group.flyerTitle || "-"}
             </td>
+            {!userView && <td>{group.companyName || "-"}</td>}
             <td>{group.couponType || "-"}</td>
             {userView ? (
               <>
@@ -127,7 +130,7 @@ export const PlatformAdminCouponClaimsTable = ({
         {flyerGroups.length === 0 && (
           <tr>
             <td
-              colSpan={userView ? "4" : "5"}
+              colSpan={userView ? "4" : "6"}
               className="platform-admin-empty-cell"
             >
               {emptyMessage || t("adminPage.noCouponClaims")}

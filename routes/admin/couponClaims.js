@@ -42,10 +42,20 @@ module.exports = function createCouponClaimsRouter(context) {
           claims.map((claim) => claim.flyerId),
         ),
       ]);
+      const companyLookup = await getDocumentsByIds(
+        db,
+        "companies",
+        claims.map((claim) => {
+          const flyer = flyerLookup.get(claim.flyerId) || {};
+          return claim.companyId || flyer.companyId;
+        }),
+      );
 
       const data = claims.map((claim) => {
         const flyer = flyerLookup.get(claim.flyerId) || {};
         const flyerCoupon = flyer.coupon || {};
+        const companyId = claim.companyId || flyer.companyId;
+        const company = companyLookup.get(companyId) || {};
         return {
           ...claim,
           flyerTitle:
@@ -55,6 +65,8 @@ module.exports = function createCouponClaimsRouter(context) {
             downloadCount: flyerCoupon.downloadCount ?? 0,
             quantity: flyerCoupon.quantity ?? null,
           },
+          companyName:
+            company.companyDisplayName || company.name || company.companyName || "-",
           user: userLookup.get(claim.userId) || null,
         };
       });
