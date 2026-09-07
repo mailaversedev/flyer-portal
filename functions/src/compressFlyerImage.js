@@ -1,4 +1,5 @@
 const path = require("path");
+const {pipeline} = require("stream/promises");
 const {Storage} = require("@google-cloud/storage");
 const sharp = require("sharp");
 
@@ -29,13 +30,14 @@ function buildDestinationName(sourceName) {
 }
 
 /**
- * Compress and resize the source image based on file extension.
- * @param {Buffer} buffer
+ * Create a streaming sharp transform for the source image.
+ * Streaming avoids keeping both the complete source and output buffers in
+ * the Node.js heap at the same time.
  * @param {string} extension
- * @return {Promise<Buffer>}
+ * @return {sharp.Sharp}
  */
-function compressImage(buffer, extension) {
-  const image = sharp(buffer, {animated: false}).rotate();
+function createImageTransform(extension) {
+  const image = sharp({animated: false}).rotate();
 
   // Resize down for lightweight thumbnails while preserving aspect ratio.
   image.resize({
@@ -51,19 +53,19 @@ function compressImage(buffer, extension) {
         compressionLevel: 9,
         quality: 70,
         palette: true,
-      }).toBuffer();
+      });
     case ".webp":
-      return image.webp({quality: 72}).toBuffer();
+      return image.webp({quality: 72});
     case ".avif":
-      return image.avif({quality: 50}).toBuffer();
+      return image.avif({quality: 50});
     case ".tif":
     case ".tiff":
-      return image.tiff({quality: 70}).toBuffer();
+      return image.tiff({quality: 70});
     case ".jpg":
     case ".jpeg":
     case ".gif":
     default:
-      return image.jpeg({quality: 72, mozjpeg: true}).toBuffer();
+      return image.jpeg({quality: 72, mozjpeg: true});
   }
 }
 
@@ -109,33 +111,36 @@ async function compressFlyerImageHandler(event) {
   const sourceFile = bucket.file(objectName);
   const destinationFile = bucket.file(destinationName);
 
-  const [sourceBuffer] = await sourceFile.download();
   const extension = path.extname(objectName);
-  const compressedBuffer = await compressImage(sourceBuffer, extension);
 
   let outputContentType = contentType;
   if ([".jpg", ".jpeg", ".gif"].includes(extension.toLowerCase())) {
     outputContentType = "image/jpeg";
   }
 
-  await destinationFile.save(compressedBuffer, {
+  const compressedAt = new Date().toISOString();
+  const destinationStream = destinationFile.createWriteStream({
     resumable: false,
     contentType: outputContentType,
     metadata: {
-      metadata: {
-        sourceObject: objectName,
-        compressedAt: new Date().toISOString(),
-      },
+      metadata: {sourceObject: objectName, compressedAt},
     },
   });
+
+  // Stream from Cloud Storage through sharp instead of buffering the entire
+  // source and compressed output in memory.
+  await pipeline(
+      sourceFile.createReadStream(),
+      createImageTransform(extension),
+      destinationStream,
+  );
 
   await destinationFile.makePublic();
 
   console.log("Compressed thumbnail written", {
     source: objectName,
     destination: destinationName,
-    originalBytes: sourceBuffer.length,
-    compressedBytes: compressedBuffer.length,
+    originalBytes: Number(data.size || 0),
   });
 }
 

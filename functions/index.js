@@ -21,6 +21,10 @@ exports.compressFlyerImage = onObjectFinalized(
     {
       region: SOURCE_BUCKET_REGION,
       bucket: SOURCE_BUCKET,
+      // Image processing can briefly require more memory than the source
+      // file size because sharp/libvips holds decoded pixel data in memory.
+      memory: "512MiB",
+      timeoutSeconds: 300,
     },
     compressFlyerImageHandler,
 );
