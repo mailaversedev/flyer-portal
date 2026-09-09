@@ -87,4 +87,38 @@ router.post("/file", upload.single("file"), async (req, res) => {
   }
 });
 
+// Multer errors occur before the route handler above runs. Return JSON so the
+// frontend can show the actual upload failure instead of receiving Express's
+// default HTML error page.
+router.use((error, req, res, next) => {
+  if (!error) {
+    return next();
+  }
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        success: false,
+        message: "File is too large. Please choose an image smaller than 10MB and try again.",
+        code: error.code,
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Invalid file upload",
+      code: error.code,
+    });
+  }
+
+  if (error.message === "Only image files are allowed!") {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+
+  return next(error);
+});
+
 module.exports = router;

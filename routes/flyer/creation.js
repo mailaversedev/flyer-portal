@@ -257,6 +257,18 @@ module.exports = function createCreationRouter(context) {
   router.post("/flyer", authenticateToken, async (req, res) => {
     try {
       const { type, data } = req.body;
+
+      if (
+        typeof data?.coverPhoto === "string" &&
+        /^(blob:|data:)/i.test(data.coverPhoto)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Cover photo upload was not completed. Please upload the image again and retry.",
+          code: "TEMPORARY_IMAGE_URL",
+        });
+      }
+
       const isSuperAdmin = req.user?.role === "super-admin";
       const noReward = isSuperAdmin && Boolean(data?.targetBudget?.noReward);
       const rawScheduledAt =

@@ -655,10 +655,14 @@ class ApiService {
       if (fileToUpload) {
         try {
           const uploadResponse = await this.uploadFile(fileToUpload, key);
-          return uploadResponse.success ? uploadResponse.url : null;
+          if (!uploadResponse.success || !uploadResponse.url) {
+            throw new Error(uploadResponse.message || `Failed to upload ${key}`);
+          }
+
+          return uploadResponse.url;
         } catch (error) {
           console.error(`Failed to upload ${key}:`, error);
-          return null;
+          throw new Error(`Failed to upload ${key}: ${error.message}`);
         }
       }
 
