@@ -1,222 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 
 import ApiService from "../../services/ApiService";
 import i18n, { applyLocale, normalizeLocale } from "../../i18n";
+import RegistrationForm from "../../components/Login/RegistrationForm";
+import ResetPasswordForm from "../../components/Login/ResetPasswordForm";
 
 import "./StaffLogin.css";
 
-const FALLBACK_HK_DISTRICTS = [
-  "Central & Western",
-  "Wan Chai",
-  "Eastern",
-  "Southern",
-  "Yau Tsim Mong",
-  "Sham Shui Po",
-  "Kowloon City",
-  "Wong Tai Sin",
-  "Kwun Tong",
-  "Tsuen Wan",
-  "Tuen Mun",
-  "Yuen Long",
-  "North",
-  "Tai Po",
-  "Sai Kung",
-  "Sha Tin",
-  "Kwai Tsing",
-  "Islands",
-];
-
 const StaffLogin = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login");
-  const isRegistering = mode === "register";
-  const isResetting = mode === "reset";
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [resetOtp, setResetOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [companyDisplayName, setCompanyDisplayName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [companyNature, setCompanyNature] = useState("");
-  const [district, setDistrict] = useState("");
-  const [companyIconFile, setCompanyIconFile] = useState(null);
-  const [address, setAddress] = useState("");
-  const [contact, setContact] = useState("");
-  const [companyIndustries, setCompanyIndustries] = useState([]);
-  const [districtOptions, setDistrictOptions] = useState([]);
-  const [isLoadingIndustries, setIsLoadingIndustries] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [locale, setLocale] = useState(
     normalizeLocale(localStorage.getItem("locale") || i18n.resolvedLanguage),
   );
 
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const isRegistering = mode === "register";
+  const isResetting = mode === "reset";
 
-  useEffect(() => {
-    const fetchCompanyIndustries = async () => {
-      setIsLoadingIndustries(true);
-      try {
-        const response = await ApiService.getCompanyIndustries();
-        if (response.success && Array.isArray(response.data)) {
-          setCompanyIndustries(response.data);
-        } else {
-          setCompanyIndustries([]);
-        }
-      } catch (fetchError) {
-        console.error("Failed to fetch company industries", fetchError);
-        setCompanyIndustries([]);
-      } finally {
-        setIsLoadingIndustries(false);
-      }
-    };
-
-    const fetchDistricts = async () => {
-      try {
-        const res = await ApiService.getDistricts();
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-          setDistrictOptions(res.data);
-        } else {
-          setDistrictOptions(FALLBACK_HK_DISTRICTS);
-        }
-      } catch (error) {
-        console.error("Failed to load district options", error);
-        setDistrictOptions(FALLBACK_HK_DISTRICTS);
-      }
-    };
-
-    fetchCompanyIndustries();
-    fetchDistricts();
-  }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
     setLoading(true);
-
     try {
-      let response;
-      if (mode === "forgot") {
-        response = await ApiService.requestStaffPasswordReset(email);
-        if (response.success) {
-          toast.success(response.message || t("login.passwordResetCodeSent"));
-          setMode("reset");
-        }
-        return;
+      const response = await ApiService.loginStaff(username, password);
+      if (!response.success)
+        throw new Error(response.message || t("login.loginFailed"));
+      ApiService.setAccessToken(response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      await applyLocale(response.data.user?.locale || locale);
+      if (response.data.company) {
+        localStorage.setItem("company", JSON.stringify(response.data.company));
+        ApiService.setCurrentCompany(response.data.company);
       }
-
-      if (isResetting) {
-        if (newPassword !== password) {
-          toast.error(t("login.passwordsDoNotMatch"));
-          return;
-        }
-        response = await ApiService.resetStaffPassword(email, resetOtp, newPassword);
-        if (response.success) {
-          toast.success(response.message || t("login.passwordResetSuccess"));
-          setMode("login");
-          setPassword("");
-          setNewPassword("");
-          setResetOtp("");
-        }
-        return;
-      }
-
-      if (isRegistering) {
-        let companyIconUrl = "";
-        if (companyIconFile) {
-          try {
-            const uploadResponse = await ApiService.uploadFile(
-              companyIconFile,
-              "companyIcon",
-            );
-            if (uploadResponse.success) {
-              companyIconUrl = uploadResponse.url;
-            } else {
-              throw new Error("Failed to upload company icon");
-            }
-          } catch (uploadError) {
-            toast.error(
-              t("login.uploadCompanyIconFailed", {
-                message: uploadError.message,
-              }),
-            );
-            setLoading(false);
-            return;
-          }
-        }
-
-        response = await ApiService.registerStaff({
-          username,
-          email,
-          password,
-          displayName,
-          companyDisplayName,
-          companyName,
-          companyNature,
-          companyIcon: companyIconUrl,
-          address,
-          contact,
-          district,
-          role: "admin", // Default role for self-onboarding
-          locale,
-        });
-      } else {
-        response = await ApiService.loginStaff(username, password);
-      }
-
-      if (response.success) {
-        if (isRegistering) {
-          setMode("login");
-          toast.success(response.message || t("login.registrationSuccess"));
-          setPassword("");
-        } else {
-          // Login success
-          ApiService.setAccessToken(response.data.token);
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-          await applyLocale(response.data.user?.locale || locale);
-
-          if (response.data.company) {
-            localStorage.setItem(
-              "company",
-              JSON.stringify(response.data.company),
-            );
-            ApiService.setCurrentCompany(response.data.company);
-          }
-
-          navigate("/dashboard");
-        }
-      } else {
-        toast.error(
-          response.message ||
-            (isRegistering
-              ? t("login.registrationFailed")
-              : t("login.loginFailed")),
-        );
-      }
-    } catch (err) {
-      toast.error(err.message || "An error occurred");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.message || "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleMode = () => {
-    setMode(isRegistering ? "login" : "register");
-  };
-
-  const openPasswordReset = () => {
-    setMode("forgot");
-    setEmail("");
-    setPassword("");
-  };
-
   const handleLocaleChange = async (event) => {
-    const nextLocale = event.target.value;
-    setLocale(nextLocale);
-    const normalizedLocale = await applyLocale(nextLocale);
+    const normalizedLocale = await applyLocale(event.target.value);
     setLocale(normalizedLocale);
   };
 
@@ -243,281 +74,82 @@ const StaffLogin = () => {
               ? t("login.forgotPassword")
               : isResetting
                 ? t("login.resetPassword")
-            : t("login.portalLogin")}
+                : t("login.portalLogin")}
         </h2>
 
-        <form onSubmit={handleSubmit}>
-          {(mode === "forgot" || isResetting) && (
-            <div className="form-group">
-              <label htmlFor="reset-email">{t("login.email")}</label>
-              <input
-                type="email"
-                id="reset-email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t("login.enterEmail")}
-                required
-              />
-            </div>
-          )}
-
-          {isResetting && (
-            <>
-              <div className="form-group">
-                <label htmlFor="reset-otp">{t("login.resetCode")}</label>
-                <input
-                  type="text"
-                  id="reset-otp"
-                  value={resetOtp}
-                  onChange={(e) => setResetOtp(e.target.value)}
-                  inputMode="numeric"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="new-password">{t("login.newPassword")}</label>
-                <input
-                  type="password"
-                  id="new-password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={6}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="confirm-password">{t("login.confirmPassword")}</label>
-                <input
-                  type="password"
-                  id="confirm-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  required
-                />
-              </div>
-            </>
-          )}
-
-          {mode !== "forgot" && !isResetting && (
-          <>
-          {!isRegistering && (
+        {mode === "login" && (
+          <form onSubmit={handleLogin}>
             <div className="form-group">
               <label htmlFor="username">{t("login.username")}</label>
               <input
-                type="text"
                 id="username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(event) => setUsername(event.target.value)}
                 placeholder={t("login.enterUsername")}
                 required
               />
             </div>
-          )}
+            <div className="form-group">
+              <label htmlFor="password">{t("login.password")}</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={t("login.enterPassword")}
+                required
+              />
+            </div>
+            <button type="submit" className="login-button" disabled={loading}>
+              {loading ? t("login.loggingIn") : t("login.login")}
+            </button>
+          </form>
+        )}
 
-          <div className="form-group">
-            <label htmlFor="password">{t("login.password")}</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t("login.enterPassword")}
-              required
-            />
-          </div>
+        {isRegistering && (
+          <RegistrationForm t={t} onSuccess={() => setMode("login")} />
+        )}
 
-          {isRegistering && (
-            <>
-              <div className="form-group">
-                <label htmlFor="email">{t("login.email")}</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t("login.enterEmail")}
-                  required
-                />
-              </div>
+        {(mode === "forgot" || isResetting) && (
+          <ResetPasswordForm
+            t={t}
+            showResetFields={isResetting}
+            onCodeSent={() => setMode("reset")}
+            onSuccess={() => setMode("login")}
+          />
+        )}
 
-              <div className="form-group">
-                <label htmlFor="displayName">{t("login.displayName")}</label>
-                <input
-                  type="text"
-                  id="displayName"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder={t("login.yourFullName")}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="companyName">{t("login.companyName")}</label>
-                <input
-                  type="text"
-                  id="companyName"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder={t("login.companyNamePlaceholder")}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="companyDisplayName">
-                  {t("login.companyDisplayName")}
-                </label>
-                <input
-                  type="text"
-                  id="companyDisplayName"
-                  value={companyDisplayName}
-                  onChange={(e) => setCompanyDisplayName(e.target.value)}
-                  placeholder={t("login.companyDisplayNamePlaceholder")}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="companyNature">
-                  {t("login.companyNature")}
-                </label>
-                <select
-                  id="companyNature"
-                  value={companyNature}
-                  onChange={(e) => setCompanyNature(e.target.value)}
-                  required
-                  className="form-control"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    marginTop: "5px",
-                    borderRadius: "4px",
-                    border: "1px solid #ddd",
-                  }}
-                >
-                  <option value="">
-                    {isLoadingIndustries
-                      ? t("login.loadingIndustries")
-                      : t("login.selectIndustry")}
-                  </option>
-                  {companyIndustries.map((industry) => (
-                    <option key={industry} value={industry}>
-                      {industry}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="companyIcon">{t("login.companyIcon")}</label>
-                <input
-                  type="file"
-                  id="companyIcon"
-                  accept="image/png, image/jpeg"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      if (
-                        file.type !== "image/png" &&
-                        file.type !== "image/jpeg"
-                      ) {
-                        toast.error("Only PNG and JPEG images are allowed.");
-                        e.target.value = null;
-                        return;
-                      }
-                      setCompanyIconFile(file);
-                    }
-                  }}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="address">{t("login.addressOptional")}</label>
-                <input
-                  type="text"
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder={t("login.companyAddressPlaceholder")}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="district">{t("login.districtOptional")}</label>
-                <select
-                  id="district"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  className="form-control"
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    marginTop: "5px",
-                    borderRadius: "4px",
-                    border: "1px solid #ddd",
-                  }}
-                >
-                  <option value="">{t("qrGeneration.pleaseSelect") || t("login.selectDistrict")}</option>
-                  {districtOptions.map((dist, idx) => (
-                    <option key={idx} value={dist}>
-                      {dist}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="contact">{t("login.contactOptional")}</label>
-                <input
-                  type="text"
-                  id="contact"
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  placeholder={t("login.contactPlaceholder")}
-                />
-              </div>
-            </>
-          )}
-          </>
-          )}
-
-          <button type="submit" className="login-button" disabled={loading}>
-            {loading
-              ? isRegistering
-                ? t("login.registering")
-                : isResetting
-                  ? t("login.resettingPassword")
-                  : t("login.loggingIn")
-              : isRegistering
-                ? t("login.registerCompany")
-                : mode === "forgot"
-                  ? t("login.sendResetCode")
-                  : isResetting
-                    ? t("login.resetPassword")
-                    : t("login.login")}
-          </button>
-
-          <div className="toggle-container">
-            {mode === "login" && (
-              <button type="button" className="toggle-button" onClick={openPasswordReset}>
-                {t("login.forgotPassword")}
-              </button>
-            )}
-            {(mode === "forgot" || isResetting) && (
-              <button type="button" className="toggle-button" onClick={() => setMode("login")}>
-                {t("login.backToLogin")}
-              </button>
-            )}
-            {mode !== "forgot" && !isResetting && (
+        <div className="toggle-container">
+          {mode === "login" && (
             <button
               type="button"
               className="toggle-button"
-              onClick={toggleMode}
+              onClick={() => setMode("forgot")}
+            >
+              {t("login.forgotPassword")}
+            </button>
+          )}
+          {(mode === "forgot" || isResetting) && (
+            <button
+              type="button"
+              className="toggle-button"
+              onClick={() => setMode("login")}
+            >
+              {t("login.backToLogin")}
+            </button>
+          )}
+          {mode !== "forgot" && !isResetting && (
+            <button
+              type="button"
+              className="toggle-button"
+              onClick={() => setMode(isRegistering ? "login" : "register")}
             >
               {isRegistering
                 ? t("login.alreadyHaveAccount")
                 : t("login.newCompany")}
             </button>
-            )}
-          </div>
-        </form>
+          )}
+        </div>
       </div>
 
       {loading && (
@@ -525,13 +157,7 @@ const StaffLogin = () => {
           <div className="loading-indicator-content">
             <div className="spinner" />
             <span className="loading-indicator-text">
-              {isRegistering
-                ? t("login.registering")
-                : isResetting
-                  ? t("login.resettingPassword")
-                  : mode === "forgot"
-                    ? t("login.sendResetCode")
-                    : t("login.loggingIn")}
+              {t("login.loggingIn")}
             </span>
           </div>
         </div>
