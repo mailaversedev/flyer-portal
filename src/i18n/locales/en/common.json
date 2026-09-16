@@ -64,7 +64,18 @@
     "registrationSuccess": "Registration successful! Please login.",
     "registrationFailed": "Registration failed",
     "loginFailed": "Login failed",
-    "uploadCompanyIconFailed": "Failed to upload company icon: {{message}}"
+    "uploadCompanyIconFailed": "Failed to upload company icon: {{message}}",
+    "forgotPassword": "Forgot your password?",
+    "backToLogin": "Back to login",
+    "resetCode": "Reset code",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "sendResetCode": "Send reset code",
+    "resetPassword": "Reset password",
+    "resettingPassword": "Resetting password...",
+    "passwordResetCodeSent": "If an account exists, a reset code has been sent.",
+    "passwordResetSuccess": "Password reset successfully. Please login.",
+    "passwordsDoNotMatch": "Passwords do not match."
   },
   "profilePage": {
     "title": "Company Profile",

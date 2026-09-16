@@ -6,6 +6,7 @@ const {
   createCompanyWallet,
   createCompanyWalletTransaction,
 } = require("../../services/companyWalletService");
+const authContext = require("../auth/context");
 
 const db = admin.firestore();
 
@@ -37,6 +38,10 @@ module.exports = {
   INITIAL_COMPANY_TOKENS,
   createCompanyWallet,
   createCompanyWalletTransaction,
+  generateOtp: authContext.generateOtp,
+  sendPasswordResetEmail: authContext.sendPasswordResetEmail,
+  storePasswordResetOtp: authContext.storePasswordResetOtp,
+  consumePasswordResetOtp: authContext.consumePasswordResetOtp,
   createRefreshSession: require("../auth/session").createRefreshSession,
   rotateRefreshSession: require("../auth/session").rotateRefreshSession,
   revokeRefreshSession: require("../auth/session").revokeRefreshSession,

@@ -182,6 +182,22 @@ class ApiService {
     });
   }
 
+  static async requestStaffPasswordReset(email) {
+    return this.makeRequest("/api/auth/staff/request-password-reset", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+      skipAuth: true,
+    });
+  }
+
+  static async resetStaffPassword(email, otp, newPassword) {
+    return this.makeRequest("/api/auth/staff/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, otp, newPassword }),
+      skipAuth: true,
+    });
+  }
+
   // PUT /api/auth/staff/company - Update Company Profile
   static async updateCompanyProfile(companyData) {
     return this.makeRequest("/api/auth/staff/company", {

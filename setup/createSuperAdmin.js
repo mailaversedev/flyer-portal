@@ -44,10 +44,10 @@ const parseArgs = (argv) => {
 
 const printUsage = () => {
   console.log(`Usage:
-  node setup/createSuperAdmin.js --username <username> --displayName <display name> --password <password> [--locale <locale>]
+  node setup/createSuperAdmin.js --username <username> --email <email> --displayName <display name> --password <password> [--locale <locale>]
 
 Example:
-  node setup/createSuperAdmin.js --username platform-root --displayName "Platform Root" --password "change-this-password" --locale en`);
+  node setup/createSuperAdmin.js --username platform-root --email admin@example.com --displayName "Platform Root" --password "change-this-password" --locale en`);
 };
 
 const getOption = (args, key, envKey, fallback = "") => {
@@ -86,13 +86,14 @@ const main = async () => {
   }
 
   const username = getOption(args, "username", "SUPER_ADMIN_USERNAME");
+  const email = getOption(args, "email", "SUPER_ADMIN_EMAIL");
   const displayName = getOption(args, "displayName", "SUPER_ADMIN_DISPLAY_NAME");
   const password = getOption(args, "password", "SUPER_ADMIN_PASSWORD");
   const locale = getOption(args, "locale", "SUPER_ADMIN_LOCALE", DEFAULT_LOCALE);
 
-  if (!username || !displayName || !password) {
+  if (!username || !email || !displayName || !password) {
     printUsage();
-    throw new Error("username, displayName, and password are required");
+    throw new Error("username, email, displayName, and password are required");
   }
 
   if (password.length < MIN_PASSWORD_LENGTH) {
@@ -118,6 +119,7 @@ const main = async () => {
 
   await staffRef.set({
     username,
+    email: email.toLowerCase(),
     displayName,
     password: hashedPassword,
     role: "super-admin",

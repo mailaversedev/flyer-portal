@@ -64,7 +64,18 @@
     "registrationSuccess": "註冊成功！請登入。",
     "registrationFailed": "註冊失敗",
     "loginFailed": "登入失敗",
-    "uploadCompanyIconFailed": "公司圖示上傳失敗：{{message}}"
+    "uploadCompanyIconFailed": "公司圖示上傳失敗：{{message}}",
+    "forgotPassword": "忘記密碼？",
+    "backToLogin": "返回登入",
+    "resetCode": "重設驗證碼",
+    "newPassword": "新密碼",
+    "confirmPassword": "確認密碼",
+    "sendResetCode": "發送重設驗證碼",
+    "resetPassword": "重設密碼",
+    "resettingPassword": "正在重設密碼…",
+    "passwordResetCodeSent": "如果帳戶存在，重設驗證碼已發送。",
+    "passwordResetSuccess": "密碼已重設，請重新登入。",
+    "passwordsDoNotMatch": "兩次輸入的密碼不一致。"
   },
   "profilePage": {
     "title": "公司資料",

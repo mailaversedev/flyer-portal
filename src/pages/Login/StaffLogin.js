@@ -31,10 +31,14 @@ const FALLBACK_HK_DISTRICTS = [
 
 const StaffLogin = () => {
   const { t } = useTranslation();
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [mode, setMode] = useState("login");
+  const isRegistering = mode === "register";
+  const isResetting = mode === "reset";
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [companyDisplayName, setCompanyDisplayName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -95,6 +99,31 @@ const StaffLogin = () => {
 
     try {
       let response;
+      if (mode === "forgot") {
+        response = await ApiService.requestStaffPasswordReset(email);
+        if (response.success) {
+          toast.success(response.message || t("login.passwordResetCodeSent"));
+          setMode("reset");
+        }
+        return;
+      }
+
+      if (isResetting) {
+        if (newPassword !== password) {
+          toast.error(t("login.passwordsDoNotMatch"));
+          return;
+        }
+        response = await ApiService.resetStaffPassword(email, resetOtp, newPassword);
+        if (response.success) {
+          toast.success(response.message || t("login.passwordResetSuccess"));
+          setMode("login");
+          setPassword("");
+          setNewPassword("");
+          setResetOtp("");
+        }
+        return;
+      }
+
       if (isRegistering) {
         let companyIconUrl = "";
         if (companyIconFile) {
@@ -140,7 +169,7 @@ const StaffLogin = () => {
 
       if (response.success) {
         if (isRegistering) {
-          setIsRegistering(false);
+          setMode("login");
           toast.success(response.message || t("login.registrationSuccess"));
           setPassword("");
         } else {
@@ -175,7 +204,13 @@ const StaffLogin = () => {
   };
 
   const toggleMode = () => {
-    setIsRegistering(!isRegistering);
+    setMode(isRegistering ? "login" : "register");
+  };
+
+  const openPasswordReset = () => {
+    setMode("forgot");
+    setEmail("");
+    setPassword("");
   };
 
   const handleLocaleChange = async (event) => {
@@ -204,21 +239,81 @@ const StaffLogin = () => {
         <h2>
           {isRegistering
             ? t("login.companyOnboarding")
+            : mode === "forgot"
+              ? t("login.forgotPassword")
+              : isResetting
+                ? t("login.resetPassword")
             : t("login.portalLogin")}
         </h2>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="username">{t("login.username")}</label>
-            <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder={t("login.enterUsername")}
-              required
-            />
-          </div>
+          {(mode === "forgot" || isResetting) && (
+            <div className="form-group">
+              <label htmlFor="reset-email">{t("login.email")}</label>
+              <input
+                type="email"
+                id="reset-email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t("login.enterEmail")}
+                required
+              />
+            </div>
+          )}
+
+          {isResetting && (
+            <>
+              <div className="form-group">
+                <label htmlFor="reset-otp">{t("login.resetCode")}</label>
+                <input
+                  type="text"
+                  id="reset-otp"
+                  value={resetOtp}
+                  onChange={(e) => setResetOtp(e.target.value)}
+                  inputMode="numeric"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="new-password">{t("login.newPassword")}</label>
+                <input
+                  type="password"
+                  id="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={6}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="confirm-password">{t("login.confirmPassword")}</label>
+                <input
+                  type="password"
+                  id="confirm-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={6}
+                  required
+                />
+              </div>
+            </>
+          )}
+
+          {mode !== "forgot" && !isResetting && (
+          <>
+          {!isRegistering && (
+            <div className="form-group">
+              <label htmlFor="username">{t("login.username")}</label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder={t("login.enterUsername")}
+                required
+              />
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="password">{t("login.password")}</label>
@@ -380,18 +475,37 @@ const StaffLogin = () => {
               </div>
             </>
           )}
+          </>
+          )}
 
           <button type="submit" className="login-button" disabled={loading}>
             {loading
               ? isRegistering
                 ? t("login.registering")
-                : t("login.loggingIn")
+                : isResetting
+                  ? t("login.resettingPassword")
+                  : t("login.loggingIn")
               : isRegistering
                 ? t("login.registerCompany")
-                : t("login.login")}
+                : mode === "forgot"
+                  ? t("login.sendResetCode")
+                  : isResetting
+                    ? t("login.resetPassword")
+                    : t("login.login")}
           </button>
 
           <div className="toggle-container">
+            {mode === "login" && (
+              <button type="button" className="toggle-button" onClick={openPasswordReset}>
+                {t("login.forgotPassword")}
+              </button>
+            )}
+            {(mode === "forgot" || isResetting) && (
+              <button type="button" className="toggle-button" onClick={() => setMode("login")}>
+                {t("login.backToLogin")}
+              </button>
+            )}
+            {mode !== "forgot" && !isResetting && (
             <button
               type="button"
               className="toggle-button"
@@ -401,6 +515,7 @@ const StaffLogin = () => {
                 ? t("login.alreadyHaveAccount")
                 : t("login.newCompany")}
             </button>
+            )}
           </div>
         </form>
       </div>
@@ -410,7 +525,13 @@ const StaffLogin = () => {
           <div className="loading-indicator-content">
             <div className="spinner" />
             <span className="loading-indicator-text">
-              {isRegistering ? t("login.registering") : t("login.loggingIn")}
+              {isRegistering
+                ? t("login.registering")
+                : isResetting
+                  ? t("login.resettingPassword")
+                  : mode === "forgot"
+                    ? t("login.sendResetCode")
+                    : t("login.loggingIn")}
             </span>
           </div>
         </div>
