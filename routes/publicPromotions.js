@@ -2,6 +2,7 @@ const express = require("express");
 
 const PAGE_SIZE = 12;
 const SCAN_BATCH_SIZE = 48;
+const MAX_SITEMAP_FLYERS = 45000;
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -73,6 +74,17 @@ const isVisiblePublicFlyer = (flyer, nowMs) => {
   return Number.isNaN(scheduledAtMs) || scheduledAtMs <= nowMs;
 };
 
+const getLastModified = (flyer) => {
+  const value = flyer.updatedAt || flyer.createdAt;
+  const date = value && typeof value.toDate === "function"
+    ? value.toDate()
+    : new Date(value);
+
+  return date instanceof Date && !Number.isNaN(date.getTime())
+    ? date.toISOString()
+    : null;
+};
+
 const getPublicOrigin = (req) => {
   const configuredUrl = getSafeUrl(process.env.PUBLIC_SITE_URL);
   if (configuredUrl) {
@@ -87,6 +99,9 @@ const getPublicOrigin = (req) => {
 
 const getPageUrl = (page) =>
   page === 1 ? "/promotions" : `/promotions/page/${page}`;
+
+const getPromotionUrl = (flyerId) =>
+  `/promotions/${encodeURIComponent(flyerId)}`;
 
 async function getPromotionPage(db, page) {
   const numberOfFlyersNeeded = page * PAGE_SIZE + 1;
@@ -111,7 +126,7 @@ async function getPromotionPage(db, page) {
     snapshot.forEach((document) => {
       const flyer = document.data() || {};
       if (isVisiblePublicFlyer(flyer, nowMs)) {
-        visibleFlyers.push({ id: document.id, ...flyer });
+        visibleFlyers.push({ ...flyer, id: document.id });
       }
     });
 
@@ -128,8 +143,44 @@ async function getPromotionPage(db, page) {
   };
 }
 
-const renderPromotionCard = (flyer) => {
+async function getSitemapFlyers(db) {
+  const flyers = [];
+  const nowMs = Date.now();
+  let lastDocument = null;
+  let hasMoreDocuments = true;
+
+  while (flyers.length < MAX_SITEMAP_FLYERS && hasMoreDocuments) {
+    let query = db
+      .collection("flyers")
+      .orderBy("createdAt", "desc")
+      .limit(SCAN_BATCH_SIZE);
+
+    if (lastDocument) {
+      query = query.startAfter(lastDocument);
+    }
+
+    const snapshot = await query.get();
+    hasMoreDocuments = snapshot.size === SCAN_BATCH_SIZE;
+
+    snapshot.forEach((document) => {
+      const flyer = document.data() || {};
+      if (flyers.length < MAX_SITEMAP_FLYERS && isVisiblePublicFlyer(flyer, nowMs)) {
+        flyers.push({ ...flyer, id: document.id });
+      }
+    });
+
+    lastDocument = snapshot.docs[snapshot.docs.length - 1] || null;
+    if (!lastDocument) {
+      break;
+    }
+  }
+
+  return flyers;
+}
+
+const renderPromotionCard = (flyer, { linkTitle = true } = {}) => {
   const title = getFlyerTitle(flyer);
+  const promotionUrl = getPromotionUrl(flyer.id);
   const companyName = getCompanyName(flyer);
   const description = toPlainText(
     flyer.productDescriptions || flyer.adContent || "",
@@ -185,7 +236,7 @@ const renderPromotionCard = (flyer) => {
       <span class="type-badge">${escapeHtml(toPlainText(flyer.type || "Promotion", 30))}</span>
     </div>
     <div class="card-content">
-      <h2>${escapeHtml(title)}</h2>
+      <h2>${linkTitle ? `<a class="promotion-title" href="${escapeHtml(promotionUrl)}">${escapeHtml(title)}</a>` : escapeHtml(title)}</h2>
       ${companyDetails}
       ${rewardMarkup}
       <details>
@@ -196,12 +247,62 @@ const renderPromotionCard = (flyer) => {
   </article>`;
 };
 
-const renderPage = ({ flyers, page, hasNextPage, origin }) => {
+  const renderPromotionDetailPage = ({ flyer, origin }) => {
+    const title = getFlyerTitle(flyer);
+    const companyName = flyer.hideCompanyDetail ? "Mailaverse" : getCompanyName(flyer);
+    const description = toPlainText(
+      `${title} from ${companyName}. ${flyer.productDescriptions || flyer.adContent || ""}`,
+      160,
+    );
+    const canonicalPath = getPromotionUrl(flyer.id);
+    const canonicalUrl = `${origin}${canonicalPath}`;
+    const coverPhoto = getSafeUrl(flyer.coverPhoto);
+    const offer = {
+      "@context": "https://schema.org",
+      "@type": "Offer",
+      name: title,
+      description,
+      url: canonicalUrl,
+      seller: {
+        "@type": "Organization",
+        name: companyName,
+      },
+      ...(coverPhoto ? { image: coverPhoto } : {}),
+    };
+
+    return renderPage({
+      flyers: [flyer],
+      page: 1,
+      hasNextPage: false,
+      origin,
+      canonicalPath,
+      pageTitle: `${title} | ${companyName} | Mailaverse`,
+      pageDescription: description,
+      heading: title,
+      intro: `Promotion from ${companyName}. Review the offer details below.`,
+      structuredData: offer,
+      linkCardTitles: false,
+    });
+  };
+
+const renderPage = ({
+  flyers,
+  page,
+  hasNextPage,
+  origin,
+  canonicalPath = getPageUrl(page),
+  pageTitle,
+  pageDescription,
+  heading = "Current flyer promotions",
+  intro = "Explore active offers, surveys, and reward opportunities from businesses on Mailaverse. Open a card to read the full promotion details.",
+  structuredData,
+  linkCardTitles = true,
+}) => {
   const pagePath = getPageUrl(page);
-  const canonicalUrl = `${origin}${pagePath}`;
-  const title = page === 1 ? "Latest Flyer Promotions | Mailaverse" : `Flyer Promotions – Page ${page} | Mailaverse`;
-  const description = "Browse Mailaverse flyer promotions, offers, surveys, and reward opportunities from local businesses.";
-  const itemList = {
+  const canonicalUrl = `${origin}${canonicalPath}`;
+  const title = pageTitle || (page === 1 ? "Latest Flyer Promotions | Mailaverse" : `Flyer Promotions – Page ${page} | Mailaverse`);
+  const description = pageDescription || "Browse Mailaverse flyer promotions, offers, surveys, and reward opportunities from local businesses.";
+  const itemList = structuredData || {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: "Mailaverse flyer promotions",
@@ -210,7 +311,7 @@ const renderPage = ({ flyers, page, hasNextPage, origin }) => {
       "@type": "ListItem",
       position: (page - 1) * PAGE_SIZE + index + 1,
       name: getFlyerTitle(flyer),
-      url: `${canonicalUrl}#flyer-${flyer.id}`,
+      url: `${origin}${getPromotionUrl(flyer.id)}`,
     })),
   };
   const previousPage = page > 1 ? page - 1 : null;
@@ -223,7 +324,7 @@ const renderPage = ({ flyers, page, hasNextPage, origin }) => {
       </nav>`
     : "";
   const cards = flyers.length
-    ? flyers.map(renderPromotionCard).join("\n")
+    ? flyers.map((flyer) => renderPromotionCard(flyer, { linkTitle: linkCardTitles })).join("\n")
     : `<section class="empty-state"><h2>No current promotions yet</h2><p>Please check back soon for new offers.</p></section>`;
 
   return `<!doctype html>
@@ -265,6 +366,8 @@ const renderPage = ({ flyers, page, hasNextPage, origin }) => {
     .type-badge { position: absolute; top: 12px; right: 12px; padding: 5px 9px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(13, 18, 35, .76); font-size: .72rem; font-weight: 700; text-transform: capitalize; }
     .card-content { padding: 16px; }
     h2 { margin: 0; font-size: 1.05rem; line-height: 1.38; }
+    .promotion-title { color: inherit; text-decoration: none; }
+    .promotion-title:hover { color: #fbbf24; text-decoration: underline; }
     .company { display: flex; align-items: center; gap: 8px; min-width: 0; margin-top: 13px; color: #cbd5e1; font-size: .86rem; }
     .company-avatar { display: grid; flex: 0 0 auto; place-items: center; width: 27px; height: 27px; overflow: hidden; border-radius: 50%; background: #39466e; color: #fbbf24; font-size: .73rem; font-weight: 800; }
     .company-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -298,8 +401,8 @@ const renderPage = ({ flyers, page, hasNextPage, origin }) => {
     <header class="site-header"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-name">Mailaverse</span></header>
     <section aria-labelledby="promotions-heading">
       <p class="eyebrow">Discover local offers</p>
-      <h1 id="promotions-heading">Current flyer promotions</h1>
-      <p class="intro">Explore active offers, surveys, and reward opportunities from businesses on Mailaverse. Open a card to read the full promotion details.</p>
+      <h1 id="promotions-heading">${escapeHtml(heading)}</h1>
+      <p class="intro">${escapeHtml(intro)}</p>
     </section>
     <section class="grid" aria-label="Flyer promotions">${cards}</section>
     ${pagination}
@@ -344,12 +447,58 @@ module.exports = function createPublicPromotionsRouter({ db }) {
 
   router.get("/promotions", renderPromotions);
   router.get("/promotions/page/:page", renderPromotions);
-  router.get("/sitemap.xml", (req, res) => {
+  router.get("/promotions/:flyerId", async (req, res) => {
+    try {
+      const flyerDoc = await db.collection("flyers").doc(req.params.flyerId).get();
+      const flyer = flyerDoc.exists ? { ...flyerDoc.data(), id: flyerDoc.id } : null;
+
+      if (!flyer || !isVisiblePublicFlyer(flyer, Date.now())) {
+        return res.status(404).type("html").send("Promotion not found.");
+      }
+
+      res.set("Cache-Control", "public, max-age=300, s-maxage=900");
+      return res.type("html").send(
+        renderPromotionDetailPage({ flyer, origin: getPublicOrigin(req) }),
+      );
+    } catch (error) {
+      console.error("Unable to render public promotion:", error);
+      return res.status(500).type("html").send("Unable to load promotion.");
+    }
+  });
+  router.get("/robots.txt", (req, res) => {
     const origin = getPublicOrigin(req);
-    res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+    res.type("text/plain").send(`User-agent: *
+Disallow: /
+Allow: /promotions
+Allow: /promotions/
+Allow: /sitemap.xml
+
+Sitemap: ${origin}/sitemap.xml
+`);
+  });
+  router.get("/sitemap.xml", async (req, res) => {
+    try {
+      const origin = getPublicOrigin(req);
+      const flyers = await getSitemapFlyers(db);
+      const pageCount = Math.ceil(flyers.length / PAGE_SIZE);
+      const listingUrls = Array.from({ length: pageCount }, (_, index) => {
+        const path = getPageUrl(index + 1);
+        return `  <url><loc>${escapeXml(`${origin}${path}`)}</loc></url>`;
+      });
+      const promotionUrls = flyers.map((flyer) => {
+        const lastModified = getLastModified(flyer);
+        return `  <url><loc>${escapeXml(`${origin}${getPromotionUrl(flyer.id)}`)}</loc>${lastModified ? `<lastmod>${escapeXml(lastModified)}</lastmod>` : ""}</url>`;
+      });
+
+      res.set("Cache-Control", "public, max-age=300, s-maxage=900");
+      return res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${escapeXml(`${origin}/promotions`)}</loc></url>
+${listingUrls.concat(promotionUrls).join("\n")}
 </urlset>`);
+    } catch (error) {
+      console.error("Unable to render sitemap:", error);
+      return res.status(500).type("text/plain").send("Unable to load sitemap.");
+    }
   });
 
   return router;
