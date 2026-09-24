@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 import ApiService from "../../services/ApiService";
+import ResetPasswordForm from "../../components/Login/ResetPasswordForm";
 import i18n, {
   applyLocale,
   clearPendingLocale,
@@ -35,6 +36,30 @@ const Profile = () => {
 
   const [loading, setLoading] = useState(false);
   const [companyDisplayName, setCompanyDisplayName] = useState("");
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showPasswordResetFields, setShowPasswordResetFields] = useState(false);
+  const passwordResetTriggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!showPasswordReset) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const triggerElement = passwordResetTriggerRef.current;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setShowPasswordReset(false);
+        setShowPasswordResetFields(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      triggerElement?.focus();
+    };
+  }, [showPasswordReset]);
 
   useEffect(() => {
     if (companyCoverFiles.length === 0) {
@@ -243,7 +268,17 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <div className="profile-card">
-        <h2>{t("profilePage.title")}</h2>
+        <div className="profile-header">
+          <h2>{t("profilePage.title")}</h2>
+          <button
+            type="button"
+            className="password-reset-trigger"
+            ref={passwordResetTriggerRef}
+            onClick={() => setShowPasswordReset(true)}
+          >
+            {t("profilePage.resetPassword")}
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="profile-form">
           <div className="form-group">
@@ -441,7 +476,74 @@ const Profile = () => {
             {loading ? t("common.saving") : t("common.save")}
           </button>
         </form>
+
       </div>
+      {showPasswordReset && (
+        <div
+          className="password-reset-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowPasswordReset(false);
+              setShowPasswordResetFields(false);
+            }
+          }}
+        >
+          <section
+            className="password-reset-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="password-reset-title"
+            aria-describedby="password-reset-description"
+            onKeyDown={(event) => {
+              if (event.key !== "Tab") return;
+              const focusableElements = event.currentTarget.querySelectorAll(
+                'button:not([disabled]), input:not([disabled])',
+              );
+              const firstElement = focusableElements[0];
+              const lastElement = focusableElements[focusableElements.length - 1];
+
+              if (event.shiftKey && document.activeElement === firstElement) {
+                event.preventDefault();
+                lastElement.focus();
+              } else if (!event.shiftKey && document.activeElement === lastElement) {
+                event.preventDefault();
+                firstElement.focus();
+              }
+            }}
+          >
+            <div className="password-reset-dialog-header">
+              <div>
+                <h2 id="password-reset-title">{t("profilePage.resetPassword")}</h2>
+                <p id="password-reset-description">
+                  {t("profilePage.passwordResetDescription")}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="password-reset-close"
+                aria-label={t("profilePage.closePasswordReset")}
+                onClick={() => {
+                  setShowPasswordReset(false);
+                  setShowPasswordResetFields(false);
+                }}
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <ResetPasswordForm
+              t={t}
+              className="profile-password-form"
+              showResetFields={showPasswordResetFields}
+              onCodeSent={() => setShowPasswordResetFields(true)}
+              onSuccess={() => {
+                setShowPasswordReset(false);
+                setShowPasswordResetFields(false);
+                ApiService.logoutSession();
+              }}
+            />
+          </section>
+        </div>
+      )}
     </div>
   );
 };

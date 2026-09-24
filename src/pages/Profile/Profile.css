@@ -14,9 +14,20 @@
 
 .profile-card h2 {
   margin-top: 0;
-  margin-bottom: 24px;
   color: white;
   font-size: 24px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.profile-header h2 {
+  margin-bottom: 0;
 }
 
 .profile-form .form-group {
@@ -116,4 +127,157 @@
   background-color: rgba(72, 187, 120, 0.1);
   color: #68d391;
   border: 1px solid rgba(72, 187, 120, 0.2);
+}
+
+.password-reset-trigger {
+  flex-shrink: 0;
+  padding: 9px 14px;
+  color: #f9a58d;
+  background: transparent;
+  border: 1px solid #765044;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.password-reset-trigger:hover {
+  background: rgba(247, 93, 52, 0.1);
+  border-color: #f75d34;
+}
+
+.password-reset-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 15, 25, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.password-reset-dialog {
+  width: min(100%, 480px);
+  max-height: min(90vh, 720px);
+  overflow-y: auto;
+  padding: 28px;
+  color: #f8fafc;
+  background: #1e293b;
+  border: 1px solid #3a4553;
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  animation: password-reset-dialog-enter 0.18s ease-out;
+}
+
+.password-reset-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.password-reset-dialog-header h2 {
+  margin: 0 0 8px;
+  color: #f8fafc;
+  font-size: 22px;
+}
+
+.password-reset-dialog-header p {
+  margin: 0;
+  color: #aab5c5;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.password-reset-close {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #aab5c5;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.password-reset-close:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes password-reset-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.profile-password-form .form-group {
+  margin-bottom: 20px;
+}
+
+.profile-password-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.profile-password-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  color: white;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.profile-password-form input:focus {
+  border-color: #f75d34;
+  outline: none;
+}
+
+.profile-password-form .login-button {
+  width: 100%;
+  padding: 12px 24px;
+  color: white;
+  background: #f75d34;
+  border: 0;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-password-form .login-button:disabled {
+  background: #ffb8a3;
+  cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+  .profile-header {
+    align-items: flex-start;
+  }
+
+  .profile-header h2 {
+    font-size: 21px;
+  }
+
+  .password-reset-dialog {
+    padding: 22px;
+  }
 }

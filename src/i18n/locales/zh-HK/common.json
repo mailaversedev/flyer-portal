@@ -75,6 +75,8 @@
     "resettingPassword": "正在重設密碼…",
     "passwordResetCodeSent": "如果帳戶存在，重設驗證碼已發送。",
     "passwordResetSuccess": "密碼已重設，請重新登入。",
+    "passwordResetFailed": "重設密碼失敗。",
+    "passwordResetRequestFailed": "無法申請密碼重設驗證碼。",
     "passwordsDoNotMatch": "兩次輸入的密碼不一致。"
   },
   "profilePage": {
@@ -98,6 +100,9 @@
     "introductionPlaceholder": "介紹你的公司、服務內容及重點資訊。",
     "portalLanguage": "平台語言",
     "profileUpdated": "資料已成功更新！",
+    "passwordResetDescription": "使用發送至帳戶電郵的驗證碼重設密碼。",
+    "resetPassword": "重設密碼",
+    "closePasswordReset": "關閉密碼重設視窗",
     "selectIndustry": "請選擇行業...",
     "loadingIndustries": "正在載入行業...",
     "selectDistrict": "請選擇地區",

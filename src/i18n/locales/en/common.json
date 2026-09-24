@@ -75,6 +75,8 @@
     "resettingPassword": "Resetting password...",
     "passwordResetCodeSent": "If an account exists, a reset code has been sent.",
     "passwordResetSuccess": "Password reset successfully. Please login.",
+    "passwordResetFailed": "Failed to reset password.",
+    "passwordResetRequestFailed": "Failed to request a password reset code.",
     "passwordsDoNotMatch": "Passwords do not match."
   },
   "profilePage": {
@@ -98,6 +100,9 @@
     "introductionPlaceholder": "Tell users about your company, services, and highlights.",
     "portalLanguage": "Portal Language",
     "profileUpdated": "Profile updated successfully!",
+    "passwordResetDescription": "Reset your password using a verification code sent to your account email.",
+    "resetPassword": "Reset password",
+    "closePasswordReset": "Close password reset dialog",
     "selectIndustry": "Select Industry...",
     "loadingIndustries": "Loading industries...",
     "selectDistrict": "Select a district",

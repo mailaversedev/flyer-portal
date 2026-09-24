@@ -7,6 +7,7 @@ const ResetPasswordForm = ({
   showResetFields,
   onCodeSent,
   onSuccess,
+  className,
 }) => {
   const [email, setEmail] = useState("");
   const [resetOtp, setResetOtp] = useState("");
@@ -41,12 +42,13 @@ const ResetPasswordForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className={className}>
       <div className="form-group">
         <label htmlFor="reset-email">{t("login.email")}</label>
         <input
           type="email"
           id="reset-email"
+          autoFocus
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder={t("login.enterEmail")}
