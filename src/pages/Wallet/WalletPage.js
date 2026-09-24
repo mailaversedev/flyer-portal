@@ -145,7 +145,7 @@ const WalletPage = () => {
             <div className="wallet-page-panel wallet-balance-panel">
               <span className="wallet-kicker">{t("walletPage.balanceLabel")}</span>
               <strong className="wallet-balance-value">
-                {wallet?.balance ?? 0} {wallet?.currency || "TOKEN"}
+                {wallet?.balance ?? 0} {t("walletPage.tokensShort")}
               </strong>
               <p>{t("walletPage.balanceHint")}</p>
               <p>

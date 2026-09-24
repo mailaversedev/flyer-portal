@@ -7,14 +7,14 @@ const TOKEN_BUNDLES = [
     title: "Starter Bundle",
     tokens: 20,
     priceHkd: 100,
-    description: "HK$100 for 20 tokens. Best for smaller batches of flyer generation and editing.",
+    description: "HK$100 for 20 $MC. Best for smaller batches of flyer generation and editing.",
   },
   {
     code: "bundle-200",
     title: "Growth Bundle",
     tokens: 200,
     priceHkd: 1000,
-    description: "HK$1000 for 200 tokens. Built for frequent FlyerGenie generation and editable workflows.",
+    description: "HK$1000 for 200 $MC. Built for frequent FlyerGenie generation and editable workflows.",
   },
 ];
 
