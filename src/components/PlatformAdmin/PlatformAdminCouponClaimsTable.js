@@ -23,6 +23,11 @@ export const PlatformAdminCouponClaimsTable = ({
     return groups;
   }, new Map());
   const flyerGroups = [...groupedClaims.values()];
+  const hasAssignedVoucherNumber = claims.some(
+    (claim) =>
+      claim.assignedVoucherNumber != null &&
+      String(claim.assignedVoucherNumber).trim() !== "",
+  );
   return (
     <table className="campaigns-table platform-admin-engagement-table">
       <thead>
@@ -30,6 +35,9 @@ export const PlatformAdminCouponClaimsTable = ({
           <th>{t("adminPage.flyerTitle")}</th>
           {!userView && <th>{t("adminPage.company")}</th>}
           <th>{t("adminPage.couponType")}</th>
+          {hasAssignedVoucherNumber && (
+            <th>{t("adminPage.assignedVoucherNumber")}</th>
+          )}
           {userView ? (
             <>
               <th>{t("adminPage.claimedUsers")}</th>
@@ -52,6 +60,23 @@ export const PlatformAdminCouponClaimsTable = ({
             </td>
             {!userView && <td>{group.companyName || "-"}</td>}
             <td>{group.couponType || "-"}</td>
+            {hasAssignedVoucherNumber && (
+              <td>
+                <div className="platform-admin-user-list">
+                  {group.claims.map((claim) => (
+                    <div
+                      className="platform-admin-user-list-item"
+                      key={`${claim.id}-assigned-voucher-number`}
+                    >
+                      {claim.assignedVoucherNumber != null &&
+                      String(claim.assignedVoucherNumber).trim() !== ""
+                        ? claim.assignedVoucherNumber
+                        : "-"}
+                    </div>
+                  ))}
+                </div>
+              </td>
+            )}
             {userView ? (
               <>
                 <td>
@@ -130,7 +155,7 @@ export const PlatformAdminCouponClaimsTable = ({
         {flyerGroups.length === 0 && (
           <tr>
             <td
-              colSpan={userView ? "4" : "6"}
+              colSpan={(userView ? 4 : 6) + (hasAssignedVoucherNumber ? 1 : 0)}
               className="platform-admin-empty-cell"
             >
               {emptyMessage || t("adminPage.noCouponClaims")}
