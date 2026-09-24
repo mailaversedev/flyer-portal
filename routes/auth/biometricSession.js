@@ -7,6 +7,7 @@ module.exports = function createBiometricSessionRouter(context) {
     JWT_SECRET,
     JWT_OPTIONS,
     createRefreshSession,
+    rotateRefreshSession,
     authenticateToken,
   } = context;
 
@@ -72,6 +73,94 @@ module.exports = function createBiometricSessionRouter(context) {
         success: false,
         message: "Internal server error creating biometric session",
         error: error.message,
+      });
+    }
+  });
+
+  router.post("/biometric-session/login", async (req, res) => {
+    const biometricRefreshToken = req.body?.biometricRefreshToken;
+    if (typeof biometricRefreshToken !== "string" || !biometricRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Biometric login is unavailable. Please sign in with your password.",
+      });
+    }
+
+    try {
+      const biometricSession = await rotateRefreshSession({
+        db,
+        refreshToken: biometricRefreshToken,
+        subjectType: "user",
+        rollingDays: 30,
+      });
+      const userDoc = await db
+        .collection("users")
+        .doc(biometricSession.userId)
+        .get();
+
+      if (!userDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found. Please sign in with your password.",
+        });
+      }
+
+      const userData = userDoc.data();
+      if (!userData.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: "User account is deactivated.",
+        });
+      }
+
+      const tokenPayload = {
+        userId: userDoc.id,
+        username: userData.username,
+        locale: userData.profile?.locale || null,
+      };
+      const token = jwt.sign(tokenPayload, JWT_SECRET, JWT_OPTIONS);
+      const appSession = await createRefreshSession({
+        db,
+        userId: userDoc.id,
+        subjectType: "user",
+        rollingDays: 30,
+        absoluteDays: 90,
+        metadata: {
+          authMethod: "biometric-login",
+          userAgent: req.get("user-agent") || null,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Biometric login successful",
+        data: {
+          token,
+          refreshToken: appSession.refreshToken,
+          refreshTokenExpiresAt: appSession.expiresAt,
+          biometricRefreshToken: biometricSession.refreshToken,
+          biometricRefreshTokenExpiresAt: biometricSession.expiresAt,
+          user: tokenPayload,
+        },
+      });
+    } catch (error) {
+      if (
+        ["Invalid refresh session", "Refresh session expired"].includes(
+          error.message,
+        )
+      ) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Biometric login has expired. Please sign in with your password.",
+        });
+      }
+
+      console.error("Error during biometric login:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error during biometric login",
       });
     }
   });
