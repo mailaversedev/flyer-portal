@@ -19,7 +19,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "node server.js",
+    "server": "node --env-file-if-exists=.env server.js",
     "worker": "node worker.js",
     "create:super-admin": "node setup/createSuperAdmin.js",
     "import:crm-contacts": "python3 setup/importCrmContacts.py",

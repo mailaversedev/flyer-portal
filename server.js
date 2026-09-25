@@ -32,6 +32,7 @@ const { router: authRoutes, authenticateToken } = require("./routes/auth/index")
 const staffAuthRoutes = require("./routes/staffAuth/index");
 const userRoutes = require("./routes/user");
 const paymentRoutes = require("./routes/payment/index");
+const kpayWebhookRoutes = require("./routes/payment/kpayWebhookRoutes");
 const lotteryRoutes = require("./routes/lottery");
 const internalRoutes = require("./routes/internal");
 const couponRoutes = require("./routes/coupon");
@@ -43,8 +44,9 @@ const createPublicPromotionsRouter = require("./routes/publicPromotions");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware for parsing JSON requests (for non-file endpoints)
-app.use(express.json({ limit: "10mb" }));
+// Middleware for parsing JSON requests (for non-file endpoints). KPay signs the
+// exact webhook body, so retain it while parsing JSON for signature verification.
+app.use(express.json({ limit: "10mb", verify: (req, res, buffer) => { req.rawBody = buffer.toString("utf8"); } }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Use Routes
@@ -57,6 +59,7 @@ app.use("/api", fileRoutes); // /api/file
 app.use("/api/lottery", lotteryRoutes); // /api/lottery
 app.use("/api", metadataRoutes); // /api/industries
 app.use("/api", voucherRoutes.router); // /api/vouchers
+app.use("/api/payment/kpay", kpayWebhookRoutes); // KPay signed webhook; intentionally unauthenticated
 
 // Protected Routes
 app.use("/api/admin", adminRoutes);

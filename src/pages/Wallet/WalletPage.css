@@ -40,6 +40,21 @@
   color: #94a3b8;
 }
 
+.wallet-page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.wallet-kpay-test-note {
+  flex-basis: 100%;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: right;
+}
+
 .wallet-summary-grid,
 .wallet-card-grid {
   display: grid;
@@ -196,10 +211,40 @@
   transform: translateY(-1px);
 }
 
+.wallet-kpay-test-btn {
+  padding: 10px 18px;
+  background: #0f766e;
+  color: #ffffff;
+  border: 1px solid rgba(153, 246, 228, 0.25);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.wallet-kpay-test-btn:hover:not(:disabled) {
+  background: #0d9488;
+  transform: translateY(-1px);
+}
+
+.wallet-kpay-test-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .wallet-page-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .wallet-page-header-actions {
+    justify-content: flex-start;
+  }
+
+  .wallet-kpay-test-note {
+    text-align: left;
   }
 
   .wallet-page-header h2 {

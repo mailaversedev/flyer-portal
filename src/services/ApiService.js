@@ -422,6 +422,13 @@ class ApiService {
     return this.makeRequest("/api/payment/wallet");
   }
 
+  static async createKpayOrder(payload) {
+    return this.makeRequest("/api/payment/kpay/orders", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   static async getWalletTransactions(limit = 20, offset = 0, type = null) {
     const params = new URLSearchParams({
       limit: String(limit),

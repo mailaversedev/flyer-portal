@@ -2,6 +2,7 @@ const express = require("express");
 
 const bundleRoutes = require("./bundleRoutes");
 const creditRequestRoutes = require("./creditRequestRoutes");
+const kpayRoutes = require("./kpayRoutes");
 const tokenRoutes = require("./tokenRoutes");
 const voucherRoutes = require("./voucherRoutes");
 const walletRoutes = require("./walletRoutes");
@@ -13,5 +14,6 @@ router.use(voucherRoutes);
 router.use(bundleRoutes);
 router.use(walletRoutes);
 router.use(creditRequestRoutes);
+router.use(kpayRoutes);
 
 module.exports = router;

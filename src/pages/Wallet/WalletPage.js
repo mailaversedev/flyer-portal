@@ -19,8 +19,10 @@ const formatDate = (value) => {
   return parsedDate.toLocaleString();
 };
 
+const KPAY_TEST_ORDER_AMOUNT_HKD = 1;
+
 const WalletPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +30,7 @@ const WalletPage = () => {
   const [feedback, setFeedback] = useState(null);
   const [purchasingBundleCode, setPurchasingBundleCode] = useState("");
   const [showCreditModal, setShowCreditModal] = useState(false);
+  const [creatingKpayOrder, setCreatingKpayOrder] = useState(false);
 
   const loadWallet = useCallback(async () => {
     try {
@@ -116,6 +119,46 @@ const WalletPage = () => {
     });
   };
 
+  const handleCreateKpayTestOrder = async () => {
+    const amount = KPAY_TEST_ORDER_AMOUNT_HKD.toFixed(2);
+    const confirmed = window.confirm(
+      t("walletPage.kpayTestOrderConfirm", { amount }),
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setCreatingKpayOrder(true);
+      setFeedback(null);
+
+      const response = await ApiService.createKpayOrder({
+        amount: KPAY_TEST_ORDER_AMOUNT_HKD,
+        idempotencyKey:
+          window.crypto?.randomUUID?.() ||
+          `kpay-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        description: "KPay API integration test",
+        language: i18n.resolvedLanguage || i18n.language || "zh-HK",
+      });
+      const checkoutUrl = response?.data?.checkoutUrl;
+
+      if (!response?.success || !checkoutUrl) {
+        throw new Error(response?.message || t("walletPage.kpayTestOrderError"));
+      }
+
+      window.location.assign(checkoutUrl);
+    } catch (orderError) {
+      console.error("Failed to create KPay test order", orderError);
+      setFeedback({
+        type: "error",
+        message: orderError.message || t("walletPage.kpayTestOrderError"),
+      });
+    } finally {
+      setCreatingKpayOrder(false);
+    }
+  };
+
   return (
     <div className="wallet-page">
       <div className="wallet-page-header">
@@ -123,12 +166,26 @@ const WalletPage = () => {
           <h2>{t("walletPage.title")}</h2>
           <p>{t("walletPage.subtitle")}</p>
         </div>
-        <button
-          className="wallet-request-credit-btn"
-          onClick={() => setShowCreditModal(true)}
-        >
-          Request Credit
-        </button>
+        <div className="wallet-page-header-actions">
+          <button
+            className="wallet-kpay-test-btn"
+            onClick={handleCreateKpayTestOrder}
+            disabled={creatingKpayOrder}
+          >
+            {creatingKpayOrder
+              ? t("walletPage.kpayTestOrderCreating")
+              : t("walletPage.kpayTestOrderButton")}
+          </button>
+          <button
+            className="wallet-request-credit-btn"
+            onClick={() => setShowCreditModal(true)}
+          >
+            Request Credit
+          </button>
+          <span className="wallet-kpay-test-note">
+            {t("walletPage.kpayTestOrderNote")}
+          </span>
+        </div>
       </div>
 
       {feedback ? (
