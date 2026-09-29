@@ -1,4 +1,28 @@
 {
+  "eventCreation": {
+    "title": "活動賺賞",
+    "subtitle": "建立商戶活動，邀請用戶報名",
+    "merchant": "主辦商戶",
+    "chooseMerchant": "選擇商戶",
+    "eventTitle": "活動名稱",
+    "venue": "地點",
+    "description": "活動介紹",
+    "start": "活動開始",
+    "end": "活動結束",
+    "deadline": "報名截止",
+    "timezone": "活動時區",
+    "capacity": "名額（選填）",
+    "confirmationRequired": "需要 QR 碼確認出席",
+    "imagePrompt": "活動圖片生成提示",
+    "promptRequired": "請輸入圖片生成提示",
+    "imageFailed": "未能產生活動圖片",
+    "preview": "活動圖片預覽",
+    "create": "建立活動",
+    "saving": "建立活動中...",
+    "created": "活動已建立",
+    "failed": "未能建立活動",
+    "loadMerchantsFailed": "未能載入商戶"
+  },
   "common": {
     "dashboard": "主頁",
     "coupons": "優惠券",

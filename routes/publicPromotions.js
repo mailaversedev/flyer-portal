@@ -223,6 +223,8 @@ const renderPromotionCard = (flyer, { linkTitle = true } = {}) => {
   const details = [
     description ? `<p class="description">${escapeHtml(description)}</p>` : "",
     tagsMarkup,
+    flyer.type === "event" && flyer.venue ? `<p class="detail-row"><strong>Venue</strong><span>${escapeHtml(flyer.venue)}</span></p>` : "",
+    flyer.type === "event" && flyer.startsAt ? `<p class="detail-row"><strong>Starts</strong><span>${escapeHtml(flyer.startsAt)}</span></p>` : "",
     location ? `<p class="detail-row"><strong>Location</strong><span>${escapeHtml(location)}</span></p>` : "",
     startingDate ? `<p class="detail-row"><strong>Starts</strong><span>${escapeHtml(startingDate)}</span></p>` : "",
     destination
@@ -257,7 +259,18 @@ const renderPromotionCard = (flyer, { linkTitle = true } = {}) => {
     const canonicalPath = getPromotionUrl(flyer.id);
     const canonicalUrl = `${origin}${canonicalPath}`;
     const coverPhoto = getSafeUrl(flyer.coverPhoto);
-    const offer = {
+    const offer = flyer.type === "event" ? {
+      "@context": "https://schema.org",
+      "@type": "Event",
+      name: title,
+      description,
+      url: canonicalUrl,
+      startDate: flyer.startsAt,
+      endDate: flyer.endsAt,
+      location: { "@type": "Place", name: flyer.venue || "" },
+      organizer: { "@type": "Organization", name: companyName },
+      ...(coverPhoto ? { image: coverPhoto } : {}),
+    } : {
       "@context": "https://schema.org",
       "@type": "Offer",
       name: title,
@@ -279,7 +292,9 @@ const renderPromotionCard = (flyer, { linkTitle = true } = {}) => {
       pageTitle: `${title} | ${companyName} | Mailaverse`,
       pageDescription: description,
       heading: title,
-      intro: `Promotion from ${companyName}. Review the offer details below.`,
+      intro: flyer.type === "event"
+        ? `Event hosted by ${companyName}. Apply in the Mailaverse app.`
+        : `Promotion from ${companyName}. Review the offer details below.`,
       structuredData: offer,
       linkCardTitles: false,
     });

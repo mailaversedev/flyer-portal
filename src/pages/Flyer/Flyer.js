@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import FlyerDistributionCard from "../../components/Flyer/FlyerDistributionCard";
+import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./Flyer.css";
 
 const Flyer = () => {
@@ -51,6 +52,18 @@ const Flyer = () => {
       isPrimary: false,
     },
   ];
+
+  if (isSuperAdmin()) {
+    flyerTypes.push({
+      id: 4,
+      title: t("eventCreation.title"),
+      subtitle: t("eventCreation.subtitle"),
+      icon: "event",
+      primaryButton: t("flyerPage.select"),
+      primaryRoute: "/flyer/create/event",
+      isPrimary: false,
+    });
+  }
 
   return (
     <div className="flyer">

@@ -40,6 +40,7 @@ const metadataRoutes = require("./routes/metadata");
 const adminRoutes = require("./routes/admin/index");
 const voucherRoutes = require("./routes/voucher");
 const createPublicPromotionsRouter = require("./routes/publicPromotions");
+const createEventCheckinRouter = require("./routes/eventCheckin");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,6 +69,7 @@ app.use("/api/payment", authenticateToken, paymentRoutes); // /api/payment/add-t
 app.use("/api/coupon", authenticateToken, couponRoutes); // /api/coupon/claim, /api/coupon/my-coupons
 
 // Server-rendered public pages must be registered before the static SPA fallback.
+app.use(createEventCheckinRouter({ db: admin.firestore() }));
 app.use(createPublicPromotionsRouter({ db: admin.firestore() }));
 
 // Serve static files from the React app build directory

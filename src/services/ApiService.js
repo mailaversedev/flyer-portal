@@ -274,6 +274,13 @@ class ApiService {
     });
   }
 
+  static async createEvent(data) {
+    return this.makeRequest("/api/flyer/events", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
   // PUT /api/flyer/:flyerId - Update flyer details
   static async updateFlyer(flyerId, flyerData) {
     return this.makeRequest(`/api/flyer/${flyerId}`, {

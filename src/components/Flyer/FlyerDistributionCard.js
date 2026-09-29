@@ -92,6 +92,16 @@ const FlyerDistributionCard = ({
             </div>
           </div>
         );
+      case "event":
+        return (
+          <div className="device-mockup survey-mockup" aria-hidden="true">
+            <div className="mockup-header">{t("eventCreation.title")}</div>
+            <div className="mockup-content">
+              <div className="question-line" />
+              <div className="question-line short" />
+            </div>
+          </div>
+        );
       default:
         return null;
     }

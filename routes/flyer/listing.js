@@ -34,6 +34,7 @@ module.exports = function createListingRouter(context) {
       if (
         !isSuperAdmin &&
         flyerData.companyId &&
+        flyerData.type !== "event" &&
         flyerData.companyId !== req.user.companyId
       ) {
         return res.status(404).json({

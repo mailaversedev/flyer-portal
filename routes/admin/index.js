@@ -12,10 +12,13 @@ const createCreditRequestsRouter = require("./creditRequests");
 const createAdminSummaryRouter = require("./summary");
 const createCouponClaimsRouter = require("./couponClaims");
 const createVoucherRedemptionsRouter = require("./voucherRedemptions");
+const createAdminEventsRouter = require("./events");
 
 const router = express.Router();
 
 router.use(authenticateToken, context.requireSuperAdmin);
+
+router.use(createAdminEventsRouter(context));
 
 router.use(createCrmRouter(context));
 router.use(createUsersRouter(context));

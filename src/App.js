@@ -10,6 +10,7 @@ import Flyer from "./pages/Flyer/Flyer";
 import LeafletCreation from "./pages/Flyer/FlyerCreation/Leaflet";
 import QueryCreation from "./pages/Flyer/FlyerCreation/Query";
 import QRGeneration from "./pages/Flyer/FlyerCreation/QRGeneration";
+import EventCreation from "./pages/Flyer/FlyerCreation/EventCreation";
 import StaffLogin from "./pages/Login/StaffLogin";
 import Profile from "./pages/Profile/Profile";
 import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
@@ -99,6 +100,7 @@ function App() {
                       element={<QueryCreation />}
                     />
                     <Route path="/flyer/create/qr" element={<QRGeneration />} />
+                    <Route path="/flyer/create/event" element={<EventCreation />} />
                     <Route
                       path="/flyer/edit/leaflet/:flyerId"
                       element={<LeafletCreation />}

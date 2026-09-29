@@ -1,4 +1,28 @@
 {
+  "eventCreation": {
+    "title": "Event to Earn",
+    "subtitle": "Create a merchant event and invite app users to apply",
+    "merchant": "Organizer / merchant",
+    "chooseMerchant": "Choose a merchant",
+    "eventTitle": "Event title",
+    "venue": "Venue",
+    "description": "Event description",
+    "start": "Event starts",
+    "end": "Event ends",
+    "deadline": "Application deadline",
+    "timezone": "Event timezone",
+    "capacity": "Capacity (optional)",
+    "confirmationRequired": "Require QR attendance confirmation",
+    "imagePrompt": "Prompt for the event image",
+    "promptRequired": "An image prompt is required",
+    "imageFailed": "Could not generate an event image",
+    "preview": "Generated event image",
+    "create": "Create event",
+    "saving": "Creating event...",
+    "created": "Event created",
+    "failed": "Could not create event",
+    "loadMerchantsFailed": "Could not load merchants"
+  },
   "common": {
     "dashboard": "Dashboard",
     "coupons": "Coupons",

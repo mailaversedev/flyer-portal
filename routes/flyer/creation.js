@@ -258,6 +258,10 @@ module.exports = function createCreationRouter(context) {
     try {
       const { type, data } = req.body;
 
+      if (type === "event") {
+        return res.status(400).json({ success: false, message: "Use the event creation endpoint" });
+      }
+
       if (
         typeof data?.coverPhoto === "string" &&
         /^(blob:|data:)/i.test(data.coverPhoto)
@@ -586,6 +590,10 @@ module.exports = function createCreationRouter(context) {
 
         const existingFlyer = flyerDoc.data() || {};
 
+        if (existingFlyer.type === "event") {
+          throw new Error("__EVENT_EDIT_UNSUPPORTED__");
+        }
+
         if (
           !isSuperAdmin &&
           existingFlyer.companyId &&
@@ -688,6 +696,13 @@ module.exports = function createCreationRouter(context) {
         return res.status(403).json({
           success: false,
           message: "You do not have permission to update this flyer",
+        });
+      }
+
+      if (error.message === "__EVENT_EDIT_UNSUPPORTED__") {
+        return res.status(403).json({
+          success: false,
+          message: "Event editing is not available yet",
         });
       }
 
