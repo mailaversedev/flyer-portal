@@ -9,7 +9,7 @@ const createConfigurationError = (message) => {
   return error;
 };
 
-const normalizePem = (value) => `${value || ""}`.trim().replace(/\\n/g, "\n");
+const normalizeKeyMaterial = (value) => `${value || ""}`.trim().replace(/\\n/g, "\n");
 
 const decodeBase64Der = (value) => {
   const compact = value.replace(/\s+/g, "");
@@ -29,14 +29,11 @@ const decodeBase64Der = (value) => {
 };
 
 const loadPrivateKey = (value) => {
-  const normalized = normalizePem(value);
-  const key = normalized.includes("-----BEGIN ")
-    ? crypto.createPrivateKey(normalized)
-    : crypto.createPrivateKey({
-        key: decodeBase64Der(normalized),
-        format: "der",
-        type: "pkcs8",
-      });
+  const key = crypto.createPrivateKey({
+    key: decodeBase64Der(normalizeKeyMaterial(value)),
+    format: "der",
+    type: "pkcs8",
+  });
 
   if (key.asymmetricKeyType !== "rsa") {
     throw new Error("Expected an RSA private key");
@@ -46,14 +43,11 @@ const loadPrivateKey = (value) => {
 };
 
 const loadPublicKey = (value) => {
-  const normalized = normalizePem(value);
-  const key = normalized.includes("-----BEGIN ")
-    ? crypto.createPublicKey(normalized)
-    : crypto.createPublicKey({
-        key: decodeBase64Der(normalized),
-        format: "der",
-        type: "spki",
-      });
+  const key = crypto.createPublicKey({
+    key: decodeBase64Der(normalizeKeyMaterial(value)),
+    format: "der",
+    type: "spki",
+  });
 
   if (key.asymmetricKeyType !== "rsa") {
     throw new Error("Expected an RSA public key");
@@ -74,22 +68,41 @@ const normalizeBaseUrl = (value) => {
   }
 };
 
-const requireHttpsUrl = (value, variableName) => {
+const getPublicAppBaseUrl = () => {
+  const configuredBaseUrl = `${process.env.KPAY_PUBLIC_BASE_URL || ""}`.trim();
+  const herokuDefaultDomain = `${process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME || ""}`.trim();
+  const baseUrl = configuredBaseUrl || (herokuDefaultDomain ? `https://${herokuDefaultDomain}` : "");
+
+  if (!baseUrl) {
+    throw createConfigurationError(
+      "Set KPAY_PUBLIC_BASE_URL or enable Heroku runtime dyno metadata to provide HEROKU_APP_DEFAULT_DOMAIN_NAME",
+    );
+  }
+
   try {
-    const url = new URL(value);
-    if (url.protocol !== "https:" || url.search || url.hash) {
-      throw new Error("Invalid URL");
+    const url = new URL(baseUrl);
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    ) {
+      throw new Error("Invalid public app URL");
     }
-    return url.toString();
+    return url.origin;
   } catch (error) {
-    throw createConfigurationError(`${variableName} must be a valid HTTPS URL without query parameters or fragments`);
+    throw createConfigurationError(
+      "KPAY_PUBLIC_BASE_URL must be a valid HTTPS origin, or Heroku app metadata must contain a valid app domain",
+    );
   }
 };
 
 const getKPayConfig = () => {
   const merchantCode = `${process.env.KPAY_MERCHANT_CODE || ""}`.trim();
-  const privateKeyValue = normalizePem(process.env.KPAY_PRIVATE_KEY);
-  const platformPublicKeyValue = normalizePem(process.env.KPAY_PLATFORM_PUBLIC_KEY);
+  const privateKeyValue = normalizeKeyMaterial(process.env.KPAY_PRIVATE_KEY);
+  const platformPublicKeyValue = normalizeKeyMaterial(process.env.KPAY_PLATFORM_PUBLIC_KEY);
   const appId = `${process.env.KPAY_APP_ID || ""}`.trim();
 
   if (!merchantCode || !privateKeyValue || !platformPublicKeyValue) {
@@ -103,7 +116,7 @@ const getKPayConfig = () => {
     privateKey = loadPrivateKey(privateKeyValue);
   } catch (error) {
     throw createConfigurationError(
-      "KPAY_PRIVATE_KEY must be an RSA private key in PEM format or base64-encoded PKCS#8 DER",
+      "KPAY_PRIVATE_KEY must be base64-encoded PKCS#8 DER for an RSA private key; PEM is not accepted",
     );
   }
 
@@ -112,18 +125,20 @@ const getKPayConfig = () => {
     platformPublicKey = loadPublicKey(platformPublicKeyValue);
   } catch (error) {
     throw createConfigurationError(
-      "KPAY_PLATFORM_PUBLIC_KEY must be an RSA public key in PEM format or base64-encoded SPKI DER",
+      "KPAY_PLATFORM_PUBLIC_KEY must be base64-encoded SPKI DER for an RSA public key; PEM is not accepted",
     );
   }
+
+  const publicAppBaseUrl = getPublicAppBaseUrl();
 
   return {
     appId,
     apiBaseUrl: normalizeBaseUrl(process.env.KPAY_API_BASE_URL),
     merchantCode,
-    notifyUrl: requireHttpsUrl(process.env.KPAY_NOTIFY_URL, "KPAY_NOTIFY_URL"),
+    notifyUrl: `${publicAppBaseUrl}/api/payment/kpay/notify`,
     platformPublicKey,
     privateKey,
-    returnUrl: requireHttpsUrl(process.env.KPAY_RETURN_URL, "KPAY_RETURN_URL"),
+    returnUrl: `${publicAppBaseUrl}/wallet`,
   };
 };
 

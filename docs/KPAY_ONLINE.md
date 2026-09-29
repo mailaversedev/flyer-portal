@@ -12,11 +12,12 @@ The Express backend implements KPay's fully managed checkout flow:
 
 Set the variables shown in [.env.example](../.env.example) in the web server's environment. Do not commit either PEM key or KPay test card data.
 
-- `KPAY_MERCHANT_CODE`, `KPAY_PRIVATE_KEY`, and `KPAY_PLATFORM_PUBLIC_KEY` come from KPay's Online Integration email. Keys may be PEM; base64-encoded DER is also accepted for PKCS#8 RSA private keys and SPKI RSA public keys.
+- `KPAY_MERCHANT_CODE`, `KPAY_PRIVATE_KEY`, and `KPAY_PLATFORM_PUBLIC_KEY` come from KPay's Online Integration email. Set only the base64-encoded DER body of the keys—exclude PEM `-----BEGIN/END-----` lines. `KPAY_PRIVATE_KEY` must be PKCS#8 DER; `KPAY_PLATFORM_PUBLIC_KEY` must be SPKI DER. PEM-wrapped values are not accepted.
 - `KPAY_APP_ID` is required only for KPay service-provider mode. Leave it blank for merchant mode.
 - UAT defaults to `https://payment.uat.kpay-group.com`; set `KPAY_API_BASE_URL=https://payment.kpay-group.com` only for the KPay production environment.
-- `KPAY_NOTIFY_URL` must be the externally reachable HTTPS URL `https://<api-host>/api/payment/kpay/notify`, with no query string. Give KPay the web server's outbound IP for their UAT/production allow list.
-- `KPAY_RETURN_URL` is where KPay returns the payer after checkout. For WeChat H5 testing, KPay requires its domain to match the order URL domain; use the domain KPay directs for that test case.
+- The app's public HTTPS origin is required. Set `KPAY_PUBLIC_BASE_URL=https://<your-app-domain>`, or enable Heroku runtime dyno metadata to provide `HEROKU_APP_DEFAULT_DOMAIN_NAME`. There are no separate notify/return URL settings: KPay URLs are always derived on this host as `/api/payment/kpay/notify` and `/wallet`.
+- Give KPay the web server's outbound IP for their UAT/production allow list.
+- For WeChat H5 testing, KPay may require the return URL domain to match the order URL domain; use the domain KPay directs for that test case.
 
 The production process must preserve the default system clock accuracy because KPay rejects stale signed requests. The webhook accepts signed requests only within five minutes of their timestamp.
 
