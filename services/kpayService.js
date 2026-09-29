@@ -11,6 +11,57 @@ const createConfigurationError = (message) => {
 
 const normalizePem = (value) => `${value || ""}`.trim().replace(/\\n/g, "\n");
 
+const decodeBase64Der = (value) => {
+  const compact = value.replace(/\s+/g, "");
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(compact) || compact.length % 4 === 1) {
+    throw new Error("Invalid base64-encoded DER");
+  }
+
+  const der = Buffer.from(compact, "base64");
+  if (
+    der.length === 0 ||
+    der.toString("base64").replace(/=+$/, "") !== compact.replace(/=+$/, "")
+  ) {
+    throw new Error("Invalid base64-encoded DER");
+  }
+
+  return der;
+};
+
+const loadPrivateKey = (value) => {
+  const normalized = normalizePem(value);
+  const key = normalized.includes("-----BEGIN ")
+    ? crypto.createPrivateKey(normalized)
+    : crypto.createPrivateKey({
+        key: decodeBase64Der(normalized),
+        format: "der",
+        type: "pkcs8",
+      });
+
+  if (key.asymmetricKeyType !== "rsa") {
+    throw new Error("Expected an RSA private key");
+  }
+
+  return key;
+};
+
+const loadPublicKey = (value) => {
+  const normalized = normalizePem(value);
+  const key = normalized.includes("-----BEGIN ")
+    ? crypto.createPublicKey(normalized)
+    : crypto.createPublicKey({
+        key: decodeBase64Der(normalized),
+        format: "der",
+        type: "spki",
+      });
+
+  if (key.asymmetricKeyType !== "rsa") {
+    throw new Error("Expected an RSA public key");
+  }
+
+  return key;
+};
+
 const normalizeBaseUrl = (value) => {
   try {
     const url = new URL(value || DEFAULT_API_BASE_URL);
@@ -37,21 +88,32 @@ const requireHttpsUrl = (value, variableName) => {
 
 const getKPayConfig = () => {
   const merchantCode = `${process.env.KPAY_MERCHANT_CODE || ""}`.trim();
-  const privateKey = normalizePem(process.env.KPAY_PRIVATE_KEY);
-  const platformPublicKey = normalizePem(process.env.KPAY_PLATFORM_PUBLIC_KEY);
+  const privateKeyValue = normalizePem(process.env.KPAY_PRIVATE_KEY);
+  const platformPublicKeyValue = normalizePem(process.env.KPAY_PLATFORM_PUBLIC_KEY);
   const appId = `${process.env.KPAY_APP_ID || ""}`.trim();
 
-  if (!merchantCode || !privateKey || !platformPublicKey) {
+  if (!merchantCode || !privateKeyValue || !platformPublicKeyValue) {
     throw createConfigurationError(
       "KPay is not configured. KPAY_MERCHANT_CODE, KPAY_PRIVATE_KEY, and KPAY_PLATFORM_PUBLIC_KEY are required",
     );
   }
 
+  let privateKey;
   try {
-    crypto.createPrivateKey(privateKey);
-    crypto.createPublicKey(platformPublicKey);
+    privateKey = loadPrivateKey(privateKeyValue);
   } catch (error) {
-    throw createConfigurationError("KPay key material is not a valid PEM-encoded RSA key");
+    throw createConfigurationError(
+      "KPAY_PRIVATE_KEY must be an RSA private key in PEM format or base64-encoded PKCS#8 DER",
+    );
+  }
+
+  let platformPublicKey;
+  try {
+    platformPublicKey = loadPublicKey(platformPublicKeyValue);
+  } catch (error) {
+    throw createConfigurationError(
+      "KPAY_PLATFORM_PUBLIC_KEY must be an RSA public key in PEM format or base64-encoded SPKI DER",
+    );
   }
 
   return {

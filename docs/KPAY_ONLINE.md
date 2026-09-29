@@ -12,7 +12,7 @@ The Express backend implements KPay's fully managed checkout flow:
 
 Set the variables shown in [.env.example](../.env.example) in the web server's environment. Do not commit either PEM key or KPay test card data.
 
-- `KPAY_MERCHANT_CODE`, `KPAY_PRIVATE_KEY`, and `KPAY_PLATFORM_PUBLIC_KEY` come from KPay's Online Integration email.
+- `KPAY_MERCHANT_CODE`, `KPAY_PRIVATE_KEY`, and `KPAY_PLATFORM_PUBLIC_KEY` come from KPay's Online Integration email. Keys may be PEM; base64-encoded DER is also accepted for PKCS#8 RSA private keys and SPKI RSA public keys.
 - `KPAY_APP_ID` is required only for KPay service-provider mode. Leave it blank for merchant mode.
 - UAT defaults to `https://payment.uat.kpay-group.com`; set `KPAY_API_BASE_URL=https://payment.kpay-group.com` only for the KPay production environment.
 - `KPAY_NOTIFY_URL` must be the externally reachable HTTPS URL `https://<api-host>/api/payment/kpay/notify`, with no query string. Give KPay the web server's outbound IP for their UAT/production allow list.
