@@ -6,7 +6,7 @@ const { buildCheckoutUrl, createManagedOrder } = require("../../services/kpaySer
 const { db } = require("./helpers");
 
 const router = express.Router();
-const MAX_HKD_AMOUNT = 99999999.99;
+const MAX_HKD_AMOUNT = 100000.00;
 
 const normalizeAmount = (value) => {
   const match = /^(0|[1-9]\d*)(?:\.(\d{1,2}))?$/.exec(`${value ?? ""}`.trim());

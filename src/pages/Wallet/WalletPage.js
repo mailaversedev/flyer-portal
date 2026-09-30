@@ -19,7 +19,7 @@ const formatDate = (value) => {
   return parsedDate.toLocaleString();
 };
 
-const KPAY_TEST_ORDER_AMOUNT_HKD = 1;
+const KPAY_TEST_ORDER_AMOUNT_HKD = 2;
 
 const WalletPage = () => {
   const { t, i18n } = useTranslation();
