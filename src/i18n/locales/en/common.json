@@ -132,6 +132,14 @@
     "loadingDistricts": "Loading districts...",
     "currentCompanyIcon": "Current Company Icon"
   },
+  "kpayPayment": {
+    "pending": "Confirming your payment… Please wait; do not pay again.",
+    "timeout": "Payment confirmation is taking longer than expected. Your payment and draft are saved. Check again without paying again.",
+    "error": "Unable to check payment status. Please retry; do not pay again.",
+    "failed": "Payment was unsuccessful. Check again, or dismiss this message to try another payment.",
+    "retry": "Check payment again",
+    "dismiss": "Dismiss"
+  },
   "walletPage": {
     "title": "Company Wallet",
     "subtitle": "Review your $Mailcoin balance, HKD credit, available bundles, and recent billing activity.",

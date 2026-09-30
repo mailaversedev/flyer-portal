@@ -10,6 +10,8 @@ import CreditRequestModal from "../../Wallet/CreditRequestModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
+import useKpayPayment, { rememberKpayPayment } from "../../../hooks/useKpayPayment";
+import KpayPaymentStatus from "../../../components/Payment/KpayPaymentStatus";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
 import {
   DEFAULT_TYPOGRAPHY,
@@ -277,23 +279,37 @@ const LeafletEditForm = ({ data, onUpdate, t }) => {
 };
 
 const LeafletCreation = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { flyerId } = useParams();
   const isEditMode = Boolean(flyerId);
   const isSuperAdminUser = isSuperAdmin();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [leafletData, setLeafletData] = useState(DEFAULT_LEAFLET_DATA);
+  const [savedDraft] = useState(() => isEditMode ? null : safeParseJson(sessionStorage.getItem(LEAFLET_DRAFT_STORAGE_KEY)));
+  const [currentStep, setCurrentStep] = useState(() => [1, 2, 3].includes(savedDraft?.currentStep) ? savedDraft.currentStep : 1);
+  const [leafletData, setLeafletData] = useState(() => ({ ...DEFAULT_LEAFLET_DATA, ...savedDraft?.leafletData }));
   const [loading, setLoading] = useState("");
   const [isFetching, setIsFetching] = useState(isEditMode);
-  const [isFreeAttempt, setIsFreeAttempt] = useState(false);
-  const [generatedHistory, setGeneratedHistory] = useState([]);
+  const [isFreeAttempt, setIsFreeAttempt] = useState(savedDraft?.isFreeAttempt || false);
+  const [generatedHistory, setGeneratedHistory] = useState(savedDraft?.generatedHistory || []);
   const [walletSummary, setWalletSummary] = useState(null);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [merchantOptions, setMerchantOptions] = useState([]);
-  const [isCreatingTargetBudgetKpay, setIsCreatingTargetBudgetKpay] = useState(false);
+  const [creatingTargetBudgetKpay, setIsCreatingTargetBudgetKpay] = useState(false);
+  const [settledBudget, setSettledBudget] = useState(savedDraft?.settledBudget || 0);
   const step1Ref = useRef();
   const navigate = useNavigate();
   const location = useLocation();
+  const isDirectUpload = location.state?.isDirectUpload || savedDraft?.isDirectUpload || false;
+  const payment = useKpayPayment({
+    purpose: "target_budget_direct",
+    onPaid: async (confirmedPayment) => {
+      const response = await ApiService.getCompanyWallet();
+      if (!response.success || !response.data) throw new Error("Unable to refresh wallet");
+      setWalletSummary(response.data);
+      setSettledBudget(Number(confirmedPayment.amount));
+      toast.success(t("targetBudget.kpayBudgetPaidSuccess"));
+    },
+  });
+  const isCreatingTargetBudgetKpay = creatingTargetBudgetKpay || !["idle", "paid"].includes(payment.status);
 
   const tokenCost = getLeafletTokenCost(leafletData.resolution);
   const availableTokens = Number(walletSummary?.balance) || 0;
@@ -307,51 +323,14 @@ const LeafletCreation = () => {
       return;
     }
 
-    const searchParams = new URLSearchParams(window.location.search);
-    const kpayResult = searchParams.get("kpayResult");
-    const kpayPurpose = searchParams.get("kpayPurpose");
-
-    const savedDraft = safeParseJson(sessionStorage.getItem(LEAFLET_DRAFT_STORAGE_KEY));
-    if (savedDraft?.leafletData) {
-      setLeafletData(savedDraft.leafletData);
-      if (
-        Number.isInteger(savedDraft.currentStep) &&
-        savedDraft.currentStep >= 1 &&
-        savedDraft.currentStep <= 3
-      ) {
-        setCurrentStep(savedDraft.currentStep);
-      }
-    }
-
-    if (kpayResult === "success" && kpayPurpose === "target_budget_direct") {
-      toast.success(t("targetBudget.kpayBudgetPaidSuccess"));
-      sessionStorage.removeItem(LEAFLET_DRAFT_STORAGE_KEY);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      const reloadWallet = async () => {
-        if (isSuperAdminUser) {
-          return;
-        }
-
-        try {
-          const response = await ApiService.getCompanyWallet();
-          if (response.success && response.data) {
-            setWalletSummary(response.data);
-          }
-        } catch (error) {
-          console.error("Failed to refresh wallet after KPay return", error);
-        }
-      };
-      reloadWallet();
-    }
-
-    if (location.state?.isDirectUpload && location.state?.uploadedImage) {
+    if (!savedDraft && location.state?.isDirectUpload && location.state?.uploadedImage) {
       setLeafletData((prev) => ({
         ...prev,
         coverPhoto: location.state.uploadedImage,
       }));
       setCurrentStep(2);
     }
-  }, [isEditMode, location.state]);
+  }, [isEditMode, location.state, savedDraft]);
 
   useEffect(() => {
     if (isEditMode) {
@@ -363,9 +342,13 @@ const LeafletCreation = () => {
       JSON.stringify({
         currentStep,
         leafletData,
+        generatedHistory,
+        isFreeAttempt,
+        isDirectUpload,
+        settledBudget,
       }),
     );
-  }, [currentStep, isEditMode, leafletData]);
+  }, [currentStep, isEditMode, leafletData, generatedHistory, isFreeAttempt, isDirectUpload, settledBudget]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -446,6 +429,53 @@ const LeafletCreation = () => {
   const handleCreditRequestSuccess = () => {
     setShowCreditModal(false);
     toast.success("Thank you. The Amount will be credited within 12hours. Please kindly email us if you have any troubles.");
+  };
+
+  const startBudgetPayment = async (budget, returnStep) => {
+    if (!Number.isFinite(budget) || budget <= 0) {
+      toast.error(t("targetBudget.invalidBudgetAmount"));
+      return;
+    }
+    try {
+      setIsCreatingTargetBudgetKpay(true);
+      // Blob URLs and File objects cannot survive navigation. Upload payment-stage
+      // assets first, then save their permanent URLs in the return draft.
+      const uploaded = await ApiService.uploadFilesFromData({
+        coverPhoto: leafletData.coverPhoto,
+        couponFile: leafletData.coupon?.couponFile,
+        qrCodeImage: leafletData.coupon?.qrCodeImage,
+        barcodeImage: leafletData.coupon?.barcodeImage,
+      });
+      const persistentData = {
+        ...leafletData,
+        coverPhoto: uploaded.coverPhoto || leafletData.coverPhoto,
+        coupon: { ...(leafletData.coupon || {}), ...uploaded },
+      };
+      sessionStorage.setItem(LEAFLET_DRAFT_STORAGE_KEY, JSON.stringify({
+        leafletData: persistentData,
+        currentStep: returnStep,
+        generatedHistory,
+        isFreeAttempt,
+        isDirectUpload,
+        settledBudget: 0,
+      }));
+      const response = await ApiService.createKpayOrder({
+        purpose: "target_budget_direct",
+        amount: Number(budget.toFixed(2)),
+        idempotencyKey: window.crypto?.randomUUID?.() || `target-budget-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        description: "Leaflet target budget payment",
+        language: i18n.resolvedLanguage || i18n.language || "zh-HK",
+        returnPath: "/flyer/create/leaflet?kpayPurpose=target_budget_direct",
+      });
+      if (!response?.success || !response.data?.checkoutUrl) {
+        throw new Error(response?.message || t("targetBudget.kpayCreateOrderError"));
+      }
+      rememberKpayPayment("target_budget_direct", response.data.paymentId);
+      window.location.assign(response.data.checkoutUrl);
+    } catch (error) {
+      toast.error(error.message || t("targetBudget.kpayCreateOrderError"));
+      setIsCreatingTargetBudgetKpay(false);
+    }
   };
 
   const handleNext = async () => {
@@ -529,7 +559,7 @@ const LeafletCreation = () => {
       if (currentStep === 2) {
       const validation = validateTargetBudgetStep({
         data: leafletData,
-        isDirectUpload: location.state?.isDirectUpload,
+        isDirectUpload,
         t,
       });
       if (!validation.isValid) {
@@ -545,35 +575,8 @@ const LeafletCreation = () => {
         const creditBalanceHkd = Number(walletSummary?.creditBalanceHkd) || 0;
 
         if (leafletData?.targetBudget?.paymentMethod === "credit-card") {
-          if (budget <= 0) {
-            toast.error(t("targetBudget.invalidBudgetAmount"));
-            return;
-          }
-
-          try {
-            setIsCreatingTargetBudgetKpay(true);
-            const response = await ApiService.createKpayOrder({
-              purpose: "target_budget_direct",
-              amount: Number(budget.toFixed(2)),
-              idempotencyKey:
-                window.crypto?.randomUUID?.() ||
-                `target-budget-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-              description: "Leaflet target budget payment",
-              language: i18n.resolvedLanguage || i18n.language || "zh-HK",
-              returnPath: "/flyer/create/leaflet?kpayResult=success&kpayPurpose=target_budget_direct",
-            });
-
-            const checkoutUrl = response?.data?.checkoutUrl;
-            if (!response?.success || !checkoutUrl) {
-              throw new Error(response?.message || t("targetBudget.kpayCreateOrderError"));
-            }
-
-            window.location.assign(checkoutUrl);
-            return;
-          } catch (error) {
-            console.error("Failed to create target budget KPay order", error);
-            toast.error(error.message || t("targetBudget.kpayCreateOrderError"));
-            setIsCreatingTargetBudgetKpay(false);
+          if (settledBudget !== budget) {
+            await startBudgetPayment(budget, 3);
             return;
           }
         }
@@ -604,8 +607,8 @@ const LeafletCreation = () => {
       const creditBalanceHkd = Number(walletSummary?.creditBalanceHkd) || 0;
 
       if (leafletData?.targetBudget?.paymentMethod === "credit-card") {
-        if (budget > creditBalanceHkd) {
-          toast.error(t("targetBudget.kpayBudgetNotSettled"));
+        if (settledBudget !== budget) {
+          await startBudgetPayment(budget, currentStep);
           return;
         }
       }
@@ -728,6 +731,7 @@ const LeafletCreation = () => {
         )}
 
         <div className="step-content">
+          <KpayPaymentStatus {...payment} />
           {isFetching ? (
             <div className="loading-indicator-text">{t("creation.loadingFlyer")}</div>
           ) : isEditMode ? (
@@ -861,7 +865,7 @@ const LeafletCreation = () => {
                   data={leafletData}
                   onUpdate={updateLeafletData}
                   history={generatedHistory}
-                  isDirectUpload={location.state?.isDirectUpload}
+                  isDirectUpload={isDirectUpload}
                   isFreeAttempt={isFreeAttempt}
                   isSuperAdminUser={isSuperAdminUser}
                   merchantOptions={merchantOptions}

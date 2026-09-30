@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 
 import ApiService from "../../services/ApiService";
+import useKpayPayment, { rememberKpayPayment } from "../../hooks/useKpayPayment";
+import KpayPaymentStatus from "../../components/Payment/KpayPaymentStatus";
 import CreditRequestModal from "./CreditRequestModal";
 import "./WalletPage.css";
 
@@ -54,35 +57,18 @@ const WalletPage = () => {
     loadWallet();
   }, [loadWallet]);
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const kpayResult = searchParams.get("kpayResult");
-    const kpayPurpose = searchParams.get("kpayPurpose");
-    const bundleCode = searchParams.get("bundleCode");
-
-    if (kpayResult !== "success") {
-      return;
-    }
-
-    if (kpayPurpose === "bundle_purchase") {
-      const matchedBundle = bundles.find((bundle) => bundle.code === bundleCode);
-      setFeedback({
-        type: "success",
-        message: t("walletPage.kpayBundleSuccess", {
-          bundle: matchedBundle?.title || t("walletPage.bundleFallbackName"),
-        }),
+  const payment = useKpayPayment({
+    purpose: "bundle_purchase",
+    onPaid: async (confirmedPayment) => {
+      await loadWallet();
+      const message = t("walletPage.kpayBundleSuccess", {
+        bundle: confirmedPayment.purposeMeta?.bundleTitle || t("walletPage.bundleFallbackName"),
       });
-      loadWallet();
-    } else if (kpayPurpose === "wallet_topup") {
-      setFeedback({
-        type: "success",
-        message: t("walletPage.kpayTopupSuccess"),
-      });
-      loadWallet();
-    }
-
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }, [bundles, loadWallet, t]);
+      setFeedback({ type: "success", message });
+      toast.success(message);
+    },
+  });
+  const paymentUnresolved = !["idle", "paid"].includes(payment.status);
 
   useEffect(() => {
     if (!feedback) {
@@ -166,6 +152,7 @@ const WalletPage = () => {
         throw new Error(response?.message || t("walletPage.kpayBundleError"));
       }
 
+      rememberKpayPayment("bundle_purchase", response.data.paymentId);
       window.location.assign(checkoutUrl);
     } catch (orderError) {
       console.error("Failed to create KPay bundle payment", orderError);
@@ -205,6 +192,8 @@ const WalletPage = () => {
       {feedback ? (
         <div className={`wallet-page-feedback ${feedback.type}`}>{feedback.message}</div>
       ) : null}
+
+      <KpayPaymentStatus {...payment} />
 
       {loading ? (
         <div className="wallet-page-panel">{t("walletPage.loading")}</div>
@@ -300,6 +289,7 @@ const WalletPage = () => {
                       className="wallet-card-action"
                       onClick={() => handlePurchaseBundle(bundle)}
                       disabled={
+                        paymentUnresolved ||
                         purchasingBundleCode === bundle.code ||
                         creatingBundleKpayCode === bundle.code ||
                         availableCreditBalanceHkd < Number(bundle.priceHkd)
@@ -314,6 +304,7 @@ const WalletPage = () => {
                       className="wallet-card-action secondary"
                       onClick={() => handlePurchaseBundleByCard(bundle)}
                       disabled={
+                        paymentUnresolved ||
                         purchasingBundleCode === bundle.code ||
                         creatingBundleKpayCode === bundle.code
                       }

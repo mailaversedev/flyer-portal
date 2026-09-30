@@ -133,6 +133,14 @@
     "loadingDistricts": "正在載入地區...",
     "currentCompanyIcon": "目前公司圖示"
   },
+  "kpayPayment": {
+    "pending": "正在確認付款… 請稍候，切勿重複付款。",
+    "timeout": "付款確認需時較長。付款紀錄及草稿已儲存，請再次查詢，切勿重複付款。",
+    "error": "暫時無法查詢付款狀態，請重試，切勿重複付款。",
+    "failed": "付款未成功。請再次查詢，或關閉此訊息後重新付款。",
+    "retry": "再次查詢付款",
+    "dismiss": "關閉"
+  },
   "walletPage": {
     "title": "公司錢包",
     "subtitle": "查看 $Mailcoin 餘額、港幣額度、可購買套餐及最近錢包紀錄。",

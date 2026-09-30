@@ -1,7 +1,6 @@
 const crypto = require("crypto");
 const express = require("express");
 
-const { createCompanyWalletTransaction, ensureCompanyWalletInTransaction } = require("../../services/companyWalletService");
 const { TOKEN_BUNDLES } = require("../../config/billingConfig");
 const { buildCheckoutUrl, buildPublicReturnUrl, createManagedOrder } = require("../../services/kpayService");
 const { db } = require("./helpers");
@@ -178,6 +177,8 @@ router.post("/kpay/orders", async (req, res) => {
     }
 
     const paymentRef = db.collection("kpayPayments").doc(buildIdempotencyHash({ companyId, idempotencyKey }));
+    const returnUrl = new URL(buildPublicReturnUrl(purposePayload.returnPath));
+    returnUrl.searchParams.set("kpayPaymentId", paymentRef.id);
     const timestamp = new Date().toISOString();
     const initialPayment = {
       paymentId: paymentRef.id,
@@ -238,7 +239,7 @@ router.post("/kpay/orders", async (req, res) => {
         amount: initialPayment.amount,
         orderRemark: initialPayment.description,
         itemName: purposePayload.itemName,
-        returnUrl: buildPublicReturnUrl(initialPayment.returnPath),
+        returnUrl: returnUrl.toString(),
       });
     } catch (error) {
       await paymentRef.update({
@@ -303,6 +304,7 @@ router.get("/kpay/orders/:paymentId", async (req, res) => {
       return res.status(404).json({ success: false, message: "KPay payment not found" });
     }
 
+    res.set("Cache-Control", "no-store");
     return res.status(200).json({ success: true, data: serializePayment(paymentDoc.data() || {}) });
   } catch (error) {
     console.error("Error retrieving KPay payment:", error);

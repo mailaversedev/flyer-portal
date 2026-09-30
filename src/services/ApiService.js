@@ -436,6 +436,10 @@ class ApiService {
     });
   }
 
+  static async getKpayOrder(paymentId) {
+    return this.makeRequest(`/api/payment/kpay/orders/${encodeURIComponent(paymentId)}`);
+  }
+
   static async getWalletTransactions(limit = 20, offset = 0, type = null) {
     const params = new URLSearchParams({
       limit: String(limit),
