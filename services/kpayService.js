@@ -99,6 +99,20 @@ const getPublicAppBaseUrl = () => {
   }
 };
 
+const buildPublicReturnUrl = (returnPath = "/wallet") => {
+  const normalizedPath = `${returnPath || ""}`.trim();
+
+  if (!normalizedPath.startsWith("/")) {
+    throw createConfigurationError("KPay returnPath must start with '/'");
+  }
+
+  if (normalizedPath.startsWith("//") || /^https?:\/\//i.test(normalizedPath)) {
+    throw createConfigurationError("KPay returnPath must be a relative path");
+  }
+
+  return `${getPublicAppBaseUrl()}${normalizedPath}`;
+};
+
 const getKPayConfig = () => {
   const merchantCode = `${process.env.KPAY_MERCHANT_CODE || ""}`.trim();
   const privateKeyValue = normalizeKeyMaterial(process.env.KPAY_PRIVATE_KEY);
@@ -138,7 +152,7 @@ const getKPayConfig = () => {
     notifyUrl: `${publicAppBaseUrl}/api/payment/kpay/notify`,
     platformPublicKey,
     privateKey,
-    returnUrl: `${publicAppBaseUrl}/wallet`,
+    defaultReturnUrl: `${publicAppBaseUrl}/wallet`,
   };
 };
 
@@ -221,15 +235,16 @@ const buildCheckoutUrl = ({ managedOrderNo, language = "zh-HK", config = getKPay
   return `${config.apiBaseUrl}${path}?${query}&K-Signature=${encodeURIComponent(signature)}`;
 };
 
-const createManagedOrder = async ({ managedOutTradeNo, amount, orderRemark, itemName }) => {
+const createManagedOrder = async ({ managedOutTradeNo, amount, orderRemark, itemName, returnUrl }) => {
   const config = getKPayConfig();
   const path = "/v1/managed/order/add";
+  const resolvedReturnUrl = returnUrl || config.defaultReturnUrl;
   const body = JSON.stringify({
     managedOutTradeNo,
     payAmount: amount,
     payCurrency: "HKD",
     notifyUrl: config.notifyUrl,
-    returnUrl: config.returnUrl,
+    returnUrl: resolvedReturnUrl,
     orderRemark,
     itemList: [
       {
@@ -316,6 +331,7 @@ const verifyWebhook = ({ headers, rawBody, callbackPath }) => {
 };
 
 module.exports = {
+  buildPublicReturnUrl,
   buildCheckoutUrl,
   buildSignatureText,
   createManagedOrder,

@@ -19,6 +19,20 @@ import {
 import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
+const LEAFLET_DRAFT_STORAGE_KEY = "leafletCreationDraftV1";
+
+const safeParseJson = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (_error) {
+    return null;
+  }
+};
+
 const formatDateTimeLocal = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -276,6 +290,7 @@ const LeafletCreation = () => {
   const [walletSummary, setWalletSummary] = useState(null);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [merchantOptions, setMerchantOptions] = useState([]);
+  const [isCreatingTargetBudgetKpay, setIsCreatingTargetBudgetKpay] = useState(false);
   const step1Ref = useRef();
   const navigate = useNavigate();
   const location = useLocation();
@@ -292,6 +307,43 @@ const LeafletCreation = () => {
       return;
     }
 
+    const searchParams = new URLSearchParams(window.location.search);
+    const kpayResult = searchParams.get("kpayResult");
+    const kpayPurpose = searchParams.get("kpayPurpose");
+
+    const savedDraft = safeParseJson(sessionStorage.getItem(LEAFLET_DRAFT_STORAGE_KEY));
+    if (savedDraft?.leafletData) {
+      setLeafletData(savedDraft.leafletData);
+      if (
+        Number.isInteger(savedDraft.currentStep) &&
+        savedDraft.currentStep >= 1 &&
+        savedDraft.currentStep <= 3
+      ) {
+        setCurrentStep(savedDraft.currentStep);
+      }
+    }
+
+    if (kpayResult === "success" && kpayPurpose === "target_budget_direct") {
+      toast.success(t("targetBudget.kpayBudgetPaidSuccess"));
+      sessionStorage.removeItem(LEAFLET_DRAFT_STORAGE_KEY);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      const reloadWallet = async () => {
+        if (isSuperAdminUser) {
+          return;
+        }
+
+        try {
+          const response = await ApiService.getCompanyWallet();
+          if (response.success && response.data) {
+            setWalletSummary(response.data);
+          }
+        } catch (error) {
+          console.error("Failed to refresh wallet after KPay return", error);
+        }
+      };
+      reloadWallet();
+    }
+
     if (location.state?.isDirectUpload && location.state?.uploadedImage) {
       setLeafletData((prev) => ({
         ...prev,
@@ -300,6 +352,20 @@ const LeafletCreation = () => {
       setCurrentStep(2);
     }
   }, [isEditMode, location.state]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      return;
+    }
+
+    sessionStorage.setItem(
+      LEAFLET_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        currentStep,
+        leafletData,
+      }),
+    );
+  }, [currentStep, isEditMode, leafletData]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -477,7 +543,41 @@ const LeafletCreation = () => {
       if (!noReward && !isSuperAdminUser) {
         const budget = Number(leafletData?.targetBudget?.budget || leafletData?.budget || 0);
         const creditBalanceHkd = Number(walletSummary?.creditBalanceHkd) || 0;
-        
+
+        if (leafletData?.targetBudget?.paymentMethod === "credit-card") {
+          if (budget <= 0) {
+            toast.error(t("targetBudget.invalidBudgetAmount"));
+            return;
+          }
+
+          try {
+            setIsCreatingTargetBudgetKpay(true);
+            const response = await ApiService.createKpayOrder({
+              purpose: "target_budget_direct",
+              amount: Number(budget.toFixed(2)),
+              idempotencyKey:
+                window.crypto?.randomUUID?.() ||
+                `target-budget-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              description: "Leaflet target budget payment",
+              language: i18n.resolvedLanguage || i18n.language || "zh-HK",
+              returnPath: "/flyer/create/leaflet?kpayResult=success&kpayPurpose=target_budget_direct",
+            });
+
+            const checkoutUrl = response?.data?.checkoutUrl;
+            if (!response?.success || !checkoutUrl) {
+              throw new Error(response?.message || t("targetBudget.kpayCreateOrderError"));
+            }
+
+            window.location.assign(checkoutUrl);
+            return;
+          } catch (error) {
+            console.error("Failed to create target budget KPay order", error);
+            toast.error(error.message || t("targetBudget.kpayCreateOrderError"));
+            setIsCreatingTargetBudgetKpay(false);
+            return;
+          }
+        }
+
         if (budget > creditBalanceHkd) {
           setShowCreditModal(true);
           return;
@@ -502,6 +602,13 @@ const LeafletCreation = () => {
     if (!noReward && !isSuperAdminUser) {
       const budget = Number(leafletData?.targetBudget?.budget || leafletData?.budget || 0);
       const creditBalanceHkd = Number(walletSummary?.creditBalanceHkd) || 0;
+
+      if (leafletData?.targetBudget?.paymentMethod === "credit-card") {
+        if (budget > creditBalanceHkd) {
+          toast.error(t("targetBudget.kpayBudgetNotSettled"));
+          return;
+        }
+      }
 
       if (budget > creditBalanceHkd) {
         setShowCreditModal(true);
@@ -549,6 +656,7 @@ const LeafletCreation = () => {
       });
 
       if (response.success) {
+        sessionStorage.removeItem(LEAFLET_DRAFT_STORAGE_KEY);
         navigate("/flyer", {
           state: {
             success: true,
@@ -811,7 +919,7 @@ const LeafletCreation = () => {
                   <button
                     className="nav-button"
                     onClick={handleCreate}
-                    disabled={loading}
+                    disabled={loading || isCreatingTargetBudgetKpay}
                     style={{
                       backgroundColor: "transparent",
                       border: "1px solid #3b82f6",
@@ -823,9 +931,11 @@ const LeafletCreation = () => {
                   <button
                     className="nav-button next-button"
                     onClick={handleNext}
-                    disabled={loading}
+                    disabled={loading || isCreatingTargetBudgetKpay}
                   >
-                    {t("creation.proceedToCoupon")}
+                    {isCreatingTargetBudgetKpay
+                      ? t("targetBudget.kpayRedirecting")
+                      : t("creation.proceedToCoupon")}
                   </button>
                 </div>
               )}
@@ -834,7 +944,7 @@ const LeafletCreation = () => {
                 <button
                   className="nav-button generate-button"
                   onClick={handleCreate}
-                  disabled={loading}
+                  disabled={loading || isCreatingTargetBudgetKpay}
                 >
                   {t("creation.create")}
                 </button>

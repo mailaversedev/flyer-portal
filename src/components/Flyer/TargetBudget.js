@@ -597,6 +597,17 @@ const TargetBudget = ({
                   <span className="checkbox-text">{t("targetBudget.fps")}</span>
                 </label>
               </div>
+              {formData.paymentMethod === "credit-card" ? (
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#64748b",
+                    marginTop: "8px",
+                  }}
+                >
+                  {t("targetBudget.creditCardKpayHint")}
+                </div>
+              ) : null}
             </div>
           )}
         </div>

@@ -1,11 +1,17 @@
 const express = require("express");
 
+const { TOKEN_BUNDLES } = require("../../config/billingConfig");
 const { createCompanyWalletTransaction, ensureCompanyWalletInTransaction } = require("../../services/companyWalletService");
 const { getKPayConfig, verifyWebhook } = require("../../services/kpayService");
 const { db } = require("./helpers");
 
 const router = express.Router();
 const CALLBACK_PATH = "/api/payment/kpay/notify";
+const KPAY_PAYMENT_PURPOSES = {
+  WALLET_TOP_UP: "wallet_topup",
+  BUNDLE_PURCHASE: "bundle_purchase",
+  TARGET_BUDGET_DIRECT: "target_budget_direct",
+};
 
 const toCents = (value) => {
   const match = /^(0|[1-9]\d*)(?:\.(\d{1,2}))?$/.exec(`${value ?? ""}`.trim());
@@ -19,6 +25,8 @@ const toCents = (value) => {
 
 const getReportedAmount = (payload) => payload.localPayAmount ?? payload.payAmount;
 const getReportedCurrency = (payload) => `${payload.localPayCurrency || payload.payCurrency || ""}`.toUpperCase();
+
+const roundToMoney = (value) => Math.round(Number(value) * 100) / 100;
 
 router.post("/notify", async (req, res) => {
   const rawBody = req.rawBody || "";
@@ -98,6 +106,8 @@ router.post("/notify", async (req, res) => {
         return;
       }
 
+      const purpose = `${payment.purpose || KPAY_PAYMENT_PURPOSES.WALLET_TOP_UP}`.trim();
+      const purposeMeta = payment.purposeMeta || {};
       const wallet = await ensureCompanyWalletInTransaction({
         transaction,
         companyId: payment.companyId,
@@ -110,34 +120,97 @@ router.post("/notify", async (req, res) => {
         ? (await transaction.get(walletRef)).data() || {}
         : wallet.data || {};
       const previousCreditBalanceHkd = Number(walletData.creditBalanceHkd) || 0;
-      const newCreditBalanceHkd = Math.round((previousCreditBalanceHkd + payment.amount) * 100) / 100;
+      const previousTokenBalance = Number(walletData.balance) || 0;
 
-      transaction.set(walletRef, {
-        creditBalanceHkd: newCreditBalanceHkd,
-        updatedAt: timestamp,
-        version: (Number(walletData.version) || 0) + 1,
-      }, { merge: true });
-      createCompanyWalletTransaction({
-        transaction,
-        walletId: walletRef.id,
-        companyId: payment.companyId,
-        type: "ADD",
-        amount: payment.amount,
-        previousBalance: previousCreditBalanceHkd,
-        newBalance: newCreditBalanceHkd,
-        balanceField: "creditBalanceHkd",
-        unit: "HKD",
-        description: "KPay Online credit top-up",
-        timestamp,
-        metadata: {
-          source: "kpay_online",
-          kpayPaymentId: payment.paymentId,
-          managedOrderNo,
-          managedOutTradeNo,
-          orderNo: callbackData.orderNo,
-          transactionNo: callbackData.transactionNo,
-        },
-      });
+      if (purpose === KPAY_PAYMENT_PURPOSES.BUNDLE_PURCHASE) {
+        const bundleCode = `${purposeMeta.bundleCode || ""}`.trim();
+        const bundle = TOKEN_BUNDLES.find((entry) => entry.code === bundleCode);
+
+        if (!bundle) {
+          throw new Error("__INVALID_BUNDLE_PURPOSE__");
+        }
+
+        const bundlePrice = roundToMoney(bundle.priceHkd);
+        if (Math.round(bundlePrice * 100) !== payment.amountCents) {
+          throw new Error("__PAYMENT_MISMATCH__");
+        }
+
+        const bundleTokens = Number(bundle.tokens) || 0;
+        const newTokenBalance = previousTokenBalance + bundleTokens;
+        transaction.set(
+          walletRef,
+          {
+            balance: newTokenBalance,
+            updatedAt: timestamp,
+            version: (Number(walletData.version) || 0) + 1,
+          },
+          { merge: true },
+        );
+
+        createCompanyWalletTransaction({
+          transaction,
+          walletId: walletRef.id,
+          companyId: payment.companyId,
+          type: "ADD",
+          amount: bundleTokens,
+          previousBalance: previousTokenBalance,
+          newBalance: newTokenBalance,
+          balanceField: "balance",
+          unit: "TOKEN",
+          description: `${bundle.title} purchase via KPay (+${bundleTokens} tokens)`,
+          timestamp,
+          metadata: {
+            source: "kpay_bundle_purchase",
+            bundleCode: bundle.code,
+            bundleTitle: bundle.title,
+            bundlePriceHkd: bundlePrice,
+            kpayPaymentId: payment.paymentId,
+            managedOrderNo,
+            managedOutTradeNo,
+            orderNo: callbackData.orderNo,
+            transactionNo: callbackData.transactionNo,
+          },
+        });
+      } else {
+        const newCreditBalanceHkd = roundToMoney(previousCreditBalanceHkd + payment.amount);
+        transaction.set(
+          walletRef,
+          {
+            creditBalanceHkd: newCreditBalanceHkd,
+            updatedAt: timestamp,
+            version: (Number(walletData.version) || 0) + 1,
+          },
+          { merge: true },
+        );
+
+        createCompanyWalletTransaction({
+          transaction,
+          walletId: walletRef.id,
+          companyId: payment.companyId,
+          type: "ADD",
+          amount: payment.amount,
+          previousBalance: previousCreditBalanceHkd,
+          newBalance: newCreditBalanceHkd,
+          balanceField: "creditBalanceHkd",
+          unit: "HKD",
+          description:
+            purpose === KPAY_PAYMENT_PURPOSES.TARGET_BUDGET_DIRECT
+              ? "KPay target budget payment"
+              : "KPay Online credit top-up",
+          timestamp,
+          metadata: {
+            source:
+              purpose === KPAY_PAYMENT_PURPOSES.TARGET_BUDGET_DIRECT
+                ? "kpay_target_budget"
+                : "kpay_online",
+            kpayPaymentId: payment.paymentId,
+            managedOrderNo,
+            managedOutTradeNo,
+            orderNo: callbackData.orderNo,
+            transactionNo: callbackData.transactionNo,
+          },
+        });
+      }
       transaction.update(paymentRef, {
         status: "PAID",
         paidAt: timestamp,
@@ -154,7 +227,7 @@ router.post("/notify", async (req, res) => {
       return res.status(503).json({ success: false, message: "KPay webhook is not configured" });
     }
 
-    if (["__PAYMENT_NOT_FOUND__", "__PAYMENT_MISMATCH__"].includes(error.message)) {
+    if (["__PAYMENT_NOT_FOUND__", "__PAYMENT_MISMATCH__", "__INVALID_BUNDLE_PURPOSE__"].includes(error.message)) {
       console.error("Rejected KPay webhook:", error.message);
       return res.status(400).json({ success: false, message: "KPay payment does not match the payment record" });
     }

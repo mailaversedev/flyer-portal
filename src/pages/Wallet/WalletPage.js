@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
@@ -19,8 +19,6 @@ const formatDate = (value) => {
   return parsedDate.toLocaleString();
 };
 
-const KPAY_TEST_ORDER_AMOUNT_HKD = 2;
-
 const WalletPage = () => {
   const { t, i18n } = useTranslation();
   const [wallet, setWallet] = useState(null);
@@ -29,8 +27,8 @@ const WalletPage = () => {
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [purchasingBundleCode, setPurchasingBundleCode] = useState("");
+  const [creatingBundleKpayCode, setCreatingBundleKpayCode] = useState("");
   const [showCreditModal, setShowCreditModal] = useState(false);
-  const [creatingKpayOrder, setCreatingKpayOrder] = useState(false);
 
   const loadWallet = useCallback(async () => {
     try {
@@ -57,6 +55,36 @@ const WalletPage = () => {
   }, [loadWallet]);
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const kpayResult = searchParams.get("kpayResult");
+    const kpayPurpose = searchParams.get("kpayPurpose");
+    const bundleCode = searchParams.get("bundleCode");
+
+    if (kpayResult !== "success") {
+      return;
+    }
+
+    if (kpayPurpose === "bundle_purchase") {
+      const matchedBundle = bundles.find((bundle) => bundle.code === bundleCode);
+      setFeedback({
+        type: "success",
+        message: t("walletPage.kpayBundleSuccess", {
+          bundle: matchedBundle?.title || t("walletPage.bundleFallbackName"),
+        }),
+      });
+      loadWallet();
+    } else if (kpayPurpose === "wallet_topup") {
+      setFeedback({
+        type: "success",
+        message: t("walletPage.kpayTopupSuccess"),
+      });
+      loadWallet();
+    }
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [bundles, loadWallet, t]);
+
+  useEffect(() => {
     if (!feedback) {
       return undefined;
     }
@@ -72,6 +100,11 @@ const WalletPage = () => {
 
   const bundles = wallet?.bundles || [];
   const availableCreditBalanceHkd = Number(wallet?.creditBalanceHkd) || 0;
+
+  const language = useMemo(
+    () => i18n.resolvedLanguage || i18n.language || "zh-HK",
+    [i18n.language, i18n.resolvedLanguage],
+  );
 
   const formatWalletValue = (value, unit = "TOKEN") => {
     if (unit === "HKD") {
@@ -111,52 +144,45 @@ const WalletPage = () => {
     }
   };
 
+  const handlePurchaseBundleByCard = async (bundle) => {
+    try {
+      setCreatingBundleKpayCode(bundle.code);
+      setFeedback(null);
+
+      const response = await ApiService.createKpayOrder({
+        purpose: "bundle_purchase",
+        bundleCode: bundle.code,
+        amount: Number(bundle.priceHkd),
+        idempotencyKey:
+          window.crypto?.randomUUID?.() ||
+          `bundle-${bundle.code}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        description: `${bundle.title} bundle purchase`,
+        language,
+        returnPath: `/wallet?kpayResult=success&kpayPurpose=bundle_purchase&bundleCode=${encodeURIComponent(bundle.code)}`,
+      });
+      const checkoutUrl = response?.data?.checkoutUrl;
+
+      if (!response?.success || !checkoutUrl) {
+        throw new Error(response?.message || t("walletPage.kpayBundleError"));
+      }
+
+      window.location.assign(checkoutUrl);
+    } catch (orderError) {
+      console.error("Failed to create KPay bundle payment", orderError);
+      setFeedback({
+        type: "error",
+        message: orderError.message || t("walletPage.kpayBundleError"),
+      });
+      setCreatingBundleKpayCode("");
+    }
+  };
+
   const handleCreditRequestSuccess = () => {
     setShowCreditModal(false);
     setFeedback({
       type: "success",
       message: "Thank you. The Amount will be credited within 12hours. Please kindly email us if you have any troubles.",
     });
-  };
-
-  const handleCreateKpayTestOrder = async () => {
-    const amount = KPAY_TEST_ORDER_AMOUNT_HKD.toFixed(2);
-    const confirmed = window.confirm(
-      t("walletPage.kpayTestOrderConfirm", { amount }),
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setCreatingKpayOrder(true);
-      setFeedback(null);
-
-      const response = await ApiService.createKpayOrder({
-        amount: KPAY_TEST_ORDER_AMOUNT_HKD,
-        idempotencyKey:
-          window.crypto?.randomUUID?.() ||
-          `kpay-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        description: "KPay API integration test",
-        language: i18n.resolvedLanguage || i18n.language || "zh-HK",
-      });
-      const checkoutUrl = response?.data?.checkoutUrl;
-
-      if (!response?.success || !checkoutUrl) {
-        throw new Error(response?.message || t("walletPage.kpayTestOrderError"));
-      }
-
-      window.location.assign(checkoutUrl);
-    } catch (orderError) {
-      console.error("Failed to create KPay test order", orderError);
-      setFeedback({
-        type: "error",
-        message: orderError.message || t("walletPage.kpayTestOrderError"),
-      });
-    } finally {
-      setCreatingKpayOrder(false);
-    }
   };
 
   return (
@@ -168,23 +194,11 @@ const WalletPage = () => {
         </div>
         <div className="wallet-page-header-actions">
           <button
-            className="wallet-kpay-test-btn"
-            onClick={handleCreateKpayTestOrder}
-            disabled={creatingKpayOrder}
-          >
-            {creatingKpayOrder
-              ? t("walletPage.kpayTestOrderCreating")
-              : t("walletPage.kpayTestOrderButton")}
-          </button>
-          <button
             className="wallet-request-credit-btn"
             onClick={() => setShowCreditModal(true)}
           >
             Request Credit
           </button>
-          <span className="wallet-kpay-test-note">
-            {t("walletPage.kpayTestOrderNote")}
-          </span>
         </div>
       </div>
 
@@ -280,19 +294,35 @@ const WalletPage = () => {
                       price: (bundle.priceHkd / bundle.tokens).toFixed(2),
                     })}
                   </p>
-                  <button
-                    type="button"
-                    className="wallet-card-action"
-                    onClick={() => handlePurchaseBundle(bundle)}
-                    disabled={
-                      purchasingBundleCode === bundle.code ||
-                      availableCreditBalanceHkd < Number(bundle.priceHkd)
-                    }
-                  >
-                    {purchasingBundleCode === bundle.code
-                      ? t("walletPage.purchasing")
-                      : t("walletPage.purchaseButton")}
-                  </button>
+                  <div className="wallet-card-actions">
+                    <button
+                      type="button"
+                      className="wallet-card-action"
+                      onClick={() => handlePurchaseBundle(bundle)}
+                      disabled={
+                        purchasingBundleCode === bundle.code ||
+                        creatingBundleKpayCode === bundle.code ||
+                        availableCreditBalanceHkd < Number(bundle.priceHkd)
+                      }
+                    >
+                      {purchasingBundleCode === bundle.code
+                        ? t("walletPage.purchasing")
+                        : t("walletPage.purchaseButton")}
+                    </button>
+                    <button
+                      type="button"
+                      className="wallet-card-action secondary"
+                      onClick={() => handlePurchaseBundleByCard(bundle)}
+                      disabled={
+                        purchasingBundleCode === bundle.code ||
+                        creatingBundleKpayCode === bundle.code
+                      }
+                    >
+                      {creatingBundleKpayCode === bundle.code
+                        ? t("walletPage.kpayRedirecting")
+                        : t("walletPage.purchaseWithCardButton")}
+                    </button>
+                  </div>
                   {availableCreditBalanceHkd < Number(bundle.priceHkd) ? (
                     <span className="wallet-card-note">
                       {t("walletPage.insufficientCredit")}
