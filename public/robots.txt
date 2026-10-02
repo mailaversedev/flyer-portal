@@ -1,7 +1,2 @@
 User-agent: *
 Disallow: /
-Allow: /promotions
-Allow: /promotions/
-Allow: /sitemap.xml
-
-Sitemap: https://portal.mailaverse.io/sitemap.xml
