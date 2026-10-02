@@ -59,10 +59,10 @@ const Flyer = () => {
       title: t("eventCreation.title"),
       subtitle: t("eventCreation.subtitle"),
       icon: "event",
-      primaryButton: t("flyerPage.select"),
+      primaryButton: t("flyerPage.leafletPrimary"),
       secondaryButton: t("flyerPage.leafletSecondary"),
       primaryRoute: "/flyer/create/event",
-      isPrimary: false,
+      isPrimary: true,
     });
   }
 

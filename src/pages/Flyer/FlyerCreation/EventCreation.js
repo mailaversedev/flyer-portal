@@ -140,17 +140,23 @@ const EventCreation = () => {
   };
 
   return (
-    <div className="flyer event-creation">
+    <div className="flyer-creation event-creation">
+      <div className="creation-container">
       <h1>{t("eventCreation.title")}</h1>
-      <div className="steps-container" aria-label={t("eventCreation.steps")}>
-        {["eventCreation.detailsStep", "creation.targetBudget"].map((label, index) => (
-          <div key={label} className={`step-indicator ${step === index + 1 ? "active" : ""}`} aria-current={step === index + 1 ? "step" : undefined}>
-            <span className="step-number">{index + 1}</span>
-            <span className="step-label">{t(label)}</span>
+      <div className="step-header">
+        <div className="step-indicators" role="group" aria-label={t("eventCreation.steps")}>
+          <div className="step-indicator active" aria-current={step === 1 ? "step" : undefined}>
+            <span className="step-number">1</span>
+            <span className="step-label">{t("eventCreation.detailsStep")}</span>
           </div>
-        ))}
+          <div className={`step-connector ${step >= 2 ? "active" : ""}`} aria-hidden="true" />
+          <div className={`step-indicator ${step >= 2 ? "active" : ""}`} aria-current={step === 2 ? "step" : undefined}>
+            <span className="step-number">2</span>
+            <span className="step-label">{t("creation.targetBudget")}</span>
+          </div>
+        </div>
       </div>
-      <form onSubmit={submit} className="step1-content" aria-label={t("eventCreation.title")}>
+      <form onSubmit={submit} className={`step-content ${step === 1 ? "step1-content" : ""}`} aria-label={t("eventCreation.title")}>
         <fieldset disabled={busy} className="event-fields">
         {step === 1 ? <>
         <div className="form-group">
@@ -305,6 +311,7 @@ const EventCreation = () => {
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 };

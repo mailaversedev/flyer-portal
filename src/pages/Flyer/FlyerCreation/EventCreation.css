@@ -1,6 +1,41 @@
 .event-creation {
-  max-width: 1200px;
   color: white;
+}
+
+.event-creation .creation-container > h1 {
+  margin-bottom: 24px;
+}
+
+/* Keep preview beside targeting on desktop, including smaller laptop screens. */
+@media (min-width: 769px) {
+  .event-creation .budget-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .event-creation .budget-form,
+  .event-creation .flyer-preview {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .event-creation .step-indicators {
+    flex-direction: row;
+  }
+
+  .event-creation .step-connector {
+    width: 32px;
+    margin: 0 12px;
+  }
+
+  .event-creation .step-label {
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 .event-fields {
