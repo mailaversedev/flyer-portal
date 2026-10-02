@@ -20,6 +20,12 @@ const FlyerDistributionCard = ({
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith("image/")) {
+      if (icon === "event") {
+        navigate(primaryRoute, {
+          state: { uploadedFile: file, isDirectUpload: true },
+        });
+        return;
+      }
       // Create a file URL for the selected image
       const imageUrl = URL.createObjectURL(file);
 
@@ -39,8 +45,8 @@ const FlyerDistributionCard = ({
     if (buttonType === "primary" && primaryRoute) {
       navigate(primaryRoute);
     } else if (buttonType === "secondary") {
-      // For leaflet, trigger file selector
-      if (icon === "leaflet" && fileInputRef.current) {
+      // For leaflet and event flyers, trigger the file selector.
+      if ((icon === "leaflet" || icon === "event") && fileInputRef.current) {
         fileInputRef.current.click();
       } else {
         // Handle other secondary button actions
@@ -115,6 +121,7 @@ const FlyerDistributionCard = ({
         ref={fileInputRef}
         onChange={handleFileSelect}
         accept="image/*"
+        aria-label={`${title}: ${secondaryButton || t("flyerPage.leafletSecondary")}`}
         style={{ display: "none" }}
       />
 

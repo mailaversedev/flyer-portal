@@ -60,6 +60,7 @@ const Flyer = () => {
       subtitle: t("eventCreation.subtitle"),
       icon: "event",
       primaryButton: t("flyerPage.select"),
+      secondaryButton: t("flyerPage.leafletSecondary"),
       primaryRoute: "/flyer/create/event",
       isPrimary: false,
     });

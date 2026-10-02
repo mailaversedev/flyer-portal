@@ -16,7 +16,7 @@
     "imagePrompt": "Prompt for the event image",
     "promptRequired": "An image prompt is required",
     "imageFailed": "Could not generate an event image",
-    "preview": "Generated event image",
+    "preview": "Event image preview",
     "create": "Create event",
     "saving": "Creating event...",
     "created": "Event created",

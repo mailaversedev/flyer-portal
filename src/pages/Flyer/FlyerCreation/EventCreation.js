@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 import ApiService from "../../../services/ApiService";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
 import "./Leaflet.css";
+import "./EventCreation.css";
 
 const initial = {
   companyId: "",
@@ -24,11 +25,21 @@ const initial = {
 const EventCreation = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const uploadedFile = location.state?.uploadedFile;
+  const [uploadedPreview, setUploadedPreview] = useState("");
   const [data, setData] = useState(initial);
   const [companies, setCompanies] = useState([]);
   const [busy, setBusy] = useState(false);
   const update = (key, value) =>
     setData((previous) => ({ ...previous, [key]: value }));
+
+  useEffect(() => {
+    if (!uploadedFile) return;
+    const preview = URL.createObjectURL(uploadedFile);
+    setUploadedPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [uploadedFile]);
 
   useEffect(() => {
     if (!isSuperAdmin()) {
@@ -46,6 +57,14 @@ const EventCreation = () => {
     setBusy(true);
     try {
       let coverPhoto = data.coverPhoto;
+      if (!coverPhoto && uploadedFile) {
+        const uploaded = await ApiService.uploadFilesFromData({
+          coverPhoto: uploadedFile,
+        });
+        coverPhoto = uploaded.coverPhoto;
+        if (!coverPhoto) throw new Error(t("eventCreation.failed"));
+        update("coverPhoto", coverPhoto);
+      }
       if (!coverPhoto) {
         if (!data.flyerPrompts.trim())
           throw new Error(t("eventCreation.promptRequired"));
@@ -82,7 +101,7 @@ const EventCreation = () => {
   return (
     <div className="flyer" style={{ maxWidth: 780, color: "white" }}>
       <h1>{t("eventCreation.title")}</h1>
-      <form onSubmit={submit} className="step1-content">
+      <form onSubmit={submit} className="step1-content" aria-label={t("eventCreation.title")}>
         <div className="form-group">
           <label className="form-label">{t("eventCreation.merchant")}</label>
           <select
@@ -108,6 +127,7 @@ const EventCreation = () => {
             <input
               className="form-input"
               required
+              aria-label={t(label)}
               maxLength={field === "header" ? 160 : 300}
               value={data[field]}
               onChange={(event) => update(field, event.target.value)}
@@ -119,6 +139,7 @@ const EventCreation = () => {
           <textarea
             className="form-textarea"
             required
+            aria-label={t("eventCreation.description")}
             maxLength={5000}
             value={data.adContent}
             onChange={(event) => update("adContent", event.target.value)}
@@ -135,6 +156,7 @@ const EventCreation = () => {
               className="form-input"
               type="datetime-local"
               required
+              aria-label={t(label)}
               value={data[field]}
               onChange={(event) => update(field, event.target.value)}
             />
@@ -160,28 +182,30 @@ const EventCreation = () => {
           />
         </div>
         <div className="form-group">
-          <label>
+          <label className="event-confirmation-label">
             <input
               type="checkbox"
               checked={data.confirmationRequired}
               onChange={(event) =>
                 update("confirmationRequired", event.target.checked)
               }
-            />{" "}
-            {t("eventCreation.confirmationRequired")}
+            />
+            <span>{t("eventCreation.confirmationRequired")}</span>
           </label>
         </div>
-        <div className="form-group">
-          <label className="form-label">{t("eventCreation.imagePrompt")}</label>
-          <textarea
-            className="form-textarea"
-            value={data.flyerPrompts}
-            onChange={(event) => update("flyerPrompts", event.target.value)}
-          />
-        </div>
-        {data.coverPhoto && (
+        {!uploadedFile && (
+          <div className="form-group">
+            <label className="form-label">{t("eventCreation.imagePrompt")}</label>
+            <textarea
+              className="form-textarea"
+              value={data.flyerPrompts}
+              onChange={(event) => update("flyerPrompts", event.target.value)}
+            />
+          </div>
+        )}
+        {(uploadedPreview || data.coverPhoto) && (
           <img
-            src={data.coverPhoto}
+            src={data.coverPhoto || uploadedPreview}
             alt={t("eventCreation.preview")}
             style={{ maxWidth: 260, borderRadius: 12 }}
           />
