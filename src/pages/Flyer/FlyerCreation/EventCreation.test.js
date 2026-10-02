@@ -147,6 +147,8 @@ test("uploaded photo is previewed, hides the prompt and releases its URL", () =>
     "src",
     "blob:event-preview",
   );
+  expect(screen.getByRole("complementary", { name: "eventCreation.preview" })).toHaveClass("event-details-preview");
+  expect(screen.getByAltText("eventCreation.preview")).toHaveClass("event-upload-preview-image");
   expect(
     screen.queryByText("eventCreation.imagePrompt"),
   ).not.toBeInTheDocument();

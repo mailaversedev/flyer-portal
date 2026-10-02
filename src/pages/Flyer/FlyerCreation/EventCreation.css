@@ -6,8 +6,36 @@
   margin-bottom: 24px;
 }
 
+.event-details-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.event-details-form,
+.event-details-preview {
+  min-width: 0;
+}
+
+.event-upload-preview-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
 /* Keep preview beside targeting on desktop, including smaller laptop screens. */
 @media (min-width: 769px) {
+  .event-details-layout.has-preview {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .event-details-preview {
+    position: sticky;
+    top: 24px;
+  }
+
   .event-creation .budget-layout {
     flex-direction: row;
     align-items: flex-start;

@@ -158,7 +158,8 @@ const EventCreation = () => {
       </div>
       <form onSubmit={submit} className={`step-content ${step === 1 ? "step1-content" : ""}`} aria-label={t("eventCreation.title")}>
         <fieldset disabled={busy} className="event-fields">
-        {step === 1 ? <>
+        {step === 1 ? <div className={`event-details-layout ${uploadedPreview || data.coverPhoto ? "has-preview" : ""}`}>
+        <div className="event-details-form">
         <div className="form-group">
           <label className="form-label">{t("eventCreation.merchant")}</label>
           <select
@@ -290,14 +291,19 @@ const EventCreation = () => {
             />
           </div>
         )}
+        </div>
         {(uploadedPreview || data.coverPhoto) && (
-          <img
-            src={data.coverPhoto || uploadedPreview}
-            alt={t("eventCreation.preview")}
-            style={{ maxWidth: 260, borderRadius: 12 }}
-          />
+          <aside className="event-details-preview" aria-label={t("eventCreation.preview")}>
+            <div className="preview-container">
+              <img
+                src={data.coverPhoto || uploadedPreview}
+                alt={t("eventCreation.preview")}
+                className="event-upload-preview-image"
+              />
+            </div>
+          </aside>
         )}
-        </> : <TargetBudget
+        </div> : <TargetBudget
           data={data}
           onUpdate={setData}
           history={history}
