@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 import ApiService from "../../../services/ApiService";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
+import TargetBudget from "../../../components/Flyer/TargetBudget";
+import eventUtils from "../../../utils/EventCreationUtil";
 import "./Leaflet.css";
 import "./EventCreation.css";
 
 const initial = {
-  companyId: "",
+  companyId: eventUtils.MAILAVERSE_ORGANIZER.id,
   header: "",
   adContent: "",
   venue: "",
@@ -20,22 +22,42 @@ const initial = {
   confirmationRequired: false,
   flyerPrompts: "",
   coverPhoto: "",
+  logoImage: null,
+  targetBudget: { noReward: true, district: "", propertyEstate: "", targetedGroup: "", scheduledAt: null },
 };
 
 const EventCreation = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const uploadedFile = location.state?.uploadedFile;
+  const [uploadedFile, setUploadedFile] = useState(location.state?.uploadedFile || null);
   const [uploadedPreview, setUploadedPreview] = useState("");
+  const [iconPreview, setIconPreview] = useState("");
+  const [step, setStep] = useState(1);
+  const [history, setHistory] = useState([]);
   const [data, setData] = useState(initial);
   const [companies, setCompanies] = useState([]);
   const [busy, setBusy] = useState(false);
   const update = (key, value) =>
-    setData((previous) => ({ ...previous, [key]: value }));
+    setData((previous) => ({ ...previous, [key]: value, ...(step === 1 && !uploadedFile ? { coverPhoto: "" } : {}) }));
+  const merchant = companies.find((company) => company.id === data.companyId) || eventUtils.MAILAVERSE_ORGANIZER;
+  const defaultIcon = merchant.icon || eventUtils.MAILAVERSE_ORGANIZER.icon;
 
   useEffect(() => {
-    if (!uploadedFile) return;
+    if (!data.logoImage?.file) {
+      setIconPreview("");
+      return;
+    }
+    const preview = URL.createObjectURL(data.logoImage.file);
+    setIconPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [data.logoImage]);
+
+  useEffect(() => {
+    if (!uploadedFile) {
+      setUploadedPreview("");
+      return;
+    }
     const preview = URL.createObjectURL(uploadedFile);
     setUploadedPreview(preview);
     return () => URL.revokeObjectURL(preview);
@@ -47,15 +69,44 @@ const EventCreation = () => {
       return;
     }
     ApiService.getAdminCompanies()
-      .then((response) => setCompanies(response.data || []))
+      .then((response) => setCompanies((response.data || []).filter((company) => company.isActive !== false)))
       .catch(() => toast.error(t("eventCreation.loadMerchantsFailed")));
   }, [navigate, t]);
+
+  const buildPayload = () => {
+    const payload = {
+      ...data,
+      timezone: data.timezone.trim(),
+      startsAt: eventUtils.eventDateToIso(data.startsAt, data.timezone.trim()),
+      endsAt: eventUtils.eventDateToIso(data.endsAt, data.timezone.trim()),
+      applicationDeadline: eventUtils.eventDateToIso(data.applicationDeadline, data.timezone.trim()),
+      capacity: data.capacity === "" ? null : Number(data.capacity),
+    };
+    const invalid = eventUtils.validateEventDetails(payload);
+    if (invalid) throw new Error(t(`eventCreation.${invalid.code}`));
+    return payload;
+  };
 
   const submit = async (event) => {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
     try {
+      const payload = buildPayload();
+      if (step === 2) {
+        let companyIcon = defaultIcon;
+        if (data.logoImage?.file) {
+          const uploaded = await ApiService.uploadFile(data.logoImage.file, "event-icon");
+          if (!uploaded.success || !uploaded.url) throw new Error(t("eventCreation.iconFailed"));
+          companyIcon = uploaded.url;
+        }
+        const response = await ApiService.createEvent({ ...payload, companyIcon, logoImage: undefined });
+        if (!response.success) throw new Error(response.message || t("eventCreation.failed"));
+        navigate("/flyer", {
+          state: { success: true, message: t("eventCreation.created") },
+        });
+        return;
+      }
       let coverPhoto = data.coverPhoto;
       if (!coverPhoto && uploadedFile) {
         const uploaded = await ApiService.uploadFilesFromData({
@@ -68,40 +119,40 @@ const EventCreation = () => {
       if (!coverPhoto) {
         if (!data.flyerPrompts.trim())
           throw new Error(t("eventCreation.promptRequired"));
-        const merchant = companies.find(
-          (company) => company.id === data.companyId,
-        );
         const image = await ApiService.generateLeaflet(
           { ...data, aspectRatio: "1:1", resolution: "1K" },
-          { company: merchant },
+          { company: { ...merchant, icon: defaultIcon } },
         );
         coverPhoto = image.images?.[0]?.url || image.flyer_output_path;
         if (!coverPhoto) throw new Error(t("eventCreation.imageFailed"));
         update("coverPhoto", coverPhoto);
       }
-      const response = await ApiService.createEvent({
-        ...data,
-        coverPhoto,
-        startsAt: new Date(data.startsAt).toISOString(),
-        endsAt: new Date(data.endsAt).toISOString(),
-        applicationDeadline: new Date(data.applicationDeadline).toISOString(),
-        capacity: data.capacity === "" ? null : Number(data.capacity),
-      });
-      if (response.success)
-        navigate("/flyer", {
-          state: { success: true, message: t("eventCreation.created") },
-        });
+      if (!/^https:\/\//.test(coverPhoto)) throw new Error(t("eventCreation.imageFailed"));
+      setData((previous) => ({ ...previous, coverPhoto }));
+      if (!uploadedFile) setHistory((previous) => [coverPhoto, ...previous.filter((url) => url !== coverPhoto)]);
+      setStep(2);
     } catch (error) {
-      toast.error(error.message || t("eventCreation.failed"));
+      const code = ["invalidDates", "invalidTimezone"].includes(error.message);
+      toast.error(code ? t(`eventCreation.${error.message}`) : error.message || t("eventCreation.failed"));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="flyer" style={{ maxWidth: 780, color: "white" }}>
+    <div className="flyer event-creation">
       <h1>{t("eventCreation.title")}</h1>
+      <div className="steps-container" aria-label={t("eventCreation.steps")}>
+        {["eventCreation.detailsStep", "creation.targetBudget"].map((label, index) => (
+          <div key={label} className={`step-indicator ${step === index + 1 ? "active" : ""}`} aria-current={step === index + 1 ? "step" : undefined}>
+            <span className="step-number">{index + 1}</span>
+            <span className="step-label">{t(label)}</span>
+          </div>
+        ))}
+      </div>
       <form onSubmit={submit} className="step1-content" aria-label={t("eventCreation.title")}>
+        <fieldset disabled={busy} className="event-fields">
+        {step === 1 ? <>
         <div className="form-group">
           <label className="form-label">{t("eventCreation.merchant")}</label>
           <select
@@ -110,13 +161,25 @@ const EventCreation = () => {
             value={data.companyId}
             onChange={(event) => update("companyId", event.target.value)}
           >
-            <option value="">{t("eventCreation.chooseMerchant")}</option>
-            {companies.map((company) => (
+            <option value={eventUtils.MAILAVERSE_ORGANIZER.id}>Mailaverse</option>
+            {companies.filter((company) => company.id !== eventUtils.MAILAVERSE_ORGANIZER.id).map((company) => (
               <option key={company.id} value={company.id}>
                 {company.companyDisplayName || company.name}
               </option>
             ))}
           </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor="event-icon">{t("eventCreation.icon")}</label>
+          <div className="event-icon-picker">
+            <img src={iconPreview || defaultIcon} alt={t("eventCreation.iconPreview")} />
+            <input id="event-icon" type="file" accept="image/*" onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file?.type.startsWith("image/")) update("logoImage", { file });
+            }} />
+            {data.logoImage && <button type="button" className="action-button secondary" onClick={() => update("logoImage", null)}>{t("eventCreation.resetIcon")}</button>}
+          </div>
+          <p className="event-hint">{t("eventCreation.iconHint")}</p>
         </div>
         {[
           ["header", "eventCreation.eventTitle"],
@@ -166,6 +229,8 @@ const EventCreation = () => {
           <label className="form-label">{t("eventCreation.timezone")}</label>
           <input
             className="form-input"
+            aria-label={t("eventCreation.timezone")}
+            required
             value={data.timezone}
             onChange={(event) => update("timezone", event.target.value)}
           />
@@ -174,6 +239,7 @@ const EventCreation = () => {
           <label className="form-label">{t("eventCreation.capacity")}</label>
           <input
             className="form-input"
+            aria-label={t("eventCreation.capacity")}
             type="number"
             min="1"
             step="1"
@@ -193,11 +259,26 @@ const EventCreation = () => {
             <span>{t("eventCreation.confirmationRequired")}</span>
           </label>
         </div>
+        <div className="form-group">
+          <label className="form-label" htmlFor="event-photo">{t("flyerPage.leafletSecondary")}</label>
+          <input id="event-photo" type="file" accept="image/*" onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file?.type.startsWith("image/")) {
+              setUploadedFile(file);
+              setData((previous) => ({ ...previous, coverPhoto: "" }));
+            }
+          }} />
+          {uploadedFile && <button className="action-button secondary" type="button" onClick={() => {
+            setUploadedFile(null);
+            setData((previous) => ({ ...previous, coverPhoto: "" }));
+          }}>{t("eventCreation.usePrompt")}</button>}
+        </div>
         {!uploadedFile && (
           <div className="form-group">
             <label className="form-label">{t("eventCreation.imagePrompt")}</label>
             <textarea
               className="form-textarea"
+              aria-label={t("eventCreation.imagePrompt")}
               value={data.flyerPrompts}
               onChange={(event) => update("flyerPrompts", event.target.value)}
             />
@@ -210,9 +291,19 @@ const EventCreation = () => {
             style={{ maxWidth: 260, borderRadius: 12 }}
           />
         )}
-        <button className="action-button primary" disabled={busy} type="submit">
-          {busy ? t("eventCreation.saving") : t("eventCreation.create")}
-        </button>
+        </> : <TargetBudget
+          data={data}
+          onUpdate={setData}
+          history={history}
+          isEvent
+        />}
+        </fieldset>
+        <div className="step-navigation">
+          <button className="nav-button back-button" disabled={busy} type="button" onClick={() => step === 2 ? setStep(1) : navigate("/flyer")}>{t("creation.back")}</button>
+          <button className="nav-button next-button" disabled={busy} type="submit">
+            {busy ? t(step === 1 ? "eventCreation.preparingImage" : "eventCreation.saving") : t(step === 1 ? "creation.next" : "eventCreation.create")}
+          </button>
+        </div>
       </form>
     </div>
   );

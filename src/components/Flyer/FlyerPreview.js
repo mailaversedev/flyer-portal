@@ -227,6 +227,7 @@ const FlyerPreview = ({
 
         <div className="preview-controls">
           <button
+            type="button"
             className="download-button"
             onClick={handleDownload}
             disabled={!coverPhoto}
@@ -236,6 +237,7 @@ const FlyerPreview = ({
           </button>
           {isFreeAttempt && (
             <button
+              type="button"
               className="download-button download-button-secondary"
               onClick={handleDownloadWithoutWatermark}
               disabled={!coverPhoto || isDownloadingWithoutWatermark}

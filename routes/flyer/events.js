@@ -1,9 +1,10 @@
 const express = require("express");
 const crypto = require("crypto");
 const { authenticateToken } = require("../auth");
+const { MAILAVERSE_ORGANIZER, validateEventDetails } = require("../../src/utils/EventCreationUtil");
+const eventMessages = require("../../src/i18n/locales/en/common.json").eventCreation;
 
 const asDate = (value) => typeof value === "string" && value.trim() ? new Date(value) : new Date(NaN);
-const validDate = (date) => !Number.isNaN(date.getTime());
 const hash = (value) => crypto.createHash("sha256").update(value).digest("hex");
 
 function checkinToken(applicationId, nonce) {
@@ -46,30 +47,49 @@ module.exports = function createEventsRouter({ db }) {
     const end = asDate(data.endsAt);
     const deadline = asDate(data.applicationDeadline);
     const capacity = data.capacity === "" || data.capacity == null ? null : Number(data.capacity);
-    if (!companyId || !header || !adContent || !venue || !validDate(start) || !validDate(end) || !validDate(deadline) ||
-        start <= new Date() || end <= start || deadline > start || deadline <= new Date() ||
-        (capacity !== null && (!Number.isSafeInteger(capacity) || capacity < 1)) ||
-        (data.confirmationRequired !== undefined && typeof data.confirmationRequired !== "boolean") ||
-        typeof data.coverPhoto !== "string" || !/^https:\/\//.test(data.coverPhoto) ||
-        (data.timezone && (typeof data.timezone !== "string" || data.timezone.length > 80 || !Intl.supportedValuesOf("timeZone").includes(data.timezone))) ||
-        header.length > 160 || adContent.length > 5000 || venue.length > 300) {
-      return res.status(400).json({ success: false, message: "Invalid event fields or dates" });
+    const timezone = data.timezone === undefined ? "Asia/Hong_Kong" : data.timezone;
+    const invalid = validateEventDetails({ ...data, companyId, header, adContent, venue, timezone });
+    if (invalid) {
+      return res.status(400).json({ success: false, message: eventMessages[invalid.code], field: invalid.field, code: invalid.code });
+    }
+    if (typeof data.coverPhoto !== "string" || !/^https:\/\//.test(data.coverPhoto)) {
+      return res.status(400).json({ success: false, message: "Upload or generate the event image before publishing", field: "coverPhoto" });
+    }
+    if (data.companyIcon != null && (typeof data.companyIcon !== "string" || !/^https:\/\//.test(data.companyIcon))) {
+      return res.status(400).json({ success: false, message: "The organizer icon must be an uploaded HTTPS image", field: "companyIcon" });
+    }
+    const targeting = data.targetBudget || {};
+    if (typeof targeting !== "object" || Array.isArray(targeting) ||
+        ["district", "propertyEstate", "targetedGroup"].some((field) => targeting[field] != null && (typeof targeting[field] !== "string" || targeting[field].length > 300))) {
+      return res.status(400).json({ success: false, message: "Invalid event targeting fields", field: "targetBudget" });
     }
     if (data.confirmationRequired && ((!process.env.EVENT_CHECKIN_SECRET || process.env.EVENT_CHECKIN_SECRET.length < 32) || !/^https:\/\/[^/]+\/?$/.test(process.env.EVENT_PUBLIC_BASE_URL || ""))) {
       return res.status(503).json({ success: false, message: "Event check-in is not configured" });
     }
     try {
-      const merchant = await db.collection("companies").doc(companyId).get();
-      if (!merchant.exists || merchant.data()?.isActive === false) return res.status(400).json({ success: false, message: "Active merchant not found" });
-      const company = merchant.data();
+      let company = MAILAVERSE_ORGANIZER;
+      const isMailaverse = companyId === MAILAVERSE_ORGANIZER.id;
+      if (!isMailaverse) {
+        const merchant = await db.collection("companies").doc(companyId).get();
+        if (!merchant.exists || merchant.data()?.isActive === false) return res.status(400).json({ success: false, message: "Active merchant not found", field: "companyId" });
+        company = merchant.data();
+      }
+      const rawScheduledAt = targeting.scheduledAt || data.scheduledAt;
+      const scheduledAt = rawScheduledAt ? new Date(rawScheduledAt).toISOString() : null;
       const flyer = {
         type: "event", companyId, header, adContent, venue,
         startsAt: start.toISOString(), endsAt: end.toISOString(), applicationDeadline: deadline.toISOString(),
-        timezone: data.timezone || "Asia/Hong_Kong", capacity,
+        timezone, capacity,
         confirmationRequired: data.confirmationRequired === true, applicantCount: 0, confirmedCount: 0,
         coverPhoto: data.coverPhoto || null, flyerPrompts: typeof data.flyerPrompts === "string" ? data.flyerPrompts.slice(0, 2000) : "",
         companyName: company.name || "", companyDisplayName: company.companyDisplayName || company.name || "",
-        companyIcon: company.icon || null, hideCompanyDetail: false, noReward: true,
+        companyIcon: data.companyIcon || company.icon || MAILAVERSE_ORGANIZER.icon, hideCompanyDetail: isMailaverse, noReward: true,
+        scheduledAt,
+        targetBudget: {
+          district: targeting.district || "", propertyEstate: targeting.propertyEstate || "",
+          targetedGroup: targeting.targetedGroup || "", aiTargeted: targeting.aiTargeted === true,
+          noSpecific: targeting.noSpecific === true, noReward: true, scheduledAt,
+        },
         status: "active", createdAt: new Date().toISOString(),
       };
       const ref = await db.collection("flyers").add(flyer);

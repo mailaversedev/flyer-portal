@@ -2,7 +2,7 @@
 
 ## Product decisions
 
-- A fourth flyer type, `event`, is created **only by super admins**, with a selected merchant publicly shown as organizer.
+- A fourth flyer type, `event`, is created **only by super admins**, with a selected merchant or Mailaverse itself as organizer. Organizer icons default to the merchant icon or Mailaverse logo and can be overridden with an uploaded image.
 - Use the existing prompt-based image generator to create the event's mobile hero/profile image. Store title and description as `header` and `adContent`.
 - Events have no coupon, lottery, Mailcoin reward, or wallet budget. The term “earn” does not imply a payout in v1.
 - Capture event start/end and timezone, venue, application deadline, optional capacity, and an opt-in `confirmationRequired` checkbox (default off). Applications close at deadline or start; check-in is permitted during the event window.
@@ -18,7 +18,7 @@
 
 ## Phase 2: portal and mobile
 
-5. Add a super-admin-only Event to Earn card and creation/edit screens to the portal. Reuse prompt-based generation and upload contracts but not the leaflet coupon or target-budget wizard. Provide event preview, field validation, merchant branding, and English/zh-HK strings. Build an admin list/report view.
+5. Add a super-admin-only Event to Earn card and creation/edit screens to the portal. Use two creation steps: event details/icon and prompt generation or direct upload, then the existing target-budget/preview UI in no-reward event mode. Review the image before explicitly publishing; targeting and release scheduling are optional, and coupon/payment/reward-budget controls remain unavailable. Interpret event and release times in the selected IANA timezone, accept valid aliases and UTC, and return field-specific date errors. Provide merchant/Mailaverse branding and English/zh-HK strings. Build an admin list/report view.
 6. Extend mobile flyer models and product details for events, hiding coupon/reward controls. Implement an Apply/Join CTA with restored status and a dedicated status view that shows a personal QR only when confirmation is on. Handle sign-in, full/closed events, retries and already-applied/confirmed states. Localize and log events without sending usernames or tokens to analytics.
 
 ## Phase 3: analytics, testing and rollout

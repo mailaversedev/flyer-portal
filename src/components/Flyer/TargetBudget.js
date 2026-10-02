@@ -13,6 +13,7 @@ import {
   getStoredCompanyNature,
 } from "../../utils/LeafletNormalizationUtil";
 import FlyerPreview from "./FlyerPreview";
+import eventUtils from "../../utils/EventCreationUtil";
 
 import "./TargetBudget.css";
 
@@ -36,6 +37,7 @@ const TargetBudget = ({
   isFreeAttempt = false,
   isSuperAdminUser = false,
   merchantOptions = [],
+  isEvent = false,
 }) => {
   const { t, i18n } = useTranslation();
   const showNoRewardOption = isSuperAdmin();
@@ -50,7 +52,7 @@ const TargetBudget = ({
     budget: data?.targetBudget?.budget || data?.budget || DEFAULT_BUDGET,
     paymentMethod:
       data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
-    noReward: Boolean(data?.targetBudget?.noReward || data?.noReward),
+    noReward: isEvent || Boolean(data?.targetBudget?.noReward || data?.noReward),
     scheduledAt:
       data?.targetBudget?.scheduledAt || data?.scheduledAt || "",
   };
@@ -219,6 +221,15 @@ const TargetBudget = ({
       handleInputChange("scheduledAt", null);
       return;
     }
+    if (isEvent) {
+      try {
+        handleInputChange("scheduledAt", eventUtils.eventDateToIso(value, data.timezone));
+      } catch (_) {
+        // Keep invalid local values so final validation blocks publishing.
+        handleInputChange("scheduledAt", value);
+      }
+      return;
+    }
     const date = new Date(value);
     if (!Number.isNaN(date.getTime())) {
       handleInputChange("scheduledAt", date.toISOString());
@@ -247,7 +258,9 @@ const TargetBudget = ({
         <div className="budget-form">
           <h3 className="section-title">{t("targetBudget.title")}</h3>
 
-          {showNoRewardOption && (
+          {isEvent && <p className="event-budget-note">{t("eventCreation.noRewardHint")}</p>}
+
+          {showNoRewardOption && !isEvent && (
             <div className="form-group">
               <label
                 className="checkbox-label"
@@ -347,7 +360,7 @@ const TargetBudget = ({
                 className="form-select"
                 value={formData.district}
                 onChange={(e) => handleInputChange("district", e.target.value)}
-                required
+                required={!isEvent}
               >
                 <option value="">{t("qrGeneration.pleaseSelect")}</option>
                 {districtOptions.map((district, idx) => (
@@ -388,7 +401,7 @@ const TargetBudget = ({
                 }
                 disabled={isLoadingBuildings || !formData.district}
                 style={{ width: "100%" }}
-                required
+                required={!isEvent}
               >
                 <option value="">
                   {isLoadingBuildings
@@ -417,7 +430,7 @@ const TargetBudget = ({
               onChange={(e) =>
                 handleInputChange("targetedGroup", e.target.value)
               }
-              required
+              required={!isEvent}
             />
 
             <div className="checkbox-options">
@@ -469,9 +482,10 @@ const TargetBudget = ({
             <input
               type="datetime-local"
               className="form-input"
-              value={formatDateTimeLocal(formData.scheduledAt)}
+              aria-label={t("targetBudget.scheduledDateTime")}
+              value={isEvent ? eventUtils.eventDateToLocal(formData.scheduledAt, data.timezone) : formatDateTimeLocal(formData.scheduledAt)}
               onChange={(e) => handleScheduleChange(e.target.value)}
-              min={formatDateTimeLocal(new Date().toISOString())}
+              min={isEvent ? eventUtils.eventDateToLocal(new Date().toISOString(), data.timezone) : formatDateTimeLocal(new Date().toISOString())}
             />
             <div
               style={{

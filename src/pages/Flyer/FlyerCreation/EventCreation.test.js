@@ -17,6 +17,7 @@ jest.mock("react-i18next", () => {
 });
 jest.mock("react-toastify", () => ({ toast: { error: jest.fn() } }));
 jest.mock("../../../utils/AuthUtil", () => ({ isSuperAdmin: () => true }));
+jest.mock("../../../components/Flyer/FlyerPreview", () => ({ __esModule: true, default: ({ coverPhoto }) => <img src={coverPhoto} alt="eventCreation.preview" /> }));
 jest.mock("../../../services/ApiService", () => ({
   __esModule: true,
   default: {
@@ -24,6 +25,9 @@ jest.mock("../../../services/ApiService", () => ({
     uploadFilesFromData: jest.fn(),
     generateLeaflet: jest.fn(),
     createEvent: jest.fn(),
+    getDistricts: jest.fn(),
+    getCurrentCompany: jest.fn(),
+    uploadFile: jest.fn(),
   },
 }));
 
@@ -42,6 +46,9 @@ beforeEach(() => {
   ApiService.uploadFilesFromData.mockResolvedValue({ coverPhoto: imageUrl });
   ApiService.generateLeaflet.mockResolvedValue({ images: [{ url: imageUrl }] });
   ApiService.createEvent.mockResolvedValue({ success: true });
+  ApiService.getDistricts.mockResolvedValue({ success: true, data: [] });
+  ApiService.getCurrentCompany.mockReturnValue(null);
+  ApiService.uploadFile.mockResolvedValue({ success: true, url: "https://storage.example.com/icon.png" });
 });
 
 const fillEventForm = async () => {
@@ -52,9 +59,9 @@ const fillEventForm = async () => {
   [
     ["eventCreation.eventTitle", "Test event"],
     ["eventCreation.venue", "Test venue"],
-    ["eventCreation.start", "2026-10-10T12:00"],
-    ["eventCreation.end", "2026-10-10T14:00"],
-    ["eventCreation.deadline", "2026-10-09T12:00"],
+    ["eventCreation.start", "2099-10-10T12:00"],
+    ["eventCreation.end", "2099-10-10T14:00"],
+    ["eventCreation.deadline", "2099-10-09T12:00"],
   ].forEach(([label, value]) => {
     fireEvent.change(screen.getByLabelText(label), { target: { value } });
   });
@@ -109,6 +116,10 @@ test("direct upload persists a permanent URL without generating an image", async
   render(<EventCreation />);
   await fillEventForm();
   fireEvent.submit(screen.getByRole("form"));
+  await screen.findByRole("button", { name: "eventCreation.create" });
+  expect(ApiService.createEvent).not.toHaveBeenCalled();
+  expect(screen.getByAltText("eventCreation.preview")).toHaveAttribute("src", imageUrl);
+  fireEvent.submit(screen.getByRole("form"));
   await waitFor(() => expect(ApiService.createEvent).toHaveBeenCalled());
   expect(ApiService.uploadFilesFromData).toHaveBeenCalledWith({ coverPhoto: file });
   expect(ApiService.generateLeaflet).not.toHaveBeenCalled();
@@ -132,7 +143,9 @@ test("upload failure prevents event creation and allows retry", async () => {
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Upload failed"));
   expect(ApiService.createEvent).not.toHaveBeenCalled();
   expect(ApiService.generateLeaflet).not.toHaveBeenCalled();
-  expect(screen.getByRole("button", { name: "eventCreation.create" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "creation.next" })).toBeEnabled();
+  fireEvent.submit(screen.getByRole("form"));
+  await screen.findByRole("button", { name: "eventCreation.create" });
   fireEvent.submit(screen.getByRole("form"));
   await waitFor(() => expect(ApiService.createEvent).toHaveBeenCalledTimes(1));
 });
@@ -152,14 +165,80 @@ test("regular event creation retains image prompt generation", async () => {
   render(<EventCreation />);
   expect(screen.getByText("eventCreation.imagePrompt")).toBeInTheDocument();
   await fillEventForm();
-  fireEvent.change(screen.getAllByRole("textbox")[4], {
+  fireEvent.change(screen.getByLabelText("eventCreation.imagePrompt"), {
     target: { value: "Generate an event flyer" },
   });
+  fireEvent.submit(screen.getByRole("form"));
+  await screen.findByRole("button", { name: "eventCreation.create" });
+  expect(ApiService.createEvent).not.toHaveBeenCalled();
+  expect(screen.getByAltText("eventCreation.preview")).toHaveAttribute("src", imageUrl);
+  expect(navigate).not.toHaveBeenCalled();
   fireEvent.submit(screen.getByRole("form"));
   await waitFor(() => expect(ApiService.createEvent).toHaveBeenCalled());
   expect(ApiService.generateLeaflet).toHaveBeenCalledWith(
     expect.objectContaining({ flyerPrompts: "Generate an event flyer" }),
-    { company: merchant },
+    { company: expect.objectContaining({ ...merchant, icon: expect.stringContaining("https://") }) },
   );
   expect(ApiService.uploadFilesFromData).not.toHaveBeenCalled();
+});
+
+test("Mailaverse is an organizer without a merchant record and supports a custom icon", async () => {
+  useLocation.mockReturnValue({ state: { uploadedFile: file } });
+  render(<EventCreation />);
+  await fillEventForm();
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "mailaverse" } });
+  fireEvent.change(screen.getByLabelText("eventCreation.icon"), { target: { files: [file] } });
+  fireEvent.change(screen.getByLabelText("eventCreation.timezone"), { target: { value: "UTC" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await screen.findByRole("button", { name: "eventCreation.create" });
+  fireEvent.submit(screen.getByRole("form"));
+  await waitFor(() => expect(ApiService.createEvent).toHaveBeenCalled());
+  expect(ApiService.uploadFile).toHaveBeenCalledWith(file, "event-icon");
+  expect(ApiService.createEvent).toHaveBeenCalledWith(expect.objectContaining({
+    companyId: "mailaverse", companyIcon: "https://storage.example.com/icon.png",
+    startsAt: "2099-10-10T12:00:00.000Z", timezone: "UTC",
+  }));
+});
+
+test("date errors are shown before image generation", async () => {
+  render(<EventCreation />);
+  await fillEventForm();
+  fireEvent.change(screen.getByLabelText("eventCreation.end"), { target: { value: "2099-10-10T11:00" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith("eventCreation.endAfterStart"));
+  expect(ApiService.generateLeaflet).not.toHaveBeenCalled();
+  expect(ApiService.createEvent).not.toHaveBeenCalled();
+});
+
+test("event release schedule uses the event timezone and cannot follow the deadline", async () => {
+  useLocation.mockReturnValue({ state: { uploadedFile: file } });
+  render(<EventCreation />);
+  await fillEventForm();
+  fireEvent.change(screen.getByLabelText("eventCreation.timezone"), { target: { value: "Asia/Hong_Kong" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await screen.findByRole("button", { name: "eventCreation.create" });
+  fireEvent.change(screen.getByLabelText("targetBudget.scheduledDateTime"), { target: { value: "2099-10-09T13:00" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith("eventCreation.scheduleBeforeDeadline"));
+  expect(ApiService.createEvent).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText("targetBudget.scheduledDateTime"), { target: { value: "2099-10-08T12:00" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await waitFor(() => expect(ApiService.createEvent).toHaveBeenCalled());
+  expect(ApiService.createEvent).toHaveBeenCalledWith(expect.objectContaining({
+    targetBudget: expect.objectContaining({ scheduledAt: "2099-10-08T04:00:00.000Z" }),
+  }));
+});
+
+test("back allows edits and regenerates the image before another review", async () => {
+  render(<EventCreation />);
+  await fillEventForm();
+  fireEvent.change(screen.getByLabelText("eventCreation.imagePrompt"), { target: { value: "First design" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await screen.findByRole("button", { name: "eventCreation.create" });
+  fireEvent.click(screen.getByRole("button", { name: "creation.back" }));
+  fireEvent.change(screen.getByLabelText("eventCreation.imagePrompt"), { target: { value: "Second design" } });
+  fireEvent.submit(screen.getByRole("form"));
+  await screen.findByRole("button", { name: "eventCreation.create" });
+  expect(ApiService.generateLeaflet).toHaveBeenCalledTimes(2);
+  expect(ApiService.createEvent).not.toHaveBeenCalled();
 });
