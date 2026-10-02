@@ -144,7 +144,7 @@
     "introductionPlaceholder": "介紹你的公司、服務內容及重點資訊。",
     "portalLanguage": "平台語言",
     "profileUpdated": "資料已成功更新！",
-    "passwordResetDescription": "使用發送至帳戶電郵的驗證碼重設密碼。",
+    "passwordResetDescription": "輸入並確認新密碼。重設密碼後，你將會登出。",
     "resetPassword": "重設密碼",
     "closePasswordReset": "關閉密碼重設視窗",
     "selectIndustry": "請選擇行業...",

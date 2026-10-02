@@ -143,7 +143,7 @@
     "introductionPlaceholder": "Tell users about your company, services, and highlights.",
     "portalLanguage": "Portal Language",
     "profileUpdated": "Profile updated successfully!",
-    "passwordResetDescription": "Reset your password using a verification code sent to your account email.",
+    "passwordResetDescription": "Enter and confirm your new password. You will be signed out after resetting it.",
     "resetPassword": "Reset password",
     "closePasswordReset": "Close password reset dialog",
     "selectIndustry": "Select Industry...",

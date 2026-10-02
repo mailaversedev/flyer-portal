@@ -4,6 +4,8 @@ const bcrypt = require("bcryptjs");
 module.exports = function createStaffPasswordResetRouter(context) {
   const {
     db,
+    authenticateToken,
+    JWT_OPTIONS,
     normalizeEmail,
     isValidEmail,
     generateOtp,
@@ -44,6 +46,42 @@ module.exports = function createStaffPasswordResetRouter(context) {
     } catch (error) {
       console.error("Error requesting staff password reset:", error);
       return res.status(500).json({ success: false, message: "Internal server error during password reset request" });
+    }
+  });
+
+  router.post("/change-password", authenticateToken, async (req, res) => {
+    try {
+      // Shared authentication accepts customer tokens too; require a staff token.
+      if (req.user?.aud !== JWT_OPTIONS.audience || !req.user?.userId) {
+        return res.status(403).json({ success: false, message: "A staff session is required" });
+      }
+
+      const newPassword = req.body?.newPassword;
+      if (typeof newPassword !== "string" || newPassword.length < 6) {
+        return res.status(400).json({ success: false, message: "Password must be at least 6 characters long" });
+      }
+
+      // Never select the account using an email or user ID supplied in the body.
+      const staffDoc = await db.collection("staffs").doc(req.user.userId).get();
+      if (!staffDoc.exists || staffDoc.data()?.isActive === false) {
+        return res.status(403).json({ success: false, message: "Staff account is unavailable" });
+      }
+
+      await staffDoc.ref.update({
+        password: await bcrypt.hash(newPassword, 12),
+        updatedAt: new Date().toISOString(),
+      });
+      await revokeAllRefreshSessions({
+        db,
+        userId: staffDoc.id,
+        subjectType: "staff",
+        reason: "password_reset",
+      });
+
+      return res.status(200).json({ success: true, message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Error changing staff password:", error);
+      return res.status(500).json({ success: false, message: "Internal server error during password reset" });
     }
   });
 

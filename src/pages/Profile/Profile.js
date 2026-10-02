@@ -37,7 +37,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [companyDisplayName, setCompanyDisplayName] = useState("");
   const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [showPasswordResetFields, setShowPasswordResetFields] = useState(false);
   const passwordResetTriggerRef = useRef(null);
 
   useEffect(() => {
@@ -48,7 +47,6 @@ const Profile = () => {
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         setShowPasswordReset(false);
-        setShowPasswordResetFields(false);
       }
     };
 
@@ -484,7 +482,6 @@ const Profile = () => {
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setShowPasswordReset(false);
-              setShowPasswordResetFields(false);
             }
           }}
         >
@@ -524,7 +521,6 @@ const Profile = () => {
                 aria-label={t("profilePage.closePasswordReset")}
                 onClick={() => {
                   setShowPasswordReset(false);
-                  setShowPasswordResetFields(false);
                 }}
               >
                 <span aria-hidden="true">&times;</span>
@@ -533,11 +529,9 @@ const Profile = () => {
             <ResetPasswordForm
               t={t}
               className="profile-password-form"
-              showResetFields={showPasswordResetFields}
-              onCodeSent={() => setShowPasswordResetFields(true)}
+              authenticated
               onSuccess={() => {
                 setShowPasswordReset(false);
-                setShowPasswordResetFields(false);
                 ApiService.logoutSession();
               }}
             />

@@ -198,6 +198,13 @@ class ApiService {
     });
   }
 
+  static async changeStaffPassword(newPassword) {
+    return this.makeRequest("/api/auth/staff/change-password", {
+      method: "POST",
+      body: JSON.stringify({ newPassword }),
+    });
+  }
+
   // PUT /api/auth/staff/company - Update Company Profile
   static async updateCompanyProfile(companyData) {
     return this.makeRequest("/api/auth/staff/company", {
