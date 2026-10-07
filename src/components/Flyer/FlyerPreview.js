@@ -95,7 +95,7 @@ const FlyerPreview = ({
     }
 
     const confirmed = window.confirm(
-      "Download without watermark will deduct 2 $MC. Continue?",
+      "Download without watermark will deduct 2 $MGT. Continue?",
     );
 
     if (!confirmed) {
