@@ -74,7 +74,7 @@ const DigitalCoupon = ({
               fontWeight: "bold",
             }}
           >
-            {couponType === "free" ? description : value}
+            {couponType === "free" ? t("couponBuilder.free") : value}
           </span>
           {couponType === "percentage" && (
             <div
@@ -103,7 +103,8 @@ const DigitalCoupon = ({
       className="digital-coupon-preview"
       style={{
         width: "100%",
-        height: "120px",
+        height: couponType === "free" ? undefined : "120px",
+        minHeight: couponType === "free" ? "140px" : undefined,
         backgroundColor: "white",
         borderRadius: "16px",
         display: "flex",
@@ -116,6 +117,7 @@ const DigitalCoupon = ({
       <div
         style={{
           width: "100px",
+          flexShrink: couponType === "free" ? 0 : undefined,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -179,6 +181,7 @@ const DigitalCoupon = ({
       <div
         style={{
           flex: 1,
+          minWidth: couponType === "free" ? 0 : undefined,
           padding: "12px 16px",
           display: "flex",
           flexDirection: "column",
@@ -188,19 +191,26 @@ const DigitalCoupon = ({
       >
         {renderCouponValue()}
 
-        {couponType !== "free" && (
           <div
+            className="digital-coupon-description"
             style={{
               color: "rgba(0,0,0,0.54)",
               margin: "8px 0",
               fontSize: "14px",
               fontWeight: "500",
               lineHeight: "1.2",
+              ...(couponType === "free" ? {
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+                overflow: "hidden",
+                overflowWrap: "anywhere",
+                width: "100%",
+              } : {}),
             }}
           >
-            {description || t("couponBuilder.itemDescription")}
+            {description || (couponType === "free" ? "" : t("couponBuilder.itemDescription"))}
           </div>
-        )}
 
         <div style={{ color: "rgba(0,0,0,0.38)", fontSize: "12px" }}>
           {t("couponBuilder.offerValidUntil", { date: expire || "YYYY-MM-DD" })}
