@@ -283,7 +283,14 @@ const LeafletCreation = () => {
   const { flyerId } = useParams();
   const isEditMode = Boolean(flyerId);
   const isSuperAdminUser = isSuperAdmin();
-  const [savedDraft] = useState(() => isEditMode ? null : safeParseJson(sessionStorage.getItem(LEAFLET_DRAFT_STORAGE_KEY)));
+  const location = useLocation();
+  // A newly selected image starts a fresh flyer; payment returns without an
+  // upload in route state still restore their persisted draft.
+  const [savedDraft] = useState(() =>
+    isEditMode || (location.state?.isDirectUpload && location.state?.uploadedImage)
+      ? null
+      : safeParseJson(sessionStorage.getItem(LEAFLET_DRAFT_STORAGE_KEY)),
+  );
   const [currentStep, setCurrentStep] = useState(() => [1, 2, 3].includes(savedDraft?.currentStep) ? savedDraft.currentStep : 1);
   const [leafletData, setLeafletData] = useState(() => ({ ...DEFAULT_LEAFLET_DATA, ...savedDraft?.leafletData }));
   const [loading, setLoading] = useState("");
@@ -297,7 +304,6 @@ const LeafletCreation = () => {
   const [settledBudget, setSettledBudget] = useState(savedDraft?.settledBudget || 0);
   const step1Ref = useRef();
   const navigate = useNavigate();
-  const location = useLocation();
   const isDirectUpload = location.state?.isDirectUpload || savedDraft?.isDirectUpload || false;
   const payment = useKpayPayment({
     purpose: "target_budget_direct",
@@ -323,14 +329,17 @@ const LeafletCreation = () => {
       return;
     }
 
-    if (!savedDraft && location.state?.isDirectUpload && location.state?.uploadedImage) {
-      setLeafletData((prev) => ({
-        ...prev,
+    if (location.state?.isDirectUpload && location.state?.uploadedImage) {
+      setLeafletData({
+        ...DEFAULT_LEAFLET_DATA,
         coverPhoto: location.state.uploadedImage,
-      }));
+      });
+      setGeneratedHistory([]);
+      setIsFreeAttempt(false);
+      setSettledBudget(0);
       setCurrentStep(2);
     }
-  }, [isEditMode, location.state, savedDraft]);
+  }, [isEditMode, location.state]);
 
   useEffect(() => {
     if (isEditMode) {
