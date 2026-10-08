@@ -43,7 +43,11 @@ const FlyerDistributionCard = ({
 
   const handleButtonClick = (buttonType) => {
     if (buttonType === "primary" && primaryRoute) {
-      navigate(primaryRoute);
+      if (icon === "leaflet") {
+        navigate(primaryRoute, { state: { startNewCreation: true } });
+      } else {
+        navigate(primaryRoute);
+      }
     } else if (buttonType === "secondary") {
       // For leaflet and event flyers, trigger the file selector.
       if ((icon === "leaflet" || icon === "event") && fileInputRef.current) {

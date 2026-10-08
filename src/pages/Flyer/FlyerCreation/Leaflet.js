@@ -22,6 +22,8 @@ import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
 const LEAFLET_DRAFT_STORAGE_KEY = "leafletCreationDraftV1";
+const LEAFLET_PAYMENT_PURPOSE = "target_budget_direct";
+const LEAFLET_PENDING_PAYMENT_KEY = `kpayPending:${LEAFLET_PAYMENT_PURPOSE}`;
 
 const safeParseJson = (value) => {
   if (!value) {
@@ -45,6 +47,29 @@ const formatDateTimeLocal = (dateString) => {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const readPaymentReturn = (location, isEditMode) => {
+  if (isEditMode || location.state?.startNewCreation || location.state?.isDirectUpload) {
+    return null;
+  }
+
+  const params = new URLSearchParams(location.search);
+  const purpose = params.get("kpayPurpose");
+  if (purpose && purpose !== LEAFLET_PAYMENT_PURPOSE) return null;
+  const pendingPaymentId = sessionStorage.getItem(LEAFLET_PENDING_PAYMENT_KEY);
+  // A stored pending payment alone must never turn a normal creation into a
+  // payment return. Older return URLs may supply the purpose without an ID.
+  const paymentId = params.get("kpayPaymentId") ||
+    (purpose === LEAFLET_PAYMENT_PURPOSE ? pendingPaymentId : null);
+  if (!paymentId) return null;
+
+  const draft = safeParseJson(sessionStorage.getItem(LEAFLET_DRAFT_STORAGE_KEY));
+  if (!draft?.leafletData || ![2, 3].includes(draft.currentStep)) return null;
+  // Legacy payment drafts did not contain an ID; require the matching pending
+  // checkout in that case. Never restore a draft for a different payment.
+  if ((draft.paymentId || pendingPaymentId) !== paymentId) return null;
+  return { draft, paymentId, key: location.key, state: location.state };
 };
 
 const DEFAULT_LEAFLET_DATA = {
@@ -284,13 +309,12 @@ const LeafletCreation = () => {
   const isEditMode = Boolean(flyerId);
   const isSuperAdminUser = isSuperAdmin();
   const location = useLocation();
-  // A newly selected image starts a fresh flyer; payment returns without an
-  // upload in route state still restore their persisted draft.
-  const [savedDraft] = useState(() =>
-    isEditMode || (location.state?.isDirectUpload && location.state?.uploadedImage)
-      ? null
-      : safeParseJson(sessionStorage.getItem(LEAFLET_DRAFT_STORAGE_KEY)),
-  );
+  const [paymentReturn] = useState(() => readPaymentReturn(location, isEditMode));
+  const savedDraft = paymentReturn?.draft;
+  const isPaymentReturn = Boolean(paymentReturn && !isEditMode &&
+    location.key === paymentReturn.key && location.state === paymentReturn.state);
+  const paymentReturnActiveRef = useRef(isPaymentReturn);
+  paymentReturnActiveRef.current = isPaymentReturn;
   const [currentStep, setCurrentStep] = useState(() => [1, 2, 3].includes(savedDraft?.currentStep) ? savedDraft.currentStep : 1);
   const [leafletData, setLeafletData] = useState(() => ({ ...DEFAULT_LEAFLET_DATA, ...savedDraft?.leafletData }));
   const [loading, setLoading] = useState("");
@@ -304,11 +328,15 @@ const LeafletCreation = () => {
   const [settledBudget, setSettledBudget] = useState(savedDraft?.settledBudget || 0);
   const step1Ref = useRef();
   const navigate = useNavigate();
-  const isDirectUpload = location.state?.isDirectUpload || savedDraft?.isDirectUpload || false;
+  const isDirectUpload = location.state?.isDirectUpload ||
+    (isPaymentReturn && savedDraft?.isDirectUpload) || false;
   const payment = useKpayPayment({
-    purpose: "target_budget_direct",
+    purpose: LEAFLET_PAYMENT_PURPOSE,
+    enabled: isPaymentReturn,
+    paymentId: paymentReturn?.paymentId,
     onPaid: async (confirmedPayment) => {
       const response = await ApiService.getCompanyWallet();
+      if (!paymentReturnActiveRef.current) return;
       if (!response.success || !response.data) throw new Error("Unable to refresh wallet");
       setWalletSummary(response.data);
       setSettledBudget(Number(confirmedPayment.amount));
@@ -325,39 +353,24 @@ const LeafletCreation = () => {
   const canGenerate = hasFreeAttemptRemaining || hasEnoughTokens;
 
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode || isPaymentReturn) {
       return;
     }
 
-    if (location.state?.isDirectUpload && location.state?.uploadedImage) {
-      setLeafletData({
-        ...DEFAULT_LEAFLET_DATA,
-        coverPhoto: location.state.uploadedImage,
-      });
-      setGeneratedHistory([]);
-      setIsFreeAttempt(false);
-      setSettledBudget(0);
-      setCurrentStep(2);
-    }
-  }, [isEditMode, location.state]);
-
-  useEffect(() => {
-    if (isEditMode) {
-      return;
-    }
-
-    sessionStorage.setItem(
-      LEAFLET_DRAFT_STORAGE_KEY,
-      JSON.stringify({
-        currentStep,
-        leafletData,
-        generatedHistory,
-        isFreeAttempt,
-        isDirectUpload,
-        settledBudget,
-      }),
-    );
-  }, [currentStep, isEditMode, leafletData, generatedHistory, isFreeAttempt, isDirectUpload, settledBudget]);
+    sessionStorage.removeItem(LEAFLET_DRAFT_STORAGE_KEY);
+    sessionStorage.removeItem(LEAFLET_PENDING_PAYMENT_KEY);
+    const uploadedImage = location.state?.isDirectUpload && location.state?.uploadedImage;
+    setLeafletData({
+      ...DEFAULT_LEAFLET_DATA,
+      ...(uploadedImage ? { coverPhoto: uploadedImage } : {}),
+    });
+    setGeneratedHistory([]);
+    setIsFreeAttempt(false);
+    setSettledBudget(0);
+    setIsCreatingTargetBudgetKpay(false);
+    setShowCreditModal(false);
+    setCurrentStep(uploadedImage ? 2 : 1);
+  }, [isEditMode, isPaymentReturn, location.key, location.state]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -460,7 +473,21 @@ const LeafletCreation = () => {
         coverPhoto: uploaded.coverPhoto || leafletData.coverPhoto,
         coupon: { ...(leafletData.coupon || {}), ...uploaded },
       };
+      const response = await ApiService.createKpayOrder({
+        purpose: LEAFLET_PAYMENT_PURPOSE,
+        amount: Number(budget.toFixed(2)),
+        idempotencyKey: window.crypto?.randomUUID?.() || `target-budget-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        description: "Leaflet target budget payment",
+        language: i18n.resolvedLanguage || i18n.language || "zh-HK",
+        returnPath: "/flyer/create/leaflet?kpayPurpose=target_budget_direct",
+      });
+      if (!response?.success || !response.data?.checkoutUrl || !response.data?.paymentId) {
+        throw new Error(response?.message || t("targetBudget.kpayCreateOrderError"));
+      }
+      // Persist only at checkout, after assets are permanent and the draft can
+      // be bound to a specific payment. Ordinary creation never saves a draft.
       sessionStorage.setItem(LEAFLET_DRAFT_STORAGE_KEY, JSON.stringify({
+        paymentId: response.data.paymentId,
         leafletData: persistentData,
         currentStep: returnStep,
         generatedHistory,
@@ -468,18 +495,7 @@ const LeafletCreation = () => {
         isDirectUpload,
         settledBudget: 0,
       }));
-      const response = await ApiService.createKpayOrder({
-        purpose: "target_budget_direct",
-        amount: Number(budget.toFixed(2)),
-        idempotencyKey: window.crypto?.randomUUID?.() || `target-budget-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        description: "Leaflet target budget payment",
-        language: i18n.resolvedLanguage || i18n.language || "zh-HK",
-        returnPath: "/flyer/create/leaflet?kpayPurpose=target_budget_direct",
-      });
-      if (!response?.success || !response.data?.checkoutUrl) {
-        throw new Error(response?.message || t("targetBudget.kpayCreateOrderError"));
-      }
-      rememberKpayPayment("target_budget_direct", response.data.paymentId);
+      rememberKpayPayment(LEAFLET_PAYMENT_PURPOSE, response.data.paymentId);
       window.location.assign(response.data.checkoutUrl);
     } catch (error) {
       toast.error(error.message || t("targetBudget.kpayCreateOrderError"));
@@ -669,6 +685,7 @@ const LeafletCreation = () => {
 
       if (response.success) {
         sessionStorage.removeItem(LEAFLET_DRAFT_STORAGE_KEY);
+        sessionStorage.removeItem(LEAFLET_PENDING_PAYMENT_KEY);
         navigate("/flyer", {
           state: {
             success: true,

@@ -11,8 +11,10 @@ export const rememberKpayPayment = (purpose, paymentId) => {
   sessionStorage.setItem(storageKey(purpose), paymentId);
 };
 
-export default function useKpayPayment({ purpose, onPaid }) {
+export default function useKpayPayment({ purpose, onPaid, enabled = true, paymentId: returnPaymentId }) {
   const [paymentId, setPaymentId] = useState(() => {
+    if (!enabled) return "";
+    if (returnPaymentId) return returnPaymentId;
     const params = new URLSearchParams(window.location.search);
     return params.get("kpayPaymentId") || sessionStorage.getItem(storageKey(purpose)) || "";
   });
@@ -25,7 +27,7 @@ export default function useKpayPayment({ purpose, onPaid }) {
   }, [onPaid]);
 
   useEffect(() => {
-    if (!paymentId) return undefined;
+    if (!enabled || !paymentId) return undefined;
     let cancelled = false;
     let timer;
     const startedAt = Date.now();
@@ -68,11 +70,11 @@ export default function useKpayPayment({ purpose, onPaid }) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [paymentId, purpose, retryCount]);
+  }, [enabled, paymentId, purpose, retryCount]);
 
   return {
-    status,
-    paymentId,
+    status: enabled ? status : "idle",
+    paymentId: enabled ? paymentId : "",
     retry: () => setRetryCount((count) => count + 1),
     dismiss: () => {
       sessionStorage.removeItem(storageKey(purpose));

@@ -29,6 +29,34 @@ test("does not treat a success query flag as proof of payment", async () => {
   expect(onPaid).not.toHaveBeenCalled();
 });
 
+test("disabled creation flow ignores stale pending payment and return URL", async () => {
+  window.history.replaceState({}, "", `/wallet?kpayPaymentId=${paymentId}`);
+  rememberKpayPayment(purpose, paymentId);
+  const onPaid = jest.fn();
+  const { result } = renderHook(() => useKpayPayment({ purpose, onPaid, enabled: false }));
+  await flush();
+  expect(result.current.status).toBe("idle");
+  expect(result.current.paymentId).toBe("");
+  expect(ApiService.getKpayOrder).not.toHaveBeenCalled();
+  expect(onPaid).not.toHaveBeenCalled();
+});
+
+test("disabling a restored flow cancels polling and ignores an in-flight response", async () => {
+  let resolvePayment;
+  ApiService.getKpayOrder.mockReturnValue(new Promise((resolve) => { resolvePayment = resolve; }));
+  const onPaid = jest.fn();
+  const { result, rerender } = renderHook(({ enabled }) =>
+    useKpayPayment({ purpose, onPaid, enabled, paymentId }),
+    { initialProps: { enabled: true } },
+  );
+  rerender({ enabled: false });
+  await act(async () => { resolvePayment(response("PAID")); });
+  expect(result.current.status).toBe("idle");
+  expect(onPaid).not.toHaveBeenCalled();
+  await act(async () => { jest.advanceTimersByTime(KPAY_POLL_TIMEOUT_MS); });
+  expect(ApiService.getKpayOrder).toHaveBeenCalledTimes(1);
+});
+
 test("polls until server confirms PAID, refreshes once and cleans return URL", async () => {
   window.history.replaceState({ preserved: true }, "", `/wallet?kpayPaymentId=${paymentId}&kpayResult=success&other=keep`);
   rememberKpayPayment(purpose, paymentId);
