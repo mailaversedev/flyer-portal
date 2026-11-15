@@ -8,6 +8,7 @@ const createLoginRouter = require("./login");
 const createRefreshTokenRouter = require("./refreshToken");
 const createProfileRouter = require("./profile");
 const createCompanyRouter = require("./company");
+const createProductsRouter = require("./products");
 
 const router = express.Router();
 
@@ -17,5 +18,6 @@ router.use(createLoginRouter(context));
 router.use(createRefreshTokenRouter(context));
 router.use(createProfileRouter(context));
 router.use(createCompanyRouter(context));
+router.use(createProductsRouter(context));
 
 module.exports = router;

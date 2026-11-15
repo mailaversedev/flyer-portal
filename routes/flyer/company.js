@@ -73,6 +73,61 @@ module.exports = function createCompanyRouter(context) {
     }
   });
 
+  router.get("/company/:companyId/products", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const limit = Number(req.query.limit || 10);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid limit. Must be between 1 and 10.",
+        });
+      }
+
+      const companyRef = db.collection("companies").doc(companyId);
+      const companyDoc = await companyRef.get();
+      if (!companyDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: "Company not found.",
+        });
+      }
+
+      const productsRef = companyRef.collection("products");
+      const after = typeof req.query.after === "string" ? req.query.after : "";
+      let query = productsRef
+        .where("active", "==", true)
+        .orderBy("createdAt", "desc");
+      if (after) {
+        const cursor = await productsRef.doc(after).get();
+        if (!cursor.exists) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid product cursor.",
+          });
+        }
+        query = query.startAfter(cursor);
+      }
+
+      const snapshot = await query.limit(limit + 1).get();
+      const docs = snapshot.docs.slice(0, limit);
+      res.set("Cache-Control", "public, max-age=300, s-maxage=900");
+      return res.status(200).json({
+        success: true,
+        data: docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+        pagination: {
+          nextCursor: snapshot.docs.length > limit ? docs.at(-1).id : null,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching public company products:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch company products.",
+      });
+    }
+  });
+
   router.get("/company/me/coupons", authenticateToken, async (req, res) => {
     try {
       const companyId = req.user.companyId;

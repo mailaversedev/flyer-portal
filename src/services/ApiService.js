@@ -213,6 +213,28 @@ class ApiService {
     });
   }
 
+  static async getMerchantProducts(after = null) {
+    const query = after ? `?after=${encodeURIComponent(after)}` : "";
+    return this.makeRequest(`/api/auth/staff/products${query}`);
+  }
+
+  static async createMerchantProduct(product) {
+    return this.makeRequest("/api/auth/staff/products", {
+      method: "POST",
+      body: JSON.stringify(product),
+    });
+  }
+
+  static async updateMerchantProduct(productId, product) {
+    return this.makeRequest(
+      `/api/auth/staff/products/${encodeURIComponent(productId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(product),
+      },
+    );
+  }
+
   // GET /api/internal/buildings - Get HK Buildings
   static async getBuildings(filter, startIndex = 0) {
     return this.makeRequest(`/api/internal/buildings?filter=${encodeURIComponent(filter)}&startIndex=${startIndex}`);

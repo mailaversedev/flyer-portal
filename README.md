@@ -47,6 +47,25 @@ Starts the Node.js API server from `server.js`.
 
 Starts the flyer job background worker from `worker.js`.
 
+## Merchant products
+
+The profile page supports creating and editing company products, including image
+uploads and active/inactive status. Only active products appear in the mobile
+company page and Jetso catalog. Public product pages use cursors that remain valid
+when the cursor product is deactivated.
+
+Create the Firestore composite index manually for collection ID `products`,
+**Collection** scope, with `active` ascending and `createdAt` descending. Wait for
+the index to finish building before using public catalogs; index deployment is
+not managed by this project.
+
+Regression checks:
+
+```bash
+node --test test/merchantProducts.test.js test/companyProducts.test.js
+CI=true npm test -- --watchAll=false --runInBand src/pages/Profile/MerchantProducts.test.js
+```
+
 ## Super Admin Registration
 
 Super admin accounts should not be created through the public company onboarding form or the staff registration API.
