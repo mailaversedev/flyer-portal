@@ -47,7 +47,7 @@ const Flyer = () => {
       title: t("flyerPage.qrTitle"),
       subtitle: t("flyerPage.qrSubtitle"),
       icon: "qr",
-      primaryButton: t("flyerPage.select"),
+      primaryButton: t("flyerPage.leafletPrimary"),
       secondaryButton: t("flyerPage.leafletSecondary"),
       primaryRoute: "/flyer/create/qr",
       isPrimary: false,
