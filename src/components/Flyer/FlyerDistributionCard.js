@@ -20,7 +20,7 @@ const FlyerDistributionCard = ({
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith("image/")) {
-      if (icon === "event") {
+      if (icon === "event" || icon === "qr") {
         navigate(primaryRoute, {
           state: { uploadedFile: file, isDirectUpload: true },
         });
@@ -49,8 +49,8 @@ const FlyerDistributionCard = ({
         navigate(primaryRoute);
       }
     } else if (buttonType === "secondary") {
-      // For leaflet and event flyers, trigger the file selector.
-      if ((icon === "leaflet" || icon === "event") && fileInputRef.current) {
+      // For flyer types that support direct upload, trigger the file selector.
+      if ((icon === "leaflet" || icon === "event" || icon === "qr") && fileInputRef.current) {
         fileInputRef.current.click();
       } else {
         // Handle other secondary button actions

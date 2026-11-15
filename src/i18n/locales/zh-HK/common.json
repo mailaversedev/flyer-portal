@@ -525,6 +525,16 @@
     "nextTarget": "下一步：目標及預算"
   },
   "qrGeneration": {
+    "imagePrompt": "傳單圖片生成提示",
+    "imagePlaceholder": "輸入提示生成傳單，或上傳圖片。",
+    "usePrompt": "改用圖片生成提示",
+    "generationCost": "生成 1K 圖片會使用一次每日免費額度；免費額度用完後需支付 1 $MGT。",
+    "preparingImage": "正在準備傳單圖片...",
+    "promptRequired": "請輸入傳單圖片提示或上傳圖片。",
+    "imageFailed": "準備傳單圖片失敗，請再試一次。",
+    "invalidImage": "請選擇圖片檔案。",
+    "walletFailed": "無法查詢生成餘額，請再試一次。",
+    "billingFailed": "無法扣除圖片生成費用，請再試一次。",
     "creatingWait": "正在建立 QR 傳單，請稍候...",
     "createdSuccess": "QR Code 傳單已成功建立！",
     "createFailed": "建立傳單失敗，請再試一次。",

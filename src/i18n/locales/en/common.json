@@ -530,6 +530,16 @@
     "nextTarget": "Next: Target & Budget"
   },
   "qrGeneration": {
+    "imagePrompt": "Prompt for the flyer image",
+    "imagePlaceholder": "Generate a flyer from a prompt or upload an image.",
+    "usePrompt": "Use an image prompt instead",
+    "generationCost": "A 1K generation uses one daily free attempt, or 1 $MGT when no free attempts remain.",
+    "preparingImage": "Preparing flyer image...",
+    "promptRequired": "Enter a flyer image prompt or upload an image.",
+    "imageFailed": "Failed to prepare the flyer image. Please try again.",
+    "invalidImage": "Please select an image file.",
+    "walletFailed": "Unable to check your generation balance. Please try again.",
+    "billingFailed": "Unable to charge for flyer generation. Please try again.",
     "creatingWait": "Creating QR flyer, please wait...",
     "createdSuccess": "QR Code flyer created successfully!",
     "createFailed": "Failed to create flyer. Please try again.",

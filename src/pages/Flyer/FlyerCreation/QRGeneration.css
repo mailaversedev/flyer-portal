@@ -115,6 +115,11 @@
   margin-bottom: 8px;
 }
 
+.qr-generation-hint {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
 /* Upload Options */
 .upload-options {
   margin-bottom: 16px;

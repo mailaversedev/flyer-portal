@@ -1,18 +1,21 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Upload, X } from "lucide-react";
-import { useNavigate, useParams } from "react-router";
+import { ChevronLeft } from "lucide-react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
-import QRCode from "qrcode";
 
 import TargetBudget from "../../../components/Flyer/TargetBudget";
+import Step1Background from "../../../components/Flyer/QR/Step1Background";
+import QRCodeModal from "../../../components/Flyer/QR/QRCodeModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import ApiService from "../../../services/ApiService";
+import { isSuperAdmin } from "../../../utils/AuthUtil";
 import "./QRGeneration.css";
 
 const DEFAULT_QR_DATA = {
   coverPhoto: null,
+  flyerPrompts: "",
   adType: "",
   location: "",
   website: "",
@@ -38,56 +41,36 @@ const buildQrEditPayload = (data) => ({
   scheduledAt: data.scheduledAt || data.targetBudget?.scheduledAt || null,
 });
 
-const QRCodeComponent = ({ website }) => {
-  const { t } = useTranslation();
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
-
-  useEffect(() => {
-    const generateQRCode = async () => {
-      try {
-        const qrCodeUrl = await QRCode.toDataURL(website, {
-          width: 200,
-          margin: 2,
-          color: {
-            dark: "#000000",
-            light: "#FFFFFF",
-          },
-        });
-        setQrCodeDataUrl(qrCodeUrl);
-      } catch (error) {
-        console.error("Error generating QR code:", error);
-      }
-    };
-
-    if (website) {
-      generateQRCode();
-    }
-  }, [website]);
-
-  return qrCodeDataUrl ? (
-    <img
-      src={qrCodeDataUrl}
-      alt="Generated QR Code"
-      className="generated-qr-code"
-      style={{ width: "200px", height: "200px" }}
-    />
-  ) : (
-    <div>{t("qrGeneration.generatingQr")}</div>
-  );
-};
-
 const QRGeneration = () => {
   const { t } = useTranslation();
   const { flyerId } = useParams();
+  const location = useLocation();
   const isEditMode = Boolean(flyerId);
+  const isSuperAdminUser = isSuperAdmin();
   const [currentStep, setCurrentStep] = useState(1);
   const [showQRModal, setShowQRModal] = useState(false);
   const [errors, setErrors] = useState({});
   const [qrData, setQrData] = useState(DEFAULT_QR_DATA);
   const [loading, setLoading] = useState("");
   const [isFetching, setIsFetching] = useState(isEditMode);
+  const [uploadedFile, setUploadedFile] = useState(
+    () => (!isEditMode ? location.state?.uploadedFile || null : null),
+  );
+  const [uploadedPreview, setUploadedPreview] = useState("");
+  const [history, setHistory] = useState([]);
+  const [isFreeAttempt, setIsFreeAttempt] = useState(false);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!uploadedFile) {
+      setUploadedPreview("");
+      return;
+    }
+    const preview = URL.createObjectURL(uploadedFile);
+    setUploadedPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [uploadedFile]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -159,26 +142,17 @@ const QRGeneration = () => {
     updateQrData({ [field]: value });
   };
 
-  const handleFileSelect = async (event) => {
+  const handleFileSelect = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      try {
-        const uploadResponse = await ApiService.uploadFile(file, "cover-photo");
-
-        if (uploadResponse.success) {
-          handleInputChange("coverPhoto", uploadResponse.url);
-          return;
-        }
-      } catch (error) {
-        console.error("Error uploading file:", error);
-      }
-
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        handleInputChange("coverPhoto", loadEvent.target.result);
-      };
-      reader.readAsDataURL(file);
+    if (file && file.type.startsWith("image/")) {
+      setUploadedFile(file);
+      setHistory([]);
+      setIsFreeAttempt(false);
+      updateQrData({ coverPhoto: null });
+    } else if (file) {
+      toast.error(t("qrGeneration.invalidImage"));
     }
+    event.target.value = "";
   };
 
   const handleUpload = () => {
@@ -187,23 +161,71 @@ const QRGeneration = () => {
     }
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        handleInputChange("coverPhoto", loadEvent.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleProceedToQRCode = () => {
+  const handleProceedToQRCode = async () => {
     if (!validateRequiredFields()) {
       return;
     }
 
-    setShowQRModal(true);
+    if (loading) return;
+    try {
+      setLoading(t("qrGeneration.preparingImage"));
+      let coverPhoto = qrData.coverPhoto;
+      if (!coverPhoto && uploadedFile) {
+        const uploaded = await ApiService.uploadFilesFromData({ coverPhoto: uploadedFile });
+        coverPhoto = uploaded.coverPhoto;
+        if (!coverPhoto) throw new Error(t("qrGeneration.imageFailed"));
+      } else if (!coverPhoto) {
+        if (!qrData.flyerPrompts.trim()) {
+          throw new Error(t("qrGeneration.promptRequired"));
+        }
+        if (!isSuperAdminUser) {
+          const wallet = await ApiService.getCompanyWallet();
+          if (!wallet.success || !wallet.data) throw new Error(t("qrGeneration.walletFailed"));
+          const freeAttempts = Number(wallet.data.dailyFreeAttemptsRemaining);
+          const balance = Number(wallet.data.balance);
+          if (!Number.isFinite(freeAttempts) || !Number.isFinite(balance)) {
+            throw new Error(t("qrGeneration.walletFailed"));
+          }
+          if (freeAttempts <= 0 && balance < 1) {
+            throw new Error(t("leafletCreation.tokenIndicatorLowBalance"));
+          }
+        }
+        const result = await ApiService.generateLeaflet({
+          ...qrData,
+          aspectRatio: "1:1",
+          resolution: "1K",
+        });
+        coverPhoto = result.images?.[0]?.url || result.flyer_output_path;
+        if (!coverPhoto || !/^https:\/\//i.test(coverPhoto)) {
+          throw new Error(t("qrGeneration.imageFailed"));
+        }
+        let freeAttempt = false;
+        if (!isSuperAdminUser) {
+          const billing = await ApiService.consumeLeafletTokens({
+            resolution: "1K",
+            flyerOutputPath: coverPhoto,
+          });
+          if (!billing.success || !billing.data) throw new Error(billing.message || t("qrGeneration.billingFailed"));
+          freeAttempt = Boolean(billing.data.usedFreeAttempt);
+        }
+        setHistory((previous) =>
+          freeAttempt === isFreeAttempt
+            ? [coverPhoto, ...previous.filter((url) => url !== coverPhoto)].slice(0, 3)
+            : [coverPhoto],
+        );
+        setIsFreeAttempt(freeAttempt);
+      }
+      if (!coverPhoto || !/^https:\/\//i.test(coverPhoto)) {
+        throw new Error(t("qrGeneration.imageFailed"));
+      }
+      updateQrData({ coverPhoto });
+      setShowQRModal(true);
+    } catch (error) {
+      console.error("Failed to prepare QR flyer image:", error);
+      toast.error(error.message || t("qrGeneration.imageFailed"));
+    } finally {
+      setLoading("");
+    }
   };
 
   const handleSaveAndProceed = () => {
@@ -329,6 +351,7 @@ const QRGeneration = () => {
           ref={fileInputRef}
           onChange={handleFileSelect}
           accept="image/*"
+          aria-label={t("qrGeneration.upload")}
           style={{ display: "none" }}
         />
       )}
@@ -361,185 +384,25 @@ const QRGeneration = () => {
           ) : (
             <>
               {currentStep === 1 && (
-                <div className="step1-background-qr">
-                  <div className="background-layout">
-                    <div className="background-form">
-                      <h3 className="section-title">{t("qrGeneration.backgroundInformation")}</h3>
-
-                      {isEditMode && (
-                        <div
-                          style={{
-                            marginBottom: "20px",
-                            padding: "12px 16px",
-                            border: "1px solid #4b5563",
-                            borderRadius: "8px",
-                            background: "rgba(30, 36, 51, 0.8)",
-                            color: "#cbd5e1",
-                            fontSize: "14px",
-                          }}
-                        >
-                          {t("creation.assetLocked")}
-                        </div>
-                      )}
-
-                      <div className="form-group">
-                        <label className="form-label">{t("dashboard.adType")}</label>
-                        <div className="select-wrapper">
-                          <select
-                            className="form-select"
-                            value={qrData.adType}
-                            onChange={(event) =>
-                              handleInputChange("adType", event.target.value)
-                            }
-                          >
-                            <option value="">{t("qrGeneration.pleaseSelect")}</option>
-                            <option value="promotional">{t("qrGeneration.promotional")}</option>
-                            <option value="informational">{t("qrGeneration.informational")}</option>
-                            <option value="event">{t("qrGeneration.event")}</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">{t("qrGeneration.location")}</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder={t("qrGeneration.locationPlaceholder")}
-                          value={qrData.location}
-                          onChange={(event) =>
-                            handleInputChange("location", event.target.value)
-                          }
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">
-                          {t("qrGeneration.website")} <span style={{ color: "#ff4444" }}>*</span>
-                        </label>
-                        <input
-                          type="url"
-                          className={`form-input ${errors.website ? "error" : ""}`}
-                          placeholder={t("qrGeneration.websitePlaceholder")}
-                          value={qrData.website}
-                          onChange={(event) =>
-                            handleInputChange("website", event.target.value)
-                          }
-                          required
-                        />
-                        {errors.website && (
-                          <span className="error-message">{errors.website}</span>
-                        )}
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">{t("qrGeneration.startingDate")}</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder={t("qrGeneration.datePlaceholder")}
-                          value={qrData.startingDate}
-                          onChange={(event) =>
-                            handleInputChange("startingDate", event.target.value)
-                          }
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">{t("qrGeneration.header")}</label>
-                        <textarea
-                          className="form-textarea"
-                          placeholder={t("qrGeneration.pleaseEnter")}
-                          value={qrData.header}
-                          onChange={(event) =>
-                            handleInputChange("header", event.target.value)
-                          }
-                          rows={3}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">{t("qrGeneration.adContent")}</label>
-                        <textarea
-                          className="form-textarea"
-                          placeholder={t("qrGeneration.pleaseEnter")}
-                          value={qrData.productDescriptions}
-                          onChange={(event) =>
-                            handleInputChange("productDescriptions", event.target.value)
-                          }
-                          rows={5}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">{t("qrGeneration.promotionMessage")}</label>
-                        <textarea
-                          className="form-textarea"
-                          placeholder={t("qrGeneration.pleaseEnter")}
-                          value={qrData.promotionMessage}
-                          onChange={(event) =>
-                            handleInputChange("promotionMessage", event.target.value)
-                          }
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="preview-panel">
-                      <div className="preview-container">
-                        <div className="preview-upload-area">
-                          {qrData.coverPhoto ? (
-                            <img
-                              src={qrData.coverPhoto}
-                              alt="Cover preview"
-                              className="preview-image"
-                            />
-                          ) : (
-                            <div className="upload-placeholder">
-                              <div className="upload-icon">
-                                <Upload size={48} />
-                              </div>
-                              <div className="upload-text">
-                                <p>
-                                  Place the image here or {" "}
-                                  <span className="upload-link">{t("qrGeneration.uploadFile")}</span>
-                                </p>
-                              </div>
-                              {!isEditMode && (
-                                <>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileUpload}
-                                    className="file-input"
-                                    id="cover-upload-qr"
-                                  />
-                                  <label
-                                    htmlFor="cover-upload-qr"
-                                    className="file-input-label"
-                                  ></label>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {!isEditMode && (
-                          <div className="preview-controls">
-                            <button className="upload-button" onClick={handleUpload}>
-                              <Upload size={16} />
-                              {t("qrGeneration.upload")}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <Step1Background
+                  qrData={qrData}
+                  errors={errors}
+                  isEditMode={isEditMode}
+                  isSuperAdminUser={isSuperAdminUser}
+                  uploadedFile={uploadedFile}
+                  uploadedPreview={uploadedPreview}
+                  handleInputChange={handleInputChange}
+                  updateQrData={updateQrData}
+                  handleUpload={handleUpload}
+                  onUsePrompt={() => {
+                    setUploadedFile(null);
+                    updateQrData({ coverPhoto: null });
+                  }}
+                />
               )}
 
               {!isEditMode && currentStep === 2 && (
-                <TargetBudget data={qrData} onUpdate={updateQrData} />
+                <TargetBudget data={qrData} onUpdate={updateQrData} history={history} isFreeAttempt={isFreeAttempt} />
               )}
 
               {!isEditMode && currentStep === 3 && (
@@ -632,54 +495,11 @@ const QRGeneration = () => {
       </div>
 
       {!isEditMode && showQRModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="qr-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">{t("qrGeneration.qrCode")}</h3>
-              <button className="close-button" onClick={handleCloseModal}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="modal-content">
-              <div className="qr-code-container">
-                <div className="qr-code-placeholder">
-                  <div className="qr-code-image">
-                    {qrData.website ? (
-                      <QRCodeComponent website={qrData.website} />
-                    ) : (
-                      <div className="qr-pattern">
-                        {Array.from({ length: 13 }, (_, rowIndex) => (
-                          <div key={rowIndex} className="qr-row">
-                            {Array.from({ length: 13 }, (_, cellIndex) => (
-                              <div
-                                key={cellIndex}
-                                className={`qr-cell ${(rowIndex + cellIndex) % 3 === 0 ? "filled" : ""}`}
-                              />
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="modal-description">
-                <p>{t("qrGeneration.qrPrintMessage")}</p>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button className="nav-button back-button" onClick={handleCloseModal}>
-                {t("qrGeneration.cancel")}
-              </button>
-              <button className="nav-button next-button" onClick={handleSaveAndProceed}>
-                {t("qrGeneration.saveProceed")}
-              </button>
-            </div>
-          </div>
-        </div>
+        <QRCodeModal
+          website={qrData.website}
+          handleCloseModal={handleCloseModal}
+          handleSaveAndProceed={handleSaveAndProceed}
+        />
       )}
     </div>
   );
