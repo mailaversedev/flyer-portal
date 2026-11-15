@@ -1,6 +1,17 @@
 const express = require("express");
+const admin = require("firebase-admin");
+const crypto = require("crypto");
+const multer = require("multer");
 
 const { serializeVoucher } = require("../voucher");
+const {
+  MAX_IMAGES, MAX_IMAGE_BYTES, commitImport, encryptImage, prepareImport,
+} = require("../../services/importedVouchers");
+
+const importUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_IMAGE_BYTES, files: MAX_IMAGES, fieldSize: 1024 * 1024 },
+}).array("images", MAX_IMAGES);
 
 const NUMERIC_SEGMENT_REGEX = /^\d+$/;
 
@@ -75,7 +86,11 @@ const normalizeVoucherPayload = (body = {}) => {
     };
   }
 
-  if (!Number.isFinite(normalizedTotalNumber) || normalizedTotalNumber <= 0) {
+  if (!["static", "numbered", "imported"].includes(normalizedVoucherType)) {
+    return { error: "Voucher type is invalid" };
+  }
+
+  if (normalizedVoucherType !== "imported" && (!Number.isFinite(normalizedTotalNumber) || normalizedTotalNumber <= 0)) {
     return {
       error: "Total number must be a positive integer",
     };
@@ -126,9 +141,9 @@ const normalizeVoucherPayload = (body = {}) => {
       voucherStartSequence: parsedStartSequence,
       voucherEndSequence: parsedEndSequence,
       expiryDate: normalizedExpiryDate,
-      totalNumber: normalizedTotalNumber,
-      qrCode: normalizedQrCode,
-      promotionCode: normalizedPromotionCode,
+      totalNumber: normalizedVoucherType === "imported" ? 0 : normalizedTotalNumber,
+      qrCode: normalizedVoucherType === "imported" ? "" : normalizedQrCode,
+      promotionCode: normalizedVoucherType === "imported" ? "" : normalizedPromotionCode,
       colors:
         normalizedColors.length > 0
           ? normalizedColors
@@ -156,7 +171,7 @@ module.exports = function createVouchersRouter(context) {
 
       res.status(200).json({
         success: true,
-        data: snapshot.docs.map((doc) => serializeVoucher(doc)),
+        data: snapshot.docs.filter((doc) => doc.data().deleted !== true).map((doc) => serializeVoucher(doc)),
       });
     } catch (error) {
       console.error("Error fetching admin voucher list:", error);
@@ -218,7 +233,7 @@ module.exports = function createVouchersRouter(context) {
       const voucherData = {
         ...normalizedVoucher.data,
         redeemedCount: 0,
-        isActive: true,
+        isActive: normalizedVoucher.data.voucherType !== "imported",
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -239,6 +254,74 @@ module.exports = function createVouchersRouter(context) {
         message: "Failed to create voucher",
         error: error.message,
       });
+    }
+  });
+
+  router.post("/vouchers/:voucherId/import", (req, res, next) => {
+    importUpload(req, res, (error) => {
+      if (error) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+      return next();
+    });
+  }, async (req, res) => {
+    let uploadedPaths = [];
+    try {
+      const prepared = prepareImport(req.body.codes, req.files || [], req.body.importKey);
+      const voucherRef = db.collection("vouchers").doc(req.params.voucherId);
+      const bucket = admin.storage().bucket();
+      const attemptId = crypto.randomUUID();
+      const imagePaths = [];
+      for (let index = 0; index < prepared.images.length; index += 1) {
+        const image = prepared.images[index];
+        const storagePath = `private-voucher-items/${voucherRef.id}/${attemptId}/${index}`;
+        uploadedPaths.push(storagePath);
+        await bucket.file(storagePath).save(encryptImage(image.buffer), {
+          resumable: false,
+          contentType: "application/octet-stream",
+          metadata: { cacheControl: "private, no-store" },
+        });
+        imagePaths.push({ storagePath, contentType: image.type });
+      }
+      const result = await commitImport(db, voucherRef, prepared, imagePaths, new Date().toISOString());
+      if (result.alreadyImported && uploadedPaths.length) {
+        try {
+          await Promise.all(uploadedPaths.map((path) => bucket.file(path).delete()));
+          uploadedPaths = [];
+        } catch (cleanupError) {
+          console.error("Could not clean up duplicate private voucher uploads:", uploadedPaths, cleanupError);
+        }
+      }
+      return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      const knownErrors = {
+        __VOUCHER_NOT_FOUND__: [404, "Voucher not found"],
+        __VOUCHER_TYPE_INVALID__: [400, "Voucher is not an imported voucher"],
+        __VOUCHER_STOCK_INVALID__: [409, "Voucher stock is invalid"],
+        __DUPLICATE_CODE__: [409, "One or more codes already exist in this voucher"],
+        __IMPORT_KEY_CONFLICT__: [409, "Import key already used for different items"],
+        __VOUCHER_IMAGE_KEY_MISSING__: [503, "Voucher image encryption is not configured"],
+      };
+      const known = knownErrors[error.message];
+      if (known && uploadedPaths.length) {
+        try {
+          await Promise.all(uploadedPaths.map((path) => admin.storage().bucket().file(path).delete()));
+          uploadedPaths = [];
+        } catch (cleanupError) {
+          console.error("Could not clean up rejected private voucher uploads:", uploadedPaths, cleanupError);
+        }
+      } else if (uploadedPaths.length) {
+        console.error("Private voucher upload requires cleanup review:", uploadedPaths);
+      }
+      if (known) return res.status(known[0]).json({ success: false, message: known[1] });
+      if (["Invalid import key", "Codes must be a JSON array", "Codes must be a JSON array of strings",
+        "Each code must contain between 1 and 512 bytes", "Duplicate codes in import",
+        "Import must contain at least one item", "Import exceeds item or image limit",
+        "Images must be PNG, JPEG, GIF or WebP and at most 5 MB each", "Combined images exceed 20 MB"].includes(error.message)) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+      console.error("Error importing voucher inventory:", error);
+      return res.status(500).json({ success: false, message: "Failed to import voucher inventory" });
     }
   });
 
@@ -273,16 +356,23 @@ module.exports = function createVouchersRouter(context) {
       }
 
       const redeemedCount = Number(voucherDoc.data()?.redeemedCount) || 0;
+      const currentType = voucherDoc.data()?.voucherType || "static";
+      if (currentType !== normalizedVoucher.data.voucherType &&
+          (currentType === "imported" || normalizedVoucher.data.voucherType === "imported")) {
+        return res.status(400).json({ success: false, message: "Imported voucher type cannot be changed" });
+      }
 
-      if (normalizedVoucher.data.totalNumber < redeemedCount) {
+      if (currentType !== "imported" && normalizedVoucher.data.totalNumber < redeemedCount) {
         return res.status(400).json({
           success: false,
           message: "Total number cannot be less than redeemed count",
         });
       }
 
+      const update = { ...normalizedVoucher.data };
+      if (currentType === "imported") delete update.totalNumber;
       await voucherRef.update({
-        ...normalizedVoucher.data,
+        ...update,
         updatedAt: new Date().toISOString(),
       });
 
@@ -324,7 +414,11 @@ module.exports = function createVouchersRouter(context) {
         });
       }
 
-      await voucherRef.delete();
+      if ((voucherDoc.data()?.voucherType || "static") === "imported") {
+        await voucherRef.update({ deleted: true, isActive: false, updatedAt: new Date().toISOString() });
+      } else {
+        await voucherRef.delete();
+      }
 
       res.status(200).json({
         success: true,

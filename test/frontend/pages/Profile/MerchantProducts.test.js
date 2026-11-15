@@ -3,9 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { toast } from "react-toastify";
-import ApiService from "../../services/ApiService";
-import Profile from "./Profile";
-import MerchantProducts, { MerchantProductForm } from "./MerchantProducts";
+import ApiService from "../../../../src/services/ApiService";
+import Profile from "../../../../src/pages/Profile/Profile";
+import MerchantProducts, { MerchantProductForm } from "../../../../src/pages/Profile/MerchantProducts";
 
 jest.mock("react-i18next", () => {
   const t = (key) => key;
@@ -14,7 +14,7 @@ jest.mock("react-i18next", () => {
 jest.mock("react-toastify", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../services/ApiService", () => ({
+jest.mock("../../../../src/services/ApiService", () => ({
   __esModule: true,
   default: {
     getMerchantProducts: jest.fn(),

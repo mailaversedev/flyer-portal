@@ -409,6 +409,17 @@ class ApiService {
     });
   }
 
+  static async importAdminVoucher(voucherId, { codes, images, importKey }) {
+    const formData = new FormData();
+    formData.append("codes", JSON.stringify(codes));
+    images.forEach((file) => formData.append("images", file));
+    formData.append("importKey", importKey);
+    return this.makeRequest(`/api/admin/vouchers/${voucherId}/import`, {
+      method: "POST",
+      body: formData,
+    });
+  }
+
   static async deleteAdminVoucher(voucherId) {
     return this.makeRequest(`/api/admin/vouchers/${voucherId}`, {
       method: "DELETE",

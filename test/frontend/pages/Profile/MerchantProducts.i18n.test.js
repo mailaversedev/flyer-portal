@@ -2,11 +2,11 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { I18nextProvider } from "react-i18next";
-import i18n from "../../i18n";
-import ApiService from "../../services/ApiService";
-import MerchantProducts, { MerchantProductForm } from "./MerchantProducts";
+import i18n from "../../../../src/i18n";
+import ApiService from "../../../../src/services/ApiService";
+import MerchantProducts, { MerchantProductForm } from "../../../../src/pages/Profile/MerchantProducts";
 
-jest.mock("../../services/ApiService", () => ({
+jest.mock("../../../../src/services/ApiService", () => ({
   __esModule: true,
   default: {
     getMerchantProducts: jest.fn(),

@@ -1,6 +1,8 @@
 const express = require("express");
+const admin = require("firebase-admin");
 
 const { authenticateToken } = require("../auth");
+const { decryptImage, itemId } = require("../../services/importedVouchers");
 const {
   buildAssignedVoucherNumber,
   db,
@@ -9,6 +11,12 @@ const {
 } = require("./helpers");
 
 const router = express.Router();
+
+const normalizeRedemptionVoucher = (voucher) => {
+  if (!voucher || !voucher.importedImageUrl) return voucher;
+  const { importedImageUrl, ...rest } = voucher;
+  return { ...rest, voucherImage: importedImageUrl };
+};
 
 const getRedemptionResult = (redemptionDoc) => {
   const redemptionData = redemptionDoc.data() || {};
@@ -25,7 +33,7 @@ const getRedemptionResult = (redemptionDoc) => {
     redemptionStatus,
     voucher: result.voucher
       ? {
-          ...result.voucher,
+          ...normalizeRedemptionVoucher(result.voucher),
           redemptionId: redemptionDoc.id,
           redemptionStatus,
         }
@@ -58,6 +66,25 @@ router.get("/redeemed-vouchers", authenticateToken, async (req, res) => {
       message: "Failed to fetch redeemed vouchers",
       error: error.message,
     });
+  }
+});
+
+router.get("/redeemed-vouchers/:redemptionId/image", authenticateToken, async (req, res) => {
+  try {
+    const redemption = await db.collection("voucherRedemptions").doc(req.params.redemptionId).get();
+    const data = redemption.data();
+    if (!redemption.exists || data.userId !== req.user.userId || !data.importedImagePath) {
+      return res.status(404).json({ success: false, message: "Voucher image not found" });
+    }
+    const [encryptedImage] = await admin.storage().bucket().file(data.importedImagePath).download();
+    const image = decryptImage(encryptedImage);
+    res.set("Content-Type", data.importedImageType);
+    res.set("Cache-Control", "private, no-store");
+    res.set("X-Content-Type-Options", "nosniff");
+    return res.status(200).send(image);
+  } catch (error) {
+    console.error("Error fetching redeemed voucher image:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch voucher image" });
   }
 });
 
@@ -143,7 +170,11 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
       const existingRedemption = await transaction.get(redemptionRef);
 
       if (existingRedemption.exists) {
-        return (existingRedemption.data() || {}).result;
+        if (existingRedemption.data().userId !== userId || existingRedemption.data().voucherId !== voucherId) {
+          throw new Error("__IDEMPOTENCY_CONFLICT__");
+        }
+        const result = (existingRedemption.data() || {}).result;
+        return result ? { ...result, voucher: normalizeRedemptionVoucher(result.voucher) } : result;
       }
 
       const voucherRef = db.collection("vouchers").doc(voucherId);
@@ -171,7 +202,22 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
       if (redeemedCount >= totalNumber) throw new Error("__VOUCHER_SOLD_OUT__");
 
       const voucherType = `${voucherData.voucherType || "static"}`.trim() || "static";
-      const assignedVoucherNumber = voucherType === "numbered"
+      let importedItem = null;
+      let importedItemRef = null;
+      if (voucherType === "imported") {
+        importedItemRef = voucherRef.collection("inventory").doc(itemId(redeemedCount));
+        const item = await transaction.get(importedItemRef);
+        if (!item.exists || item.data().status !== "available") throw new Error("__VOUCHER_STOCK_INVALID__");
+        importedItem = item.data();
+        if (!["code", "image"].includes(importedItem.kind) ||
+            (importedItem.kind === "code" && !importedItem.code) ||
+            (importedItem.kind === "image" && (!importedItem.storagePath || !importedItem.contentType))) {
+          throw new Error("__VOUCHER_STOCK_INVALID__");
+        }
+      }
+      const assignedVoucherNumber = voucherType === "imported"
+        ? (importedItem.code || "")
+        : voucherType === "numbered"
         ? buildAssignedVoucherNumber({
             prefix: voucherData.voucherPrefix,
             startSequence: voucherData.voucherStartSequence,
@@ -191,6 +237,11 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
       if (previousBalance < voucherCost) throw new Error("__INSUFFICIENT_BALANCE__");
 
       const newBalance = previousBalance - voucherCost;
+      if (importedItemRef) {
+        transaction.update(importedItemRef, {
+          status: "assigned", redemptionId: redemptionRef.id, assignedAt: timestamp,
+        });
+      }
       transaction.update(walletRef, {
         balance: newBalance,
         updatedAt: timestamp,
@@ -211,7 +262,7 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
         idempotencyKey,
         createdAt: timestamp,
         updatedAt: timestamp,
-        metadata: { source: "voucher_redeem", voucherId, assignedVoucherNumber },
+        metadata: { source: "voucher_redeem", voucherId, ...(voucherType === "imported" ? {} : { assignedVoucherNumber }) },
       });
 
       const nextRedeemedCount = redeemedCount + 1;
@@ -229,12 +280,14 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
           id: voucherDoc.id, value: voucherData.value || "",
           cost: voucherCost, merchant: voucherData.merchant || "",
           merchantIcon: voucherData.merchantIcon || "",
-          voucherImage: voucherData.voucherImage || "", voucherType,
+          voucherImage: importedItem?.kind === "image"
+            ? `/api/payment/redeemed-vouchers/${encodeURIComponent(redemptionRef.id)}/image`
+            : (voucherData.voucherImage || ""), voucherType,
           expiryDate: voucherData.expiryDate || "", totalNumber,
           redeemedCount: nextRedeemedCount,
           remainingCount: Math.max(0, totalNumber - nextRedeemedCount),
-          qrCode: voucherType === "numbered" ? assignedVoucherNumber : (voucherData.qrCode || ""),
-          promotionCode: voucherType === "numbered" ? assignedVoucherNumber : (voucherData.promotionCode || ""),
+          qrCode: voucherType === "numbered" || voucherType === "imported" ? assignedVoucherNumber : (voucherData.qrCode || ""),
+          promotionCode: voucherType === "numbered" || voucherType === "imported" ? assignedVoucherNumber : (voucherData.promotionCode || ""),
           claimedVoucherNumber: assignedVoucherNumber,
           redemptionId: redemptionRef.id,
           redemptionStatus: "PENDING",
@@ -248,6 +301,10 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
         voucherId,
         idempotencyKey,
         assignedVoucherNumber,
+        ...(importedItem?.kind === "image" ? {
+          importedImagePath: importedItem.storagePath,
+          importedImageType: importedItem.contentType,
+        } : {}),
         status: "PENDING",
         redemptionStatus: "PENDING",
         createdAt: timestamp,
@@ -267,6 +324,7 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
       __VOUCHER_SOLD_OUT__: [409, "Voucher is sold out"],
       __VOUCHER_EXPIRED__: [409, "Voucher is expired"],
       __VOUCHER_INACTIVE__: [409, "Voucher is inactive"],
+      __IDEMPOTENCY_CONFLICT__: [409, "Idempotency key already used for a different voucher"],
     };
     const invalidConfigurationErrors = new Set(["__VOUCHER_PREFIX_MISSING__", "__VOUCHER_RANGE_INVALID__", "__VOUCHER_STOCK_INVALID__", "__VOUCHER_COST_INVALID__"]);
     const response = responses[error.message] || (invalidConfigurationErrors.has(error.message) ? [400, "Voucher configuration is invalid"] : null);

@@ -1,8 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
-import ApiService from "../services/ApiService";
-import useKpayPayment, { KPAY_POLL_INTERVAL_MS, KPAY_POLL_TIMEOUT_MS, rememberKpayPayment } from "./useKpayPayment";
+import ApiService from "../../../src/services/ApiService";
+import useKpayPayment, { KPAY_POLL_INTERVAL_MS, KPAY_POLL_TIMEOUT_MS, rememberKpayPayment } from "../../../src/hooks/useKpayPayment";
 
-jest.mock("../services/ApiService", () => ({
+jest.mock("../../../src/services/ApiService", () => ({
   __esModule: true,
   default: { getKpayOrder: jest.fn() },
 }));

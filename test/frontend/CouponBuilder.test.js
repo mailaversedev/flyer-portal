@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import CouponBuilder from "../src/components/Flyer/CouponBuilder";
-import ApiService from "../src/services/ApiService";
-import { uploadFlyerCoupons } from "../src/utils/FlyerCouponUpload";
+import CouponBuilder from "../../src/components/Flyer/CouponBuilder";
+import ApiService from "../../src/services/ApiService";
+import { uploadFlyerCoupons } from "../../src/utils/FlyerCouponUpload";
 
 jest.mock("react-i18next", () => {
   const t = (key, options) => options?.number ? `${key} ${options.number}` : key;
   return { useTranslation: () => ({ t }) };
 });
-jest.mock("../src/utils/AuthUtil", () => ({ isSuperAdmin: () => true }));
-jest.mock("../src/services/ApiService", () => ({
+jest.mock("../../src/utils/AuthUtil", () => ({ isSuperAdmin: () => true }));
+jest.mock("../../src/services/ApiService", () => ({
   __esModule: true,
   default: { uploadFilesFromData: jest.fn() },
 }));

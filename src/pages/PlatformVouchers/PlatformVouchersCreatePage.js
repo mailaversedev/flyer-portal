@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import ApiService from "../../services/ApiService";
@@ -7,15 +7,26 @@ import { isSuperAdmin } from "../../utils/AuthUtil";
 import { hkdToTokens, TOKEN_PRICE_HKD } from "../../config/billingConfig";
 import { DEFAULT_FORM, formatDate } from "../../components/PlatformVouchers";
 import { PlatformVoucherCard } from "../../components/PlatformVouchers/PlatformVoucherCard";
+import VoucherImportFields from "../../components/PlatformVouchers/VoucherImportFields";
+import { validateVoucherImport } from "../../utils/VoucherImportUtil";
 import "./PlatformVouchers.css";
 
 const PlatformVouchersCreatePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { voucherId } = useParams();
   const isEditing = Boolean(voucherId);
   const voucherImageInputRef = useRef(null);
-  const [formData, setFormData] = useState(DEFAULT_FORM);
+  const retryState = location.state?.voucherImport;
+  const [formData, setFormData] = useState(retryState?.formData || DEFAULT_FORM);
+  const [loadedVoucherType, setLoadedVoucherType] = useState(retryState?.formData?.voucherType || null);
+  const [importBatch, setImportBatch] = useState(retryState?.batch || { codes: [], images: [], sourceError: "" });
+  const [pendingImport, setPendingImport] = useState(retryState?.pending || null);
+  const [importFieldsKey, setImportFieldsKey] = useState(0);
+  const savedVoucherIdRef = useRef(retryState?.pending?.voucherId || voucherId || "");
+  const creationCompletedRef = useRef(false);
+  const submitLockRef = useRef(false);
   const [merchantIconFile, setMerchantIconFile] = useState(null);
   const [voucherImageFile, setVoucherImageFile] = useState(null);
   const [qrCodeFile, setQrCodeFile] = useState(null);
@@ -23,7 +34,7 @@ const PlatformVouchersCreatePage = () => {
   const [voucherImagePreviewUrl, setVoucherImagePreviewUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadingVoucher, setLoadingVoucher] = useState(isEditing);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(retryState?.error || "");
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
@@ -55,6 +66,10 @@ const PlatformVouchersCreatePage = () => {
   }, [voucherImageFile]);
 
   useEffect(() => {
+    if (location.state?.voucherImport?.pending?.voucherId === voucherId) {
+      setLoadingVoucher(false);
+      return undefined;
+    }
     if (!isEditing) {
       setLoadingVoucher(false);
       return undefined;
@@ -78,6 +93,7 @@ const PlatformVouchersCreatePage = () => {
         }
 
         const voucher = response.data;
+        setLoadedVoucherType(voucher.voucherType || "static");
         const colors = Array.isArray(voucher.colors) ? voucher.colors : [];
 
         setFormData({
@@ -108,7 +124,7 @@ const PlatformVouchersCreatePage = () => {
     return () => {
       isMounted = false;
     };
-  }, [isEditing, t, voucherId]);
+  }, [isEditing, t, voucherId, location.state]);
 
   if (!isSuperAdmin()) {
     return <Navigate to="/platform-admin" replace />;
@@ -126,6 +142,7 @@ const PlatformVouchersCreatePage = () => {
   const previewValue = formData.value.trim() || "100";
   const previewExpiryDate = formatDate(formData.expiryDate) || "-";
   const requiresVoucherRange = formData.voucherType === "numbered";
+  const isImported = formData.voucherType === "imported";
   const startSequence = Number.parseInt(formData.voucherNumberStart, 10);
   const endSequence = Number.parseInt(formData.voucherNumberEnd, 10);
   const calculatedQuantity =
@@ -161,6 +178,9 @@ const PlatformVouchersCreatePage = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    if (name === "voucherType" && isEditing &&
+        (loadedVoucherType === "imported" || value === "imported") &&
+        value !== loadedVoucherType) return;
     setFormData((current) => ({
       ...current,
       [name]: value,
@@ -175,123 +195,171 @@ const PlatformVouchersCreatePage = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setError("");
     setSuccess("");
     setSubmitting(true);
 
+    let activeImport = pendingImport;
+    let savedFormData = formData;
     try {
-      const totalNumber = requiresVoucherRange
-        ? calculatedQuantity
-        : Number.parseInt(formData.totalNumber, 10);
-
-      if (!Number.isFinite(totalNumber) || totalNumber <= 0) {
-        throw new Error(t("voucherAdminPage.totalNumberInvalid"));
-      }
-
-      const prefix = formData.voucherPrefix.trim();
-      const startVoucherNumber = formData.voucherNumberStart.trim();
-      const endVoucherNumber = formData.voucherNumberEnd.trim();
-
-      if (requiresVoucherRange) {
-        const startResult = parseVoucherSequence(startVoucherNumber, prefix);
-
-        if (startResult.error) {
-          throw new Error(startResult.error);
-        }
-
-        const endResult = parseVoucherSequence(endVoucherNumber, prefix);
-
-        if (endResult.error) {
-          throw new Error(endResult.error);
-        }
-
-        if (startResult.sequence > endResult.sequence) {
-          throw new Error(t("voucherAdminPage.voucherRangeInvalid"));
-        }
-
-        const rangeCount = endResult.sequence - startResult.sequence + 1;
-
-        if (rangeCount !== totalNumber) {
-          throw new Error(t("voucherAdminPage.voucherRangeCountMismatch"));
+      if (isImported) {
+        const importErrors = [importBatch.sourceError, ...validateVoucherImport(importBatch.codes, importBatch.images)].filter(Boolean);
+        if (importErrors.length) throw new Error(t(`voucherAdminPage.${importErrors[0]}`));
+        if (!savedVoucherIdRef.current && !importBatch.codes.length && !importBatch.images.length) {
+          throw new Error(t("voucherAdminPage.importEmpty"));
         }
       }
 
-      let merchantIconUrl = formData.merchantIcon || "";
-      let voucherImageUrl = formData.voucherImage || "";
-      let qrCodeUrl = formData.qrCode || "";
+      if (!activeImport) {
+        const totalNumber = isImported ? 0 : requiresVoucherRange
+          ? calculatedQuantity
+          : Number.parseInt(formData.totalNumber, 10);
 
-      if (merchantIconFile) {
-        const uploadResponse = await ApiService.uploadFile(
-          merchantIconFile,
-          "voucherMerchantIcon",
-        );
-
-        if (!uploadResponse?.success || !uploadResponse?.url) {
-          throw new Error(t("voucherAdminPage.uploadMerchantIconError"));
+        if (!isImported && (!Number.isFinite(totalNumber) || totalNumber <= 0)) {
+          throw new Error(t("voucherAdminPage.totalNumberInvalid"));
         }
 
-        merchantIconUrl = uploadResponse.url;
-      }
+        const prefix = formData.voucherPrefix.trim();
+        const startVoucherNumber = formData.voucherNumberStart.trim();
+        const endVoucherNumber = formData.voucherNumberEnd.trim();
 
-      if (voucherImageFile) {
-        const uploadResponse = await ApiService.uploadFile(
-          voucherImageFile,
-          "voucherImage",
-        );
+        if (requiresVoucherRange) {
+          const startResult = parseVoucherSequence(startVoucherNumber, prefix);
 
-        const uploadedVoucherImageUrl = `${uploadResponse?.url || ""}`.trim();
+          if (startResult.error) {
+            throw new Error(startResult.error);
+          }
 
-        if (!uploadResponse?.success || !uploadedVoucherImageUrl) {
-          throw new Error(t("voucherAdminPage.uploadVoucherImageError"));
+          const endResult = parseVoucherSequence(endVoucherNumber, prefix);
+
+          if (endResult.error) {
+            throw new Error(endResult.error);
+          }
+
+          if (startResult.sequence > endResult.sequence) {
+            throw new Error(t("voucherAdminPage.voucherRangeInvalid"));
+          }
+
+          const rangeCount = endResult.sequence - startResult.sequence + 1;
+
+          if (rangeCount !== totalNumber) {
+            throw new Error(t("voucherAdminPage.voucherRangeCountMismatch"));
+          }
         }
 
-        voucherImageUrl = uploadedVoucherImageUrl;
-        setFormData((current) => ({
-          ...current,
-          voucherImage: uploadedVoucherImageUrl,
-        }));
-      }
+        let merchantIconUrl = formData.merchantIcon || "";
+        let voucherImageUrl = formData.voucherImage || "";
+        let qrCodeUrl = formData.qrCode || "";
 
-      if (qrCodeFile) {
-        const uploadResponse = await ApiService.uploadFile(
-          qrCodeFile,
-          "voucherQrCode",
-        );
+        if (merchantIconFile) {
+          const uploadResponse = await ApiService.uploadFile(
+            merchantIconFile,
+            "voucherMerchantIcon",
+          );
 
-        if (!uploadResponse?.success || !uploadResponse?.url) {
-          throw new Error(t("voucherAdminPage.uploadError"));
+          if (!uploadResponse?.success || !uploadResponse?.url) {
+            throw new Error(t("voucherAdminPage.uploadMerchantIconError"));
+          }
+
+          merchantIconUrl = uploadResponse.url;
         }
 
-        qrCodeUrl = uploadResponse.url;
+        if (voucherImageFile) {
+          const uploadResponse = await ApiService.uploadFile(
+            voucherImageFile,
+            "voucherImage",
+          );
+
+          const uploadedVoucherImageUrl = `${uploadResponse?.url || ""}`.trim();
+
+          if (!uploadResponse?.success || !uploadedVoucherImageUrl) {
+            throw new Error(t("voucherAdminPage.uploadVoucherImageError"));
+          }
+
+          voucherImageUrl = uploadedVoucherImageUrl;
+          setFormData((current) => ({
+            ...current,
+            voucherImage: uploadedVoucherImageUrl,
+          }));
+        }
+
+        if (!isImported && qrCodeFile) {
+          const uploadResponse = await ApiService.uploadFile(
+            qrCodeFile,
+            "voucherQrCode",
+          );
+
+          if (!uploadResponse?.success || !uploadResponse?.url) {
+            throw new Error(t("voucherAdminPage.uploadError"));
+          }
+
+          qrCodeUrl = uploadResponse.url;
+        }
+
+        const voucherData = {
+          merchant: formData.merchant.trim(),
+          merchantIcon: merchantIconUrl,
+          voucherImage: voucherImageUrl,
+          value: formData.value.trim(),
+          cost: calculatedCost || formData.cost,
+          expiryDate: formData.expiryDate,
+          totalNumber,
+          voucherType: formData.voucherType,
+          voucherPrefix: requiresVoucherRange ? prefix : "",
+          voucherNumberStart: requiresVoucherRange ? startVoucherNumber : "",
+          voucherNumberEnd: requiresVoucherRange ? endVoucherNumber : "",
+          promotionCode: requiresVoucherRange || isImported ? "" : formData.promotionCode.trim(),
+          qrCode: isImported ? "" : qrCodeUrl,
+          terms: formData.terms.trim(),
+          colors: [formData.primaryColor, formData.secondaryColor],
+        };
+
+        if (isImported && savedVoucherIdRef.current) delete voucherData.totalNumber;
+        if (creationCompletedRef.current && !savedVoucherIdRef.current) {
+          throw new Error(t("voucherAdminPage.importMissingId"));
+        }
+        const response = savedVoucherIdRef.current
+          ? await ApiService.updateAdminVoucher(savedVoucherIdRef.current, voucherData)
+          : await ApiService.createAdminVoucher(voucherData);
+
+        if (!response?.success) {
+          throw new Error(
+            response?.message ||
+              t(isEditing ? "voucherAdminPage.updateError" : "voucherAdminPage.createError"),
+          );
+        }
+
+        if (isImported) {
+          creationCompletedRef.current = true;
+          const savedId = savedVoucherIdRef.current || response.data?.id || response.data?.voucherId || response.voucherId || response.id;
+          if (!savedId) throw new Error(t("voucherAdminPage.importMissingId"));
+          savedVoucherIdRef.current = savedId;
+          if (importBatch.codes.length || importBatch.images.length) {
+            activeImport = { ...importBatch, voucherId: savedId, importKey: crypto.randomUUID() };
+            setPendingImport(activeImport);
+            savedFormData = {
+              ...formData,
+              merchantIcon: voucherData.merchantIcon,
+              voucherImage: voucherData.voucherImage,
+              totalNumber: isEditing ? formData.totalNumber : "0",
+            };
+            setFormData(savedFormData);
+            navigate(`/platform-vouchers/${savedId}/edit`, {
+              replace: true,
+              state: { voucherImport: { pending: activeImport, batch: importBatch, formData: savedFormData } },
+            });
+          }
+        }
       }
 
-      const voucherData = {
-        merchant: formData.merchant.trim(),
-        merchantIcon: merchantIconUrl,
-        voucherImage: voucherImageUrl,
-        value: formData.value.trim(),
-        cost: calculatedCost || formData.cost,
-        expiryDate: formData.expiryDate,
-        totalNumber,
-        voucherType: formData.voucherType,
-        voucherPrefix: requiresVoucherRange ? prefix : "",
-        voucherNumberStart: requiresVoucherRange ? startVoucherNumber : "",
-        voucherNumberEnd: requiresVoucherRange ? endVoucherNumber : "",
-        promotionCode: requiresVoucherRange ? "" : formData.promotionCode.trim(),
-        qrCode: qrCodeUrl,
-        terms: formData.terms.trim(),
-        colors: [formData.primaryColor, formData.secondaryColor],
-      };
-
-      const response = isEditing
-        ? await ApiService.updateAdminVoucher(voucherId, voucherData)
-        : await ApiService.createAdminVoucher(voucherData);
-
-      if (!response?.success) {
-        throw new Error(
-          response?.message ||
-            t(isEditing ? "voucherAdminPage.updateError" : "voucherAdminPage.createError"),
-        );
+      if (activeImport) {
+        const importResponse = await ApiService.importAdminVoucher(activeImport.voucherId, activeImport);
+        if (!importResponse?.success) {
+          throw new Error(importResponse?.message || t("voucherAdminPage.importError"));
+        }
+        setPendingImport(null);
       }
 
       navigate("/platform-vouchers", {
@@ -310,8 +378,21 @@ const PlatformVouchersCreatePage = () => {
         submitError.message ||
           t(isEditing ? "voucherAdminPage.updateError" : "voucherAdminPage.createError"),
       );
+      if (activeImport) {
+        // Persist the saved ID and exact retry payload in this history entry.
+        navigate(`/platform-vouchers/${activeImport.voucherId}/edit`, {
+          replace: true,
+          state: { voucherImport: {
+            pending: activeImport,
+            batch: importBatch,
+            formData: savedFormData,
+            error: submitError.message || t("voucherAdminPage.importError"),
+          } },
+        });
+      }
     } finally {
       setSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 
@@ -344,10 +425,22 @@ const PlatformVouchersCreatePage = () => {
             </button>
           </div>
 
-          {error ? <div className="platform-vouchers-message error">{error}</div> : null}
+          {error ? <div role="alert" className="platform-vouchers-message error">{error}</div> : null}
           {success ? <div className="platform-vouchers-message success">{success}</div> : null}
+          {pendingImport ? <div role="status" className="platform-vouchers-message error">
+            {t(submitting ? "voucherAdminPage.importProcessing" : "voucherAdminPage.importRetryGuidance", { id: pendingImport.voucherId })}
+            <button type="button" disabled={submitting} onClick={() => {
+              if (!window.confirm(t("voucherAdminPage.importDiscardConfirm"))) return;
+              setPendingImport(null);
+              setImportBatch({ codes: [], images: [], sourceError: "" });
+              setImportFieldsKey((key) => key + 1);
+              setError("");
+              navigate(`/platform-vouchers/${pendingImport.voucherId}/edit`, { replace: true, state: null });
+            }}>{t("voucherAdminPage.importDiscard")}</button>
+          </div> : null}
 
-          <form className="platform-vouchers-form" onSubmit={handleSubmit}>
+          <form aria-label={t(isEditing ? "voucherAdminPage.editTitle" : "voucherAdminPage.createTitle")} className="platform-vouchers-form" onSubmit={handleSubmit}>
+            <fieldset className="platform-vouchers-details full-width" disabled={submitting || Boolean(pendingImport)}>
             <label className="full-width">
               <span>{t("voucherAdminPage.merchant")}</span>
               <input name="merchant" value={formData.merchant} onChange={handleChange} required />
@@ -429,24 +522,28 @@ const PlatformVouchersCreatePage = () => {
               <input
                 name="totalNumber"
                 type="number"
-                min="1"
-                value={requiresVoucherRange ? calculatedQuantity : formData.totalNumber}
+                min={isImported ? "0" : "1"}
+                value={isImported ? (isEditing ? formData.totalNumber : "0") : requiresVoucherRange ? calculatedQuantity : formData.totalNumber}
                 onChange={handleChange}
-                readOnly={requiresVoucherRange}
+                readOnly={requiresVoucherRange || isImported}
                 required
               />
             </label>
+            {isImported ? <p className="full-width">{t("voucherAdminPage.importStockGuidance")}</p> : null}
             <label>
               <span>{t("voucherAdminPage.voucherType")}</span>
               <select
                 name="voucherType"
                 value={formData.voucherType}
                 onChange={handleChange}
+                disabled={isEditing && loadedVoucherType === "imported"}
               >
                 <option value="static">{t("voucherAdminPage.voucherTypeStatic")}</option>
                 <option value="numbered">{t("voucherAdminPage.voucherTypeNumbered")}</option>
+                {!isEditing || loadedVoucherType === "imported" ? <option value="imported">{t("voucherAdminPage.voucherTypeImported")}</option> : null}
               </select>
             </label>
+            {isEditing ? <p className="full-width">{t("voucherAdminPage.importTypeLocked")}</p> : null}
             {requiresVoucherRange ? (
               <>
                 <label>
@@ -463,7 +560,7 @@ const PlatformVouchersCreatePage = () => {
                 </label>
               </>
             ) : null}
-            {!requiresVoucherRange ? (
+            {!requiresVoucherRange && !isImported ? (
               <label className="full-width">
                 <span>{t("voucherAdminPage.promotionCode")}</span>
                 <input name="promotionCode" value={formData.promotionCode} onChange={handleChange} />
@@ -477,22 +574,31 @@ const PlatformVouchersCreatePage = () => {
               <span>{t("voucherAdminPage.secondaryColor")}</span>
               <input name="secondaryColor" type="color" value={formData.secondaryColor} onChange={handleChange} />
             </label>
-            <label className="full-width">
+            {!isImported ? <label className="full-width">
               <span>{t("voucherAdminPage.qrCode")}</span>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 onChange={(event) => setQrCodeFile(event.target.files?.[0] || null)}
               />
-            </label>
+            </label> : null}
             <label className="full-width">
               <span>{t("voucherAdminPage.terms")}</span>
               <textarea name="terms" rows="5" value={formData.terms} onChange={handleChange} required />
             </label>
+            </fieldset>
+            {isImported ? <VoucherImportFields
+              key={importFieldsKey}
+              t={t}
+              batch={importBatch}
+              onChange={setImportBatch}
+              disabled={submitting || Boolean(pendingImport)}
+              isEditing={isEditing}
+            /> : null}
             <button type="submit" className="platform-vouchers-submit" disabled={submitting}>
               {submitting
                 ? t(isEditing ? "voucherAdminPage.updating" : "voucherAdminPage.submitting")
-                : t(isEditing ? "voucherAdminPage.updateSubmit" : "voucherAdminPage.submit")}
+                : t(pendingImport ? "voucherAdminPage.importRetry" : isEditing ? "voucherAdminPage.updateSubmit" : "voucherAdminPage.submit")}
             </button>
           </form>
         </section>

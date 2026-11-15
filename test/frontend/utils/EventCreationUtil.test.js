@@ -1,4 +1,4 @@
-const { eventDateToIso, eventDateToLocal, validateEventDetails, isValidTimezone } = require("./EventCreationUtil");
+const { eventDateToIso, eventDateToLocal, validateEventDetails, isValidTimezone } = require("../../../src/utils/EventCreationUtil");
 
 test("accepts UTC and valid timezone aliases", () => {
   ["UTC", "Asia/Kolkata", "US/Eastern", "Asia/Hong_Kong"].forEach((timezone) => expect(isValidTimezone(timezone)).toBe(true));

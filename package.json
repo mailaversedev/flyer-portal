@@ -17,7 +17,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "node scripts/runTests.js",
+    "test:server": "node --test test/*.test.js",
+    "test:frontend": "react-scripts test --roots '<rootDir>/test/frontend' --testMatch '<rootDir>/test/frontend/**/*.{spec,test}.{js,jsx,ts,tsx}'",
     "eject": "react-scripts eject",
     "server": "node --env-file-if-exists=.env server.js",
     "worker": "node worker.js",

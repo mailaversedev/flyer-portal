@@ -16,7 +16,12 @@ You may also see any lint errors in the console.
 
 ### `npm test`
 
-Launches the test runner in the interactive watch mode.\
+Runs all server tests in `test` and frontend Jest tests in `test/frontend` once.
+For focused runs, use `node --test test/example.test.js` or
+`npm run test:frontend -- --watchAll=false --runInBand test/frontend/path/to/example.test.js`.
+Arguments passed to `npm test` apply to the frontend suite; the server suite always
+runs in full. Run `npm run test:frontend` to use Jest's interactive watch mode.
+
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
 ### `npm run build`
@@ -64,7 +69,7 @@ Regression checks:
 
 ```bash
 node --test test/merchantProducts.test.js test/companyProducts.test.js
-CI=true npm test -- --watchAll=false --runInBand src/pages/Profile/MerchantProducts.test.js
+CI=true npm run test:frontend -- --watchAll=false --runInBand test/frontend/pages/Profile/MerchantProducts.test.js
 ```
 
 ## Flyer coupons
@@ -87,6 +92,45 @@ Focused server checks:
 
 ```bash
 node --test test/flyerCoupons.test.js test/couponBulkClaim.test.js
+```
+
+## Imported platform vouchers
+
+Super admins can import arbitrary codes (pasted or CSV) and individual voucher
+images. Each code or image is one voucher; within each import, codes are assigned
+first, followed by images in upload order. Later batches follow earlier batches.
+Duplicate codes in the same voucher are rejected.
+Administrators must verify that image contents are unique. Each import is limited
+to 100 items, including at most 20 PNG, JPEG, GIF, or WebP images, each at most
+5 MiB and 20 MiB combined. Import more stock in additional batches.
+
+Set `VOUCHER_IMAGE_ENCRYPTION_KEY` on every API instance to the same base64
+encoding of a securely generated 32-byte key before importing images. Store it
+in a secrets manager, back it up securely, and do not rotate or remove it without
+first migrating all encrypted images; existing vouchers become unreadable if it
+is lost or changed. For example, generate a key locally with
+`openssl rand -base64 32` and configure the result as a secret, not in source
+control. Image imports fail explicitly if the key is not configured.
+
+Images are encrypted in Cloud Storage and served only through an authenticated,
+redemption-owner-checked API. For an assigned image, the redeemed voucher's
+`voucherImage` contains this authenticated API path instead of the shared card
+artwork; imported code vouchers continue to use the shared artwork. Ensure
+Firestore security rules deny direct client
+access to `vouchers/{id}/inventory`, `vouchers/{id}/importedCodeIndex`,
+`vouchers/{id}/imports`, and other users' `voucherRedemptions`; the API uses the
+Admin SDK. Verify deployed rules separately before enabling this feature.
+Imported voucher deletion is a soft delete so previously redeemed images remain
+available. If an upload or transaction fails unexpectedly, the server logs the
+encrypted object paths for cleanup review. Before deleting such an object,
+confirm it is not referenced by voucher inventory or a redemption; a transaction
+may have committed despite a lost response.
+
+Deploy the API and updated mobile client before enabling imported vouchers:
+older mobile clients cannot display an imported image. Focused server checks:
+
+```bash
+node --test test/importedVouchers.test.js
 ```
 
 ## Super Admin Registration
