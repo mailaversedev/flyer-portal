@@ -4,21 +4,21 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { toast } from "react-toastify";
 import QRCode from "qrcode";
-import QRGeneration from "../pages/Flyer/FlyerCreation/QRGeneration";
-import Flyer from "../pages/Flyer/Flyer";
-import ApiService from "../services/ApiService";
-import { isSuperAdmin } from "../utils/AuthUtil";
+import QRGeneration from "../src/pages/Flyer/FlyerCreation/QRGeneration";
+import Flyer from "../src/pages/Flyer/Flyer";
+import ApiService from "../src/services/ApiService";
+import { isSuperAdmin } from "../src/utils/AuthUtil";
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key) => key }),
 }));
 jest.mock("react-toastify", () => ({ toast: { error: jest.fn() } }));
 jest.mock("qrcode", () => ({ toDataURL: jest.fn().mockResolvedValue("data:image/png;base64,qr") }));
-jest.mock("../utils/AuthUtil", () => ({ isSuperAdmin: jest.fn() }));
-jest.mock("../utils/FlyerValidationUtil", () => ({
+jest.mock("../src/utils/AuthUtil", () => ({ isSuperAdmin: jest.fn() }));
+jest.mock("../src/utils/FlyerValidationUtil", () => ({
   validateTargetBudgetStep: () => ({ isValid: true, missingFields: [] }),
 }));
-jest.mock("../services/ApiService", () => ({
+jest.mock("../src/services/ApiService", () => ({
   __esModule: true,
   default: {
     getCompanyWallet: jest.fn(),
@@ -30,13 +30,13 @@ jest.mock("../services/ApiService", () => ({
     updateFlyer: jest.fn(),
   },
 }));
-jest.mock("../components/Flyer/TargetBudget", () => (props) => (
+jest.mock("../src/components/Flyer/TargetBudget", () => (props) => (
   <div>
     <span>budget: {props.data.coverPhoto}</span>
     <span>free: {String(props.isFreeAttempt)}</span>
   </div>
 ));
-jest.mock("../components/Flyer/CouponBuilder", () => () => <div>coupon</div>);
+jest.mock("../src/components/Flyer/CouponBuilder", () => () => <div>coupon</div>);
 
 beforeEach(() => {
   jest.clearAllMocks();
