@@ -82,7 +82,12 @@ const Header = () => {
       case "/crm-campaigns":
       case "/crm-campaigns/create":
         return t("common.crmCampaigns");
+      case "/jetso-blog":
+        return t("common.jetsoBlog");
       default:
+        if (location.pathname.startsWith("/jetso-blog/")) {
+          return t("common.jetsoBlog");
+        }
         if (location.pathname.startsWith("/flyer/create")) {
           return t("header.createFlyer");
         }

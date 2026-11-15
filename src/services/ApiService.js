@@ -378,6 +378,72 @@ class ApiService {
     );
   }
 
+  static async getJetsoBlogPosts(after = null, limit = 20) {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (after) params.set("after", after);
+    return this.makeRequest(`/api/admin/jetso-posts?${params.toString()}`);
+  }
+
+  static async getJetsoBlogPost(postId) {
+    return this.makeRequest(
+      `/api/admin/jetso-posts/${encodeURIComponent(postId)}`,
+    );
+  }
+
+  static async createJetsoBlogPost(draft) {
+    return this.makeRequest("/api/admin/jetso-posts", {
+      method: "POST",
+      body: JSON.stringify({ draft }),
+    });
+  }
+
+  static async updateJetsoBlogPost(postId, revision, draft) {
+    return this.makeRequest(
+      `/api/admin/jetso-posts/${encodeURIComponent(postId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ revision, draft }),
+      },
+    );
+  }
+
+  static async previewJetsoBlogPost(draft) {
+    return this.makeRequest("/api/admin/jetso-posts/preview", {
+      method: "POST",
+      body: JSON.stringify({ draft }),
+    });
+  }
+
+  static async publishJetsoBlogPost(postId, revision) {
+    return this.makeRequest(
+      `/api/admin/jetso-posts/${encodeURIComponent(postId)}/publish`,
+      { method: "POST", body: JSON.stringify({ revision }) },
+    );
+  }
+
+  static async unpublishJetsoBlogPost(postId, revision) {
+    return this.makeRequest(
+      `/api/admin/jetso-posts/${encodeURIComponent(postId)}/unpublish`,
+      { method: "POST", body: JSON.stringify({ revision }) },
+    );
+  }
+
+  static async archiveJetsoBlogPost(postId, revision) {
+    return this.makeRequest(
+      `/api/admin/jetso-posts/${encodeURIComponent(postId)}/archive`,
+      { method: "POST", body: JSON.stringify({ revision }) },
+    );
+  }
+
+  static async uploadJetsoBlogImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return this.makeRequest("/api/admin/jetso-posts/images", {
+      method: "POST",
+      body: formData,
+    });
+  }
+
   static async manageCompanyWallet(companyId, payload) {
     return this.makeRequest(`/api/admin/companies/${companyId}/manage-wallet`, {
       method: "POST",

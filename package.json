@@ -3,12 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@tiptap/core": "3.34.0",
+    "@tiptap/extension-image": "3.34.0",
+    "@tiptap/extension-text-align": "3.34.0",
+    "@tiptap/pm": "3.34.0",
+    "@tiptap/react": "3.34.0",
+    "@tiptap/starter-kit": "3.34.0",
+    "@tiptap/static-renderer": "3.34.0",
     "bcryptjs": "^3.0.2",
     "express": "^4.21.2",
     "firebase-admin": "^13.4.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.12",
+    "sanitize-html": "2.18.2",
+    "sharp": "0.35.5",
     "uuid": "^11.1.0"
   },
   "engines": {
@@ -32,6 +41,12 @@
       "react-app",
       "react-app/jest"
     ]
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^@tiptap/pm/(.*)$": "<rootDir>/node_modules/@tiptap/pm/dist/$1/index.cjs",
+      "^@tiptap/core/jsx-runtime$": "<rootDir>/node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.cjs"
+    }
   },
   "browserslist": {
     "production": [

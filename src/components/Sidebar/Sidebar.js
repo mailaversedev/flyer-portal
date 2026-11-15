@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Ticket,
   BadgeCheck,
+  Newspaper,
 } from "lucide-react";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import "./Sidebar.css";
@@ -74,6 +75,11 @@ const Sidebar = () => {
           name: t("common.crmCampaigns"),
           path: "/crm-campaigns",
           icon: Mail,
+        },
+        {
+          name: t("common.jetsoBlog"),
+          path: "/jetso-blog",
+          icon: Newspaper,
         },
         {
           name: t("common.flyer"),

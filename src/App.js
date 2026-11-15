@@ -24,6 +24,8 @@ import PlatformVouchersListPage from "./pages/PlatformVouchers/PlatformVouchersL
 import PlatformVouchersCreatePage from "./pages/PlatformVouchers/PlatformVouchersCreatePage";
 import CrmCampaignListPage from "./pages/CrmCampaigns/CrmCampaignListPage";
 import CrmCampaignCreatePage from "./pages/CrmCampaigns/CrmCampaignCreatePage";
+import JetsoBlogListPage from "./pages/JetsoBlog/JetsoBlogListPage";
+import JetsoBlogEditorPage from "./pages/JetsoBlog/JetsoBlogEditorPage";
 import WalletPage from "./pages/Wallet/WalletPage";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import { isSuperAdmin } from "./utils/AuthUtil";
@@ -141,6 +143,9 @@ function App() {
                     <Route path="/platform-vouchers/:voucherId/edit" element={<PlatformVouchersCreatePage />} />
                     <Route path="/crm-campaigns" element={<CrmCampaignListPage />} />
                     <Route path="/crm-campaigns/create" element={<CrmCampaignCreatePage />} />
+                    <Route path="/jetso-blog" element={<JetsoBlogListPage />} />
+                    <Route path="/jetso-blog/new" element={<JetsoBlogEditorPage />} />
+                    <Route path="/jetso-blog/:postId/edit" element={<JetsoBlogEditorPage />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/profile/products" element={<MerchantProducts />} />
                     <Route path="/profile/products/new" element={<MerchantProductForm />} />

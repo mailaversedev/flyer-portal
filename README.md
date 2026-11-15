@@ -170,6 +170,79 @@ SUPER_ADMIN_LOCALE=en \
 npm run create:super-admin
 ```
 
+## Jetso marketing blog
+
+Super admins can manage articles at `/jetso-blog` in the portal. Articles use
+the separate Firestore `jetsoPosts` collection and never create flyers, reward
+budgets or distribution jobs. They appear only in Jetso's bilingual `/blog`
+section. Tiptap 3 is self-hosted and MIT-licensed; no paid editor/cloud service
+is required. CRM editing is unchanged.
+
+The WYSIWYG description supports headings, links, lists, text alignment,
+image uploads, drag resizing, percentage widths, image alignment, alt text and
+captions. Tables and two-column layouts are not included. Optional authored
+English/Traditional Chinese translations retain the original content fallback.
+
+Save draft does not modify a live article. Preview renders the current unsaved
+draft without writing it. Publish/Update published atomically replaces the public
+snapshot, with optimistic revision checking. Initial publication can be scheduled;
+scheduled replacements of live articles are rejected. Unpublish and archive remove
+the public snapshot. Public blog HTML and blog sitemaps use `no-store` so later
+requests see publication changes immediately; this cannot erase pages already
+downloaded or search-engine caches.
+
+Uploads require super-admin authentication and accept static JPEG/PNG/WebP up
+to 5 MiB and 8192 pixels per dimension (40 million input pixels maximum). Images
+are decoded, orientation-corrected, stripped of metadata and converted to WebP
+in the existing Cloud Storage bucket under `jetso-blog/`. SVGs, animated files
+and invalid image bytes are rejected. Uploaded marketing images are public,
+including images in unpublished drafts; do not upload confidential material.
+There are at most 20 inline images across the original and translations,
+and 500 KiB of submitted content. Large draft/public combinations are also
+rejected before exceeding Firestore's 1 MiB document limit.
+
+The server validates versioned Tiptap JSON, derives and sanitizes its HTML, and
+stores image references in both draft and public snapshot. Upload metadata is
+tracked separately in `jetsoPostImages`. To report uploads older than seven days
+that are not referenced by either copy, run
+`node scripts/reportJetsoBlogImages.js` with application default credentials.
+This is read-only: review current references again immediately before any manual
+cleanup, since an editor may have saved during the report. Unexpected upload
+failures log the specific object path for review; do not delete it until its
+registry and article references have been checked.
+
+Deployment prerequisites:
+
+1. Deploy the backend and Jetso readers before enabling the new portal build.
+   Run `npm ci` on the declared Node.js 24 runtime; Sharp's platform-specific
+   optional packages must be installed for the image decoder.
+2. Preserve Firestore single-field descending indexes for `jetsoPosts.createdAt`
+   (portal) and `jetsoPosts.publicSnapshot.publishedAt` (Jetso). No composite
+   index is required by the current post queries. Exempt `draft` and the rich
+   body HTML/text/translation fields in `publicSnapshot` from unnecessary
+   automatic indexing to reduce index fan-out; do not exempt the entire
+   `publicSnapshot` map without restoring its `publishedAt` index. Index
+   configuration is managed separately, not by this project's Firebase
+   Functions configuration.
+3. Verify Firestore rules deny all direct client reads/writes to `jetsoPosts`
+   and `jetsoPostImages`, including drafts. Admin SDK access bypasses those
+   rules: use the authenticated API for authoring and a read-only service
+   account for Jetso. Grant the portal service account existing bucket upload
+   and object-publication permissions. No new application secret is required.
+4. `REACT_APP_JETSO_SITE_URL` may override the default
+   `https://jetso.mailaverse.io` for public article links; it is a build-time value.
+5. Verify publish, draft isolation, both language URLs, scheduling, unpublish,
+   and the Jetso blog sitemaps. No mobile release or existing-data migration is
+   needed.
+
+Focused checks:
+
+```bash
+node --test test/jetsoPosts.test.js
+CI=true npm run test:frontend -- --watchAll=false --runInBand JetsoBlog
+npm run build
+```
+
 ## Heroku background jobs
 
 Flyer jobs are queued in Firestore and should be processed by a dedicated Heroku worker dyno.
