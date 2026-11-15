@@ -654,6 +654,13 @@
     "answerRequired": "選擇題至少需要一個答案"
   },
   "couponBuilder": {
+    "selectCoupon": "編輯優惠券",
+    "selectEveryCouponType": "請為每張優惠券選擇類型。",
+    "couponNumber": "優惠券 {{number}}",
+    "addCoupon": "新增優惠券",
+    "removeCoupon": "移除優惠券",
+    "moveUp": "上移",
+    "moveDown": "下移",
     "off": "折扣",
     "store": "商店",
     "entirePurchase": "整張訂單適用",

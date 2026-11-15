@@ -1,9 +1,11 @@
-function normalizeCompanyCouponEntry({ flyerId, companyId, flyerData, now }) {
+const { getFlyerCoupons, claimDocumentId } = require("./flyerCoupons");
+
+function normalizeCompanyCouponEntry({ flyerId, companyId, flyerData, coupon: couponOverride, now }) {
   if (!companyId || !flyerId || !flyerData) {
     return null;
   }
 
-  const coupon = flyerData.coupon || {};
+  const coupon = couponOverride || flyerData.coupon || {};
   if (typeof coupon.couponType !== "string" || !coupon.couponType.trim()) {
     return null;
   }
@@ -91,19 +93,10 @@ async function syncCompanyCouponLibraryEntry({
     return null;
   }
 
-  const companyCouponRef = db
-    .collection("companies")
-    .doc(companyId)
-    .collection("coupons")
-    .doc(flyerId);
-
-  const normalizedEntry = normalizeCompanyCouponEntry({
-    flyerId,
-    companyId,
-    flyerData,
-  });
-
-  if (!normalizedEntry) {
+  const library = db.collection("companies").doc(companyId).collection("coupons");
+  const coupons = getFlyerCoupons(flyerData);
+  if (!coupons.length) {
+    const companyCouponRef = library.doc(flyerId);
     if (transaction) {
       transaction.delete(companyCouponRef);
     } else {
@@ -118,13 +111,15 @@ async function syncCompanyCouponLibraryEntry({
     return null;
   }
 
-  if (transaction) {
-    transaction.set(companyCouponRef, normalizedEntry);
-  } else {
-    await companyCouponRef.set(normalizedEntry);
+  const entries = coupons.map((coupon, index) => ({
+    ref: library.doc(claimDocumentId(flyerId, coupon, index)),
+    data: normalizeCompanyCouponEntry({ flyerId, companyId, flyerData, coupon }),
+  }));
+  for (const entry of entries) {
+    if (transaction) transaction.set(entry.ref, entry.data);
+    else await entry.ref.set(entry.data);
   }
-
-  return normalizedEntry;
+  return entries.map((entry) => entry.data);
 }
 
 module.exports = {

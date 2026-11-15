@@ -56,14 +56,14 @@ const Dashboard = () => {
         const formattedData = response.data.map((flyer) => {
           const lottery = flyer.lottery || {};
           const coupon = flyer.coupon || {};
+          const coupons = Array.isArray(flyer.coupons) ? flyer.coupons : [coupon];
+          const flyerCouponDownloads = coupons.reduce((sum, item) => sum + (Number(item.downloadCount) || 0), 0);
 
           if (lottery.pool) {
             totalBudget += lottery.pool;
           }
 
-          if (coupon.downloadCount) {
-             totalCouponDownloaded += coupon.downloadCount;
-          }
+          totalCouponDownloaded += flyerCouponDownloads;
 
           totalInteracted += lottery.userReached || 0;
 
@@ -78,8 +78,8 @@ const Dashboard = () => {
           }
 
           let downloadRateVal = 0;
-          if (coupon.downloadCount && lottery.userReached) {
-            downloadRateVal = (coupon.downloadCount / lottery.userReached) * 100;
+          if (flyerCouponDownloads && lottery.userReached && coupons.length) {
+            downloadRateVal = (flyerCouponDownloads / (lottery.userReached * coupons.length)) * 100;
           }
 
           let statusLabel = flyer.status === "active" ? "Live" : "Inactive";

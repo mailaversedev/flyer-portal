@@ -220,7 +220,7 @@ const DigitalCoupon = ({
   );
 };
 
-const CouponBuilder = ({ data, onUpdate }) => {
+const SingleCouponBuilder = ({ data, onUpdate }) => {
   const { t } = useTranslation();
   const couponData = data?.coupon || {};
   const hasCustomCouponPreview = Boolean(couponData.couponFile);
@@ -699,6 +699,45 @@ const CouponBuilder = ({ data, onUpdate }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+const CouponBuilder = ({ data, onUpdate, multiple = false }) => {
+  const { t } = useTranslation();
+  const [selected, setSelected] = useState(0);
+  if (!multiple) return <SingleCouponBuilder data={data} onUpdate={onUpdate} />;
+
+  const coupons = data.coupons?.length ? data.coupons : [data.coupon || {}];
+  const updateCoupons = (next, index) => {
+    onUpdate({ coupons: next, coupon: next[0] || {} });
+    setSelected(index);
+  };
+  const move = (offset) => {
+    const next = [...coupons];
+    const target = selected + offset;
+    [next[selected], next[target]] = [next[target], next[selected]];
+    updateCoupons(next, target);
+  };
+  return (
+    <>
+      <div className="form-group">
+        <label className="form-label" htmlFor="coupon-selector">{t("couponBuilder.selectCoupon")}</label>
+        <select id="coupon-selector" className="form-select" value={selected} onChange={(event) => setSelected(Number(event.target.value))}>
+          {coupons.map((coupon, index) => (
+            <option key={index} value={index}>{t("couponBuilder.couponNumber", { number: index + 1 })} {coupon.itemDescription || ""}</option>
+          ))}
+        </select>
+        <button type="button" disabled={coupons.length >= 5} onClick={() => updateCoupons([...coupons, {}], coupons.length)}>{t("couponBuilder.addCoupon")}</button>{" "}
+        <button type="button" disabled={coupons.length <= 1} onClick={() => updateCoupons(coupons.filter((_, index) => index !== selected), Math.max(0, selected - 1))}>{t("couponBuilder.removeCoupon")}</button>{" "}
+        <button type="button" disabled={selected === 0} onClick={() => move(-1)}>{t("couponBuilder.moveUp")}</button>{" "}
+        <button type="button" disabled={selected === coupons.length - 1} onClick={() => move(1)}>{t("couponBuilder.moveDown")}</button>
+      </div>
+      <SingleCouponBuilder
+        key={selected}
+        data={{ ...data, coupon: coupons[selected] }}
+        onUpdate={({ coupon }) => updateCoupons(coupons.map((entry, index) => index === selected ? coupon : entry), selected)}
+      />
+    </>
   );
 };
 

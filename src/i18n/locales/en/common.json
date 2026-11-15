@@ -659,6 +659,13 @@
     "answerRequired": "At least one answer is required for choice questions"
   },
   "couponBuilder": {
+    "selectCoupon": "Edit coupon",
+    "selectEveryCouponType": "Please select a type for every coupon.",
+    "couponNumber": "Coupon {{number}}",
+    "addCoupon": "Add coupon",
+    "removeCoupon": "Remove coupon",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
     "off": "OFF",
     "store": "Store",
     "entirePurchase": "YOUR ENTIRE PURCHASE",

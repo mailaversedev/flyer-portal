@@ -10,6 +10,101 @@ const {
 
 const router = express.Router();
 const db = admin.firestore();
+const { getFlyerCoupons, claimDocumentId, couponAvailability, getClaimFlyerCoupon } = require("../services/flyerCoupons");
+const { normalizeCompanyCouponEntry } = require("../services/companyCouponLibrary");
+
+router.post("/claim-all", async (req, res) => {
+  const { flyerId } = req.body || {};
+  if (typeof flyerId !== "string" || !flyerId.trim() || flyerId.includes("/")) {
+    return res.status(400).json({ success: false, message: "Valid flyer ID is required" });
+  }
+  const userId = req.user.userId;
+  const flyerRef = db.collection("flyers").doc(flyerId);
+  const now = new Date();
+  const timestamp = now.toISOString();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const statsId = `${year}-${String(month).padStart(2, "0")}`;
+  const userRef = db.collection("users").doc(userId);
+  const userStatsRef = userRef.collection("statistics").doc(statsId);
+
+  try {
+    const result = await db.runTransaction(async (transaction) => {
+      const flyerDoc = await transaction.get(flyerRef);
+      if (!flyerDoc.exists) throw new Error("__FLYER_NOT_FOUND__");
+      const flyer = flyerDoc.data();
+      const coupons = getFlyerCoupons(flyer);
+      if (!["leaflet", "qr"].includes(flyer.type) || !coupons.length) {
+        throw new Error("__NO_COUPONS__");
+      }
+      if (String(flyer.status || "").trim().toLowerCase() !== "active" ||
+          (flyer.scheduledAt && new Date(flyer.scheduledAt).getTime() > now.getTime())) {
+        throw new Error("__FLYER_UNAVAILABLE__");
+      }
+      const claimRefs = coupons.map((coupon, index) =>
+        userRef.collection("coupons").doc(claimDocumentId(flyerId, coupon, index)));
+      const claimDocs = await Promise.all(claimRefs.map((ref) => transaction.get(ref)));
+      const companyStatsRef = flyer.companyId
+        ? db.collection("companies").doc(flyer.companyId).collection("statistics").doc(statsId)
+        : null;
+      const userStats = await transaction.get(userStatsRef);
+      const companyStats = companyStatsRef ? await transaction.get(companyStatsRef) : null;
+      const claimed = [];
+      const skipped = [];
+      const updatedCoupons = coupons.map((coupon, index) => {
+        const reason = claimDocs[index].exists
+          ? "already_claimed" : couponAvailability(coupon, timestamp.slice(0, 10));
+        if (reason) {
+          skipped.push({ couponId: coupon.id, reason, downloadCount: Number(coupon.downloadCount || 0) });
+          return coupon;
+        }
+        const claim = {
+          userId, flyerId, flyerCouponId: coupon.id, companyId: flyer.companyId || null,
+          companyIcon: flyer.companyIcon || "",
+          couponType: coupon.couponType,
+          couponFile: coupon.couponFile || null, qrCodeImage: coupon.qrCodeImage || null,
+          barcodeImage: coupon.barcodeImage || null, termsConditions: coupon.termsConditions || "",
+          expiredDate: coupon.expiredDate || "", discountValue: coupon.discountValue || "",
+          itemDescription: coupon.itemDescription || "", promotionCode: coupon.promotionCode || "",
+          status: "active", claimedAt: timestamp, isUsed: false, usedAmount: null, receiptImageUrl: null,
+        };
+        transaction.set(claimRefs[index], claim);
+        const downloadCount = Number(coupon.downloadCount || 0) + 1;
+        claimed.push({ couponId: coupon.id, id: claimRefs[index].id, downloadCount });
+        return { ...coupon, downloadCount };
+      });
+      if (claimed.length) {
+        const count = claimed.length;
+        const statsUpdate = { couponDownloadCount: admin.firestore.FieldValue.increment(count), updatedAt: timestamp };
+        if (userStats.exists) transaction.update(userStatsRef, statsUpdate);
+        else transaction.set(userStatsRef, { year, month, claimCount: 0, totalReward: 0, flyerTypes: {}, couponDownloadCount: count, createdAt: timestamp, updatedAt: timestamp });
+        if (companyStatsRef) {
+          if (companyStats.exists) transaction.update(companyStatsRef, statsUpdate);
+          else transaction.set(companyStatsRef, { year, month, claimCount: 0, flyerCount: 0, totalReward: 0, totalEventMoney: 0, totalClaimCount: 0, couponDownloadCount: count, createdAt: timestamp, updatedAt: timestamp });
+        }
+        const update = { coupon: updatedCoupons[0], updatedAt: timestamp };
+        if (Array.isArray(flyer.coupons)) update.coupons = updatedCoupons;
+        transaction.update(flyerRef, update);
+        if (flyer.companyId) {
+          updatedCoupons.forEach((coupon, index) => {
+            if (claimDocs[index].exists || !claimed.some((item) => item.couponId === coupon.id)) return;
+            const ref = db.collection("companies").doc(flyer.companyId).collection("coupons")
+              .doc(claimDocumentId(flyerId, coupon, index));
+            transaction.set(ref, normalizeCompanyCouponEntry({ flyerId, companyId: flyer.companyId, flyerData: flyer, coupon }), { merge: true });
+          });
+        }
+      }
+      return { claimed, skipped };
+    });
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    if (error.message === "__FLYER_NOT_FOUND__") return res.status(404).json({ success: false, message: "Flyer not found" });
+    if (error.message === "__NO_COUPONS__") return res.status(400).json({ success: false, message: "This flyer does not have claimable coupons" });
+    if (error.message === "__FLYER_UNAVAILABLE__") return res.status(400).json({ success: false, message: "This flyer is not available" });
+    console.error("Error claiming coupons:", error);
+    return res.status(500).json({ success: false, message: "Failed to claim coupons" });
+  }
+});
 
 // POST /claim - User claims a coupon from a flyer
 router.post("/claim", async (req, res) => {
@@ -36,11 +131,15 @@ router.post("/claim", async (req, res) => {
     const flyerData = flyerDoc.data();
     const coupon = flyerData?.coupon;
 
-    if (!flyerData || !coupon.couponType) {
+    if (!flyerData || !coupon?.couponType) {
       return res.status(400).json({
         success: false,
         message: "This flyer does not have a coupon",
       });
+    }
+
+    if (couponAvailability(coupon, new Date().toISOString().slice(0, 10)) === "expired") {
+      return res.status(400).json({ success: false, message: "This coupon has expired" });
     }
 
     // Check if coupon has quantity limit and if it's available
@@ -126,6 +225,11 @@ router.post("/claim", async (req, res) => {
       const flyerData = flyerDoc.data();
       const coupon = flyerData?.coupon;
 
+      if (!coupon?.couponType) throw new Error("__NO_COUPON__");
+      if (couponAvailability(coupon, new Date().toISOString().slice(0, 10)) === "expired") {
+        throw new Error("__EXPIRED__");
+      }
+
       // Check quantity again within transaction to ensure consistency
       if (coupon && coupon.quantity) {
         const currentDownloadCount = coupon.downloadCount || 0;
@@ -188,16 +292,27 @@ router.post("/claim", async (req, res) => {
       }
 
       // Update flyer with incremented download count
+      const flyerUpdate = {
+        coupon: { ...coupon, downloadCount: Number(coupon.downloadCount || 0) + 1 },
+        updatedAt: new Date().toISOString(),
+      };
+      if (Array.isArray(flyerData.coupons) && flyerData.coupons.length) {
+        flyerUpdate.coupons = [
+          { ...flyerData.coupons[0], downloadCount: flyerUpdate.coupon.downloadCount },
+          ...flyerData.coupons.slice(1),
+        ];
+      }
       transaction.set(
         flyerRef,
-        {
-          coupon: {
-            downloadCount: admin.firestore.FieldValue.increment(1),
-          },
-          updatedAt: new Date().toISOString(),
-        },
+        flyerUpdate,
         { merge: true },
       );
+      if (flyerData.companyId) {
+        const libraryRef = db.collection("companies").doc(flyerData.companyId).collection("coupons").doc(flyerId);
+        transaction.set(libraryRef, normalizeCompanyCouponEntry({
+          flyerId, companyId: flyerData.companyId, flyerData, coupon: flyerUpdate.coupon,
+        }), { merge: true });
+      }
     });
 
     res.status(201).json({
@@ -209,6 +324,9 @@ router.post("/claim", async (req, res) => {
       },
     });
   } catch (error) {
+    if (error.message === "__EXPIRED__" || error.message === "__NO_COUPON__") {
+      return res.status(400).json({ success: false, message: error.message === "__EXPIRED__" ? "This coupon has expired" : "This flyer does not have a coupon" });
+    }
     if (error.message === "__ALREADY_CLAIMED__") {
       return res.status(400).json({
         success: false,
@@ -273,7 +391,7 @@ router.get("/company-claims", async (req, res) => {
     ]);
     const data = claims.map((claim) => {
       const flyer = flyerLookup.get(claim.flyerId) || {};
-      const flyerCoupon = flyer.coupon || {};
+      const flyerCoupon = getClaimFlyerCoupon(flyer, claim);
 
       return {
         ...claim,
@@ -328,7 +446,7 @@ router.get("/my-coupons", async (req, res) => {
           ? await db.collection("flyers").doc(claim.flyerId).get()
           : null;
         const flyer = flyerDoc?.exists ? flyerDoc.data() : {};
-        const flyerCoupon = flyer.coupon || {};
+        const flyerCoupon = getClaimFlyerCoupon(flyer, claim);
 
         return {
           ...claim,

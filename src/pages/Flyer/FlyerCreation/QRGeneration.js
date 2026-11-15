@@ -9,6 +9,7 @@ import Step1Background from "../../../components/Flyer/QR/Step1Background";
 import QRCodeModal from "../../../components/Flyer/QR/QRCodeModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
+import { uploadFlyerCoupons } from "../../../utils/FlyerCouponUpload";
 import ApiService from "../../../services/ApiService";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
 import "./QRGeneration.css";
@@ -271,26 +272,15 @@ const QRGeneration = () => {
 
       const uploadedFileUrls = await ApiService.uploadFilesFromData({
         coverPhoto: qrData.coverPhoto,
-        couponFile: qrData.coupon?.couponFile,
-        qrCodeImage: qrData.coupon?.qrCodeImage,
-        barcodeImage: qrData.coupon?.barcodeImage,
       });
+      const coupons = await uploadFlyerCoupons(qrData, t);
       const finalQrData = {
         ...qrData,
         scheduledAt:
           qrData.scheduledAt || qrData.targetBudget?.scheduledAt || null,
         coverPhoto: uploadedFileUrls.coverPhoto || qrData.coverPhoto,
-        coupon: qrData.coupon
-          ? {
-              ...qrData.coupon,
-              couponFile:
-                uploadedFileUrls.couponFile || qrData.coupon.couponFile,
-              qrCodeImage:
-                uploadedFileUrls.qrCodeImage || qrData.coupon.qrCodeImage,
-              barcodeImage:
-                uploadedFileUrls.barcodeImage || qrData.coupon.barcodeImage,
-            }
-          : qrData.coupon,
+        coupons,
+        coupon: coupons[0] || {},
       };
 
       const response = await ApiService.createFlyer({
@@ -311,7 +301,7 @@ const QRGeneration = () => {
       }
     } catch (error) {
       console.error("Error creating QR flyer:", error);
-      toast.error(t("qrGeneration.createError"));
+      toast.error(error.message || t("qrGeneration.createError"));
     } finally {
       setLoading("");
     }
@@ -406,7 +396,7 @@ const QRGeneration = () => {
               )}
 
               {!isEditMode && currentStep === 3 && (
-                <CouponBuilder data={qrData} onUpdate={updateQrData} />
+                <CouponBuilder data={qrData} onUpdate={updateQrData} multiple={process.env.REACT_APP_ENABLE_MULTI_COUPONS !== "false"} />
               )}
             </>
           )}

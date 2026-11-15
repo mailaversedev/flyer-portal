@@ -1,4 +1,5 @@
 const express = require("express");
+const { getClaimFlyerCoupon } = require("../../services/flyerCoupons");
 
 const {
   encodeCursor,
@@ -53,7 +54,7 @@ module.exports = function createCouponClaimsRouter(context) {
 
       const data = claims.map((claim) => {
         const flyer = flyerLookup.get(claim.flyerId) || {};
-        const flyerCoupon = flyer.coupon || {};
+        const flyerCoupon = getClaimFlyerCoupon(flyer, claim);
         const companyId = claim.companyId || flyer.companyId;
         const company = companyLookup.get(companyId) || {};
         return {

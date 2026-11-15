@@ -67,6 +67,28 @@ node --test test/merchantProducts.test.js test/companyProducts.test.js
 CI=true npm test -- --watchAll=false --runInBand src/pages/Profile/MerchantProducts.test.js
 ```
 
+## Flyer coupons
+
+Leaflet and QR flyers can contain up to five coupons. Coupon details and order
+are fixed after publication. The mobile app claims all currently eligible
+coupons, skipping already claimed, expired and exhausted coupons individually.
+Expiry dates are inclusive through the specified UTC calendar date. Each saved
+coupon is redeemed separately. Older mobile apps display and claim only the
+first coupon; the first claim keeps the original flyer-based ID.
+
+Deploy the API and public site before the mobile app and merchant portal. For a
+staged rollout, build the portal with `REACT_APP_ENABLE_MULTI_COUPONS=false`
+to hide multi-coupon authoring until the clients are ready, then rebuild with
+the flag unset or `true`. Existing flyers and coupon claims remain compatible.
+Coupon download totals count coupons, not unique users; download rate is
+coupon downloads divided by users reached times the number of flyer coupons.
+
+Focused server checks:
+
+```bash
+node --test test/flyerCoupons.test.js test/couponBulkClaim.test.js
+```
+
 ## Super Admin Registration
 
 Super admin accounts should not be created through the public company onboarding form or the staff registration API.

@@ -9,6 +9,7 @@ import TargetBudget from "../../../components/Flyer/TargetBudget";
 import CreditRequestModal from "../../Wallet/CreditRequestModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
+import { uploadFlyerCoupons } from "../../../utils/FlyerCouponUpload";
 import ApiService from "../../../services/ApiService";
 import useKpayPayment, { rememberKpayPayment } from "../../../hooks/useKpayPayment";
 import KpayPaymentStatus from "../../../components/Payment/KpayPaymentStatus";
@@ -464,14 +465,13 @@ const LeafletCreation = () => {
       // assets first, then save their permanent URLs in the return draft.
       const uploaded = await ApiService.uploadFilesFromData({
         coverPhoto: leafletData.coverPhoto,
-        couponFile: leafletData.coupon?.couponFile,
-        qrCodeImage: leafletData.coupon?.qrCodeImage,
-        barcodeImage: leafletData.coupon?.barcodeImage,
       });
+      const coupons = await uploadFlyerCoupons(leafletData, t);
       const persistentData = {
         ...leafletData,
         coverPhoto: uploaded.coverPhoto || leafletData.coverPhoto,
-        coupon: { ...(leafletData.coupon || {}), ...uploaded },
+        coupons,
+        coupon: coupons[0] || {},
       };
       const response = await ApiService.createKpayOrder({
         purpose: LEAFLET_PAYMENT_PURPOSE,
@@ -649,10 +649,8 @@ const LeafletCreation = () => {
 
       const uploadedFileUrls = await ApiService.uploadFilesFromData({
         coverPhoto: leafletData.coverPhoto,
-        couponFile: leafletData.coupon?.couponFile,
-        qrCodeImage: leafletData.coupon?.qrCodeImage,
-        barcodeImage: leafletData.coupon?.barcodeImage,
       });
+      const coupons = await uploadFlyerCoupons(leafletData, t);
 
       const {
         referenceFlyer,
@@ -668,12 +666,8 @@ const LeafletCreation = () => {
         scheduledAt: leafletData.scheduledAt || leafletData.targetBudget?.scheduledAt || null,
         companyId: companyId || undefined,
         tags: Array.isArray(leafletData.tags) ? leafletData.tags : [],
-        coupon: {
-          ...(coupon || {}),
-          couponFile: uploadedFileUrls.couponFile || coupon?.couponFile || null,
-          qrCodeImage: uploadedFileUrls.qrCodeImage || coupon?.qrCodeImage || null,
-          barcodeImage: uploadedFileUrls.barcodeImage || coupon?.barcodeImage || null,
-        },
+        coupons,
+        coupon: coupons[0] || {},
         coverPhoto: uploadedFileUrls.coverPhoto || leafletData.coverPhoto,
       };
 
@@ -899,7 +893,7 @@ const LeafletCreation = () => {
               )}
 
               {currentStep === 3 && (
-                <CouponBuilder data={leafletData} onUpdate={updateLeafletData} />
+                <CouponBuilder data={leafletData} onUpdate={updateLeafletData} multiple={process.env.REACT_APP_ENABLE_MULTI_COUPONS !== "false"} />
               )}
             </>
           )}

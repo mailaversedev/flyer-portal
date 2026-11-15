@@ -8,6 +8,7 @@ const {
 const { calculateLotteryMetricsFromHkd } = require("../../config/lotteryConfig");
 const { scheduleFlyerJob } = require("../../services/flyerJobService");
 const { syncCompanyCouponLibraryEntry } = require("../../services/companyCouponLibrary");
+const { prepareFlyerCoupons } = require("../../services/flyerCoupons");
 const {
   createCompanyWalletIfMissing,
   createCompanyWalletTransaction,
@@ -256,10 +257,17 @@ module.exports = function createCreationRouter(context) {
 
   router.post("/flyer", authenticateToken, async (req, res) => {
     try {
-      const { type, data } = req.body;
+      const { type } = req.body;
+      let { data } = req.body;
 
       if (type === "event") {
         return res.status(400).json({ success: false, message: "Use the event creation endpoint" });
+      }
+
+      try {
+        data = prepareFlyerCoupons(data || {}, type);
+      } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
       }
 
       if (
@@ -590,6 +598,10 @@ module.exports = function createCreationRouter(context) {
 
         const existingFlyer = flyerDoc.data() || {};
 
+        if (Object.hasOwn(data, "coupon") || Object.hasOwn(data, "coupons")) {
+          throw new Error("__COUPONS_LOCKED__");
+        }
+
         if (existingFlyer.type === "event") {
           throw new Error("__EVENT_EDIT_UNSUPPORTED__");
         }
@@ -685,6 +697,9 @@ module.exports = function createCreationRouter(context) {
         },
       });
     } catch (error) {
+      if (error.message === "__COUPONS_LOCKED__") {
+        return res.status(400).json({ success: false, message: "Coupons cannot be changed after publication" });
+      }
       if (error.message === "__FLYER_NOT_FOUND__") {
         return res.status(404).json({
           success: false,

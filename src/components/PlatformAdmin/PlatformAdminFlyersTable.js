@@ -14,13 +14,13 @@ export const PlatformAdminFlyersTable = ({
 }) => {
   const formattedFlyers = flyers.map((flyer) => {
     const lottery = flyer.lottery || {};
-    const coupon = flyer.coupon || {};
+    const coupons = Array.isArray(flyer.coupons) ? flyer.coupons : [flyer.coupon || {}];
     const maxUsers = Number(lottery.maxUsers) || 0;
     const claims = Number(lottery.claims) || 0;
     const totalReached = Number(lottery.userReached) || 0;
     const browseRate = maxUsers > 1 ? (claims / (maxUsers - 1)) * 100 : 0;
-    const downloadCount = Number(coupon.downloadCount) || 0;
-    const downloadRate = totalReached > 0 ? (downloadCount / totalReached) * 100 : 0;
+    const downloadCount = coupons.reduce((sum, coupon) => sum + (Number(coupon.downloadCount) || 0), 0);
+    const downloadRate = totalReached > 0 && coupons.length > 0 ? (downloadCount / (totalReached * coupons.length)) * 100 : 0;
     return {
       id: flyer.id,
       flyerType: flyer.type || "",

@@ -8,15 +8,17 @@ export const PlatformAdminCouponClaimsTable = ({
 }) => {
   const groupedClaims = claims.reduce((groups, claim) => {
     const flyerId = claim.flyerId || claim.id;
-    const group = groups.get(flyerId);
+    const groupId = JSON.stringify([flyerId, claim.flyerCouponId || "primary"]);
+    const group = groups.get(groupId);
     if (group) group.claims.push(claim);
     else
-      groups.set(flyerId, {
-        id: flyerId,
+      groups.set(groupId, {
+        id: groupId,
         flyerId,
         flyerTitle: claim.flyerTitle,
         companyName: claim.companyName,
         couponType: claim.couponType,
+        itemDescription: claim.itemDescription,
         flyerCoupon: claim.flyerCoupon || {},
         claims: [claim],
       });
@@ -51,7 +53,7 @@ export const PlatformAdminCouponClaimsTable = ({
               {group.flyerTitle || "-"}
             </td>
             {!userView && <td>{group.companyName || "-"}</td>}
-            <td>{group.couponType || "-"}</td>
+            <td>{group.couponType || "-"}{group.itemDescription ? ` · ${group.itemDescription}` : ""}</td>
             {userView ? (
               <>
                 <td>
@@ -59,7 +61,7 @@ export const PlatformAdminCouponClaimsTable = ({
                     {group.claims.map((claim) => (
                       <div
                         className="platform-admin-user-list-item"
-                        key={claim.id}
+                        key={`${claim.userId}:${claim.id}`}
                       >
                         <strong>
                           {claim.user?.username || t("adminPage.deletedUser")}
@@ -74,7 +76,7 @@ export const PlatformAdminCouponClaimsTable = ({
                     {group.claims.map((claim) => (
                       <div
                         className="platform-admin-user-list-item"
-                        key={claim.id}
+                        key={`${claim.userId}:${claim.id}`}
                       >
                         <span
                           className={`platform-admin-claim-status ${claim.isUsed ? "platform-admin-claim-status-used" : "platform-admin-claim-status-unused"}`}
@@ -99,7 +101,7 @@ export const PlatformAdminCouponClaimsTable = ({
                     {group.claims.map((claim) => (
                       <div
                         className="platform-admin-user-list-item"
-                        key={claim.id}
+                        key={`${claim.userId}:${claim.id}`}
                       >
                         <strong>
                           {claim.user?.username || t("adminPage.deletedUser")}
