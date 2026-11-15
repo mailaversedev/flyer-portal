@@ -151,6 +151,7 @@
     "selectDistrict": "Select a district",
     "loadingDistricts": "Loading districts...",
     "currentCompanyIcon": "Current Company Icon",
+    "navigation": "Profile sections",
     "productsTitle": "Products",
     "productsHint": "Add active products to showcase them on your company page in the mobile app and Mailaverse Jetso.",
     "productsList": "Your products",
@@ -172,6 +173,8 @@
     "productCreate": "Add product",
     "productUpdate": "Save product",
     "productEdit": "Edit",
+    "productEditTitle": "Edit product",
+    "productLoadFailed": "Unable to load the product.",
     "productCreated": "Product added.",
     "productUpdated": "Product updated.",
     "productSaveFailed": "Unable to save the product."

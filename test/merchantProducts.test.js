@@ -4,7 +4,7 @@ const express = require("express");
 const createProductsRouter = require("../routes/staffAuth/products");
 
 function createDb() {
-  const productsByCompany = new Map([["company-a", new Map()]]);
+  const productsByCompany = new Map([["company-a", new Map()], ["company-b", new Map()]]);
   let nextId = 1;
   const document = (id, value) => ({
     id,
@@ -21,6 +21,8 @@ function createDb() {
               async get() {
                 return userId === "staff-a"
                   ? document(userId, { companyId: "company-a" })
+                  : userId === "staff-b"
+                    ? document(userId, { companyId: "company-b" })
                   : userId === "staff-without-company"
                     ? document(userId, {})
                     : document(userId, null);
@@ -145,6 +147,20 @@ test("merchant product CRUD is company-scoped and validates public fields", asyn
   const created = (await create.json()).data;
   assert.equal(created.name, "Coffee");
   assert.equal(created.active, true);
+
+  const get = await request(`/api/auth/staff/products/${created.id}`);
+  assert.equal(get.status, 200);
+  assert.equal((await get.json()).data.name, "Coffee");
+  const otherCompany = await request(`/api/auth/staff/products/${created.id}`, {
+    headers: { "x-user-id": "staff-b" },
+  });
+  assert.equal(otherCompany.status, 404);
+  const missing = await request("/api/auth/staff/products/missing");
+  assert.equal(missing.status, 404);
+  const noCompany = await request(`/api/auth/staff/products/${created.id}`, {
+    headers: { "x-user-id": "staff-without-company" },
+  });
+  assert.equal(noCompany.status, 404);
 
   const invalidCurrency = await request("/api/auth/staff/products", {
     method: "POST",

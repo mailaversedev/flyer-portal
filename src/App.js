@@ -13,6 +13,7 @@ import QRGeneration from "./pages/Flyer/FlyerCreation/QRGeneration";
 import EventCreation from "./pages/Flyer/FlyerCreation/EventCreation";
 import StaffLogin from "./pages/Login/StaffLogin";
 import Profile from "./pages/Profile/Profile";
+import MerchantProducts, { MerchantProductForm } from "./pages/Profile/MerchantProducts";
 import PlatformAdmin from "./pages/PlatformAdmin/PlatformAdmin";
 import PlatformAdminUsersPage from "./pages/PlatformAdmin/PlatformAdminUsersPage";
 import PlatformAdminCompaniesPage from "./pages/PlatformAdmin/PlatformAdminCompaniesPage";
@@ -141,6 +142,9 @@ function App() {
                     <Route path="/crm-campaigns" element={<CrmCampaignListPage />} />
                     <Route path="/crm-campaigns/create" element={<CrmCampaignCreatePage />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/profile/products" element={<MerchantProducts />} />
+                    <Route path="/profile/products/new" element={<MerchantProductForm />} />
+                    <Route path="/profile/products/:productId/edit" element={<MerchantProductForm />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

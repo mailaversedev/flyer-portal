@@ -152,6 +152,7 @@
     "selectDistrict": "請選擇地區",
     "loadingDistricts": "正在載入地區...",
     "currentCompanyIcon": "目前公司圖示",
+    "navigation": "個人資料分頁",
     "productsTitle": "產品",
     "productsHint": "新增產品後，產品將顯示於手機應用程式及 Mailaverse Jetso 的商戶頁面。",
     "productsList": "你的產品",
@@ -173,6 +174,8 @@
     "productCreate": "新增產品",
     "productUpdate": "儲存產品",
     "productEdit": "編輯",
+    "productEditTitle": "編輯產品",
+    "productLoadFailed": "無法載入產品。",
     "productCreated": "產品已新增。",
     "productUpdated": "產品已更新。",
     "productSaveFailed": "無法儲存產品。"

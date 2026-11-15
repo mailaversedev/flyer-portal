@@ -218,6 +218,10 @@ class ApiService {
     return this.makeRequest(`/api/auth/staff/products${query}`);
   }
 
+  static async getMerchantProduct(productId) {
+    return this.makeRequest(`/api/auth/staff/products/${encodeURIComponent(productId)}`);
+  }
+
   static async createMerchantProduct(product) {
     return this.makeRequest("/api/auth/staff/products", {
       method: "POST",

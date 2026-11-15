@@ -108,6 +108,31 @@ module.exports = function createProductsRouter({ db, authenticateToken }) {
     }
   });
 
+  router.get("/products/:productId", authenticateToken, async (req, res) => {
+    try {
+      const productsRef = await getProductsRef(req.user?.userId);
+      if (!productsRef) {
+        return res.status(404).json({
+          success: false,
+          message: "No company is associated with this staff account.",
+        });
+      }
+
+      const productDoc = await productsRef.doc(req.params.productId).get();
+      if (!productDoc.exists) {
+        return res.status(404).json({ success: false, message: "Product not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: { id: productDoc.id, ...productDoc.data() },
+      });
+    } catch (error) {
+      console.error("Error loading company product:", error);
+      return res.status(500).json({ success: false, message: "Failed to load product." });
+    }
+  });
+
   router.post("/products", authenticateToken, async (req, res) => {
     try {
       const productsRef = await getProductsRef(req.user?.userId);

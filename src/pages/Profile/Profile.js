@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 import ApiService from "../../services/ApiService";
 import ResetPasswordForm from "../../components/Login/ResetPasswordForm";
-import MerchantProducts from "./MerchantProducts";
+import ProfileNavigation from "./ProfileNavigation";
 import i18n, {
   applyLocale,
   clearPendingLocale,
@@ -266,6 +266,7 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
+      <ProfileNavigation />
       <div className="profile-card">
         <div className="profile-header">
           <h2>{t("profilePage.title")}</h2>
@@ -477,7 +478,6 @@ const Profile = () => {
         </form>
 
       </div>
-      <MerchantProducts />
       {showPasswordReset && (
         <div
           className="password-reset-overlay"

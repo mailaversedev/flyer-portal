@@ -49,8 +49,9 @@ Starts the flyer job background worker from `worker.js`.
 
 ## Merchant products
 
-The profile page supports creating and editing company products, including image
-uploads and active/inactive status. Only active products appear in the mobile
+The profile area has Profile and Products tabs. The Products tab opens the product
+list, with separate add and edit pages using the same form for image uploads and
+active/inactive status. Only active products appear in the mobile
 company page and Jetso catalog. Public product pages use cursors that remain valid
 when the cursor product is deactivated.
 
