@@ -64,16 +64,18 @@
   object-fit: cover;
 }
 
-.product-active-toggle {
+.profile-form .product-active-toggle {
   display: flex;
   align-items: center;
   gap: 9px;
+  margin-bottom: 0;
   color: #e5e7eb;
   font-size: 14px;
 }
 
-.product-active-toggle input {
+.profile-form .product-active-toggle input {
   width: auto;
+  margin: 0;
   accent-color: #f75d34;
 }
 
