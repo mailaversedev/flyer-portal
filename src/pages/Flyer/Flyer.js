@@ -50,7 +50,7 @@ const Flyer = () => {
       primaryButton: t("flyerPage.leafletPrimary"),
       secondaryButton: t("flyerPage.leafletSecondary"),
       primaryRoute: "/flyer/create/qr",
-      isPrimary: false,
+      isPrimary: true,
     },
   ];
 

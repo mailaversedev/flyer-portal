@@ -174,7 +174,6 @@ const EventCreation = () => {
             return errors;
           }}
           uploadedFile={uploadedFile}
-          previewLabel={t("eventCreation.preview")}
           generationHint={t("leafletCreation.tokenIndicatorSuperAdmin")}
           onFileSelect={(event) => {
             const file = event.target.files?.[0];

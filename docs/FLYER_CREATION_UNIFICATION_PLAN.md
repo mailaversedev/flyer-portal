@@ -5,8 +5,12 @@ Status: shared content editor implemented for Read, Scan and Event creation.
 ## Implemented
 
 - All three creation pages render `FlyerContentStep`, which reuses `Step1ContentPro`.
-  The wrapper shares upload/preview lifecycle and responsive layout; the editor
+  The wrapper shares upload controls and full-width responsive layout; the editor
   supports injected validation, copy labels/limits and optional sections.
+- Scan and Event do not show an extra Step 1 cover-preview sidebar. Selected
+  uploads are identified by filename; image review stays in Target Budget.
+  Scan retains its separate QR-code confirmation modal. All FlyerGenie creation
+  card buttons use the same primary styling.
 - Scan and Event expose the Pro design controls while preserving their 1:1 / 1K
   defaults. Read retains 4:5 / 2K. Scan billing and cost hints follow the selected
   resolution through the shared pricing helper.

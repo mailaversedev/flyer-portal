@@ -104,7 +104,8 @@ test("direct upload from the QR card enters the QR flow without generation or bi
   renderFlow("/flyer");
   const file = new File(["image"], "flyer.png", { type: "image/png" });
   userEvent.upload(screen.getByLabelText("flyerPage.qrTitle: flyerPage.leafletSecondary"), file);
-  expect(screen.getByAltText("Cover preview")).toHaveAttribute("src", "blob:preview");
+  expect(screen.getByText("flyer.png")).toBeInTheDocument();
+  expect(screen.queryByAltText("Cover preview")).not.toBeInTheDocument();
   enterWebsite();
   await proceedToBudget();
   expect(ApiService.uploadFilesFromData).toHaveBeenCalledWith({ coverPhoto: file });

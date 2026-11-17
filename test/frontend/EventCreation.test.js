@@ -120,7 +120,8 @@ test("uploaded events skip creative requirements and persist an overridden organ
   renderFlow(file);
   enterDetails();
   expect(screen.queryByLabelText("leafletPro.prompts")).not.toBeInTheDocument();
-  expect(screen.getByAltText("eventCreation.preview")).toHaveAttribute("src", "blob:preview");
+  expect(screen.getByText("event.png")).toBeInTheDocument();
+  expect(screen.queryByAltText("eventCreation.preview")).not.toBeInTheDocument();
   const icon = new File(["icon"], "icon.png", { type: "image/png" });
   userEvent.upload(screen.getByLabelText("eventCreation.icon"), icon);
   await proceedToTargeting();

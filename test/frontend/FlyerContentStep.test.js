@@ -36,7 +36,7 @@ test("upload mode retains copy but hides generation-only fields and accepts its 
   URL.createObjectURL = jest.fn(() => "blob:cover");
   URL.revokeObjectURL = jest.fn();
   const ref = createRef();
-  const { unmount } = render(<Editor
+  render(<Editor
     editorRef={ref}
     uploadedFile={new File(["image"], "cover.png", { type: "image/png" })}
     onFileSelect={jest.fn()}
@@ -46,8 +46,9 @@ test("upload mode retains copy but hides generation-only fields and accepts its 
   expect(screen.queryByLabelText("leafletPro.prompts")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("leafletPro.resolution")).not.toBeInTheDocument();
   act(() => expect(ref.current.validateRequiredFields()).toBe(true));
-  unmount();
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:cover");
+  expect(screen.getByText("cover.png")).toBeInTheDocument();
+  expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  expect(URL.createObjectURL).not.toHaveBeenCalled();
 });
 
 test("tag Enter does not submit an enclosing event-style form", () => {
@@ -58,6 +59,18 @@ test("tag Enter does not submit an enclosing event-style form", () => {
   fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
   expect(screen.getByText("#summer")).toBeInTheDocument();
   expect(submit).not.toHaveBeenCalled();
+});
+
+test("a prepared cover does not add a Step 1 preview sidebar", () => {
+  const { container } = render(<FlyerContentStep
+    data={{ ...createCreativeDefaults(), coverPhoto: "https://example.com/cover.png" }}
+    onUpdate={jest.fn()}
+    onFileSelect={jest.fn()}
+  />);
+  expect(container.querySelector(".flyer-content-preview")).toBeNull();
+  expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "qrGeneration.upload" })).toBeInTheDocument();
+  expect(screen.getByLabelText("leafletPro.prompts")).toBeInTheDocument();
 });
 
 test("multiple editors use distinct copy IDs and independent file inputs", async () => {

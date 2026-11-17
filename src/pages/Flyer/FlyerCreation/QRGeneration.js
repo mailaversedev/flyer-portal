@@ -370,7 +370,6 @@ const QRGeneration = () => {
                   getValidationErrors={(data) => uploadedFile || data.coverPhoto ? {} : getCreativeValidationErrors(data, t)}
                   uploadedFile={uploadedFile}
                   onFileSelect={handleFileSelect}
-                  previewLabel="Cover preview"
                   generationHint={isSuperAdminUser
                     ? t("leafletCreation.tokenIndicatorSuperAdmin")
                     : t("flyerContent.generationCost", {
