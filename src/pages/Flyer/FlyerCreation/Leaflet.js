@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router";
 
-import Step1ContentPro from "../../../components/Flyer/Leaflet/Step1ContentPro";
+import FlyerContentStep from "../../../components/Flyer/FlyerContentStep";
 import TargetBudget from "../../../components/Flyer/TargetBudget";
 import CreditRequestModal from "../../Wallet/CreditRequestModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
@@ -15,10 +15,10 @@ import useKpayPayment, { rememberKpayPayment } from "../../../hooks/useKpayPayme
 import KpayPaymentStatus from "../../../components/Payment/KpayPaymentStatus";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
 import {
-  DEFAULT_TYPOGRAPHY,
   normalizeLeafletResolution,
   normalizeTypographyEntries,
 } from "../../../utils/LeafletNormalizationUtil";
+import { createCreativeDefaults, getFlyerGenerationTokenCost } from "../../../utils/FlyerContentUtil";
 import "../../../components/Flyer/Leaflet/Step1Content.css";
 import "./Leaflet.css";
 
@@ -74,22 +74,12 @@ const readPaymentReturn = (location, isEditMode) => {
 };
 
 const DEFAULT_LEAFLET_DATA = {
+  ...createCreativeDefaults("4:5", "2K"),
   companyId: "",
-  aspectRatio: "4:5",
   adType: "",
-  referenceFlyer: null,
   backgroundPhoto: null,
   header: "",
   adContent: "",
-  flyerPrompts: "",
-  productPhoto: [],
-  tags: [],
-  resolution: "2K",
-  primaryColor: "",
-  secondaryColor: "",
-  typography: DEFAULT_TYPOGRAPHY.map((entry) => ({ ...entry })),
-  brandVoice: "",
-  logoImage: null,
   scheduledAt: null,
 };
 
@@ -103,13 +93,6 @@ const buildLeafletEditPayload = (data) => ({
     scheduledAt: data.scheduledAt || data.targetBudget?.scheduledAt || null,
   },
 });
-
-const getLeafletTokenCost = (resolution = "2K") => {
-  if (normalizeLeafletResolution(resolution) === "1K") {
-    return 1;
-  }
-  return 2;
-};
 
 const LeafletEditForm = ({ data, onUpdate, t }) => {
   const [newTag, setNewTag] = useState("");
@@ -346,7 +329,7 @@ const LeafletCreation = () => {
   });
   const isCreatingTargetBudgetKpay = creatingTargetBudgetKpay || !["idle", "paid"].includes(payment.status);
 
-  const tokenCost = getLeafletTokenCost(leafletData.resolution);
+  const tokenCost = getFlyerGenerationTokenCost(leafletData.resolution);
   const availableTokens = Number(walletSummary?.balance) || 0;
   const freeAttemptsRemaining = Number(walletSummary?.dailyFreeAttemptsRemaining) || 0;
   const hasFreeAttemptRemaining = isSuperAdminUser || freeAttemptsRemaining > 0;
@@ -785,7 +768,7 @@ const LeafletCreation = () => {
                     </span>
                   </div>
 
-                  <Step1ContentPro
+                  <FlyerContentStep
                     ref={step1Ref}
                     data={leafletData}
                     onUpdate={updateLeafletData}

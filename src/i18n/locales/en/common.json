@@ -1,4 +1,11 @@
 {
+  "flyerContent": {
+    "imageReadFailed": "Could not read the selected image. Please try again.",
+    "preview": "Flyer image preview",
+    "ratioRequired": "Aspect ratio is required",
+    "promptRequired": "Context/Prompts is required",
+    "generationCost": "A {{resolution}} generation uses one daily free attempt, or {{count}} $MGT when no free attempts remain."
+  },
   "eventCreation": {
     "title": "Event to Earn",
     "subtitle": "Create a merchant event and invite app users to apply",

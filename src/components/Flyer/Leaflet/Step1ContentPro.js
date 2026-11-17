@@ -1,16 +1,26 @@
-import React, { useState, useImperativeHandle, forwardRef } from "react";
+import React, { useId, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { Plus, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import ColorInputField from "./ColorInputField";
 import { getProLeafletValidationErrors } from "../../../utils/LeafletValidationUtil";
 import { normalizeTypographyEntries } from "../../../utils/LeafletNormalizationUtil";
 import "./Step1Content.css";
 
 const Step1ContentPro = forwardRef(
-  ({ data, onUpdate, isSuperAdminUser = false, merchantOptions = [] }, ref) => {
+  ({
+    data, onUpdate, isSuperAdminUser = false, merchantOptions = [],
+    getValidationErrors = getProLeafletValidationErrors,
+    showGenerationControls = true, showTags = true, showLogo = true,
+    copyLabels = {}, copyLimits = {},
+  }, ref) => {
     const { t } = useTranslation();
     const [newTag, setNewTag] = useState("");
     const [errors, setErrors] = useState({});
+    const inputId = useId();
+    const referenceInputRef = useRef(null);
+    const logoInputRef = useRef(null);
+    const productInputRef = useRef(null);
     const tags = data.tags || [];
     const typographyEntries = normalizeTypographyEntries(data.typography);
 
@@ -27,7 +37,7 @@ const Step1ContentPro = forwardRef(
     { value: "21:9", label: "21:9 (2520 x 1080)" },
   ];
     const validateRequiredFields = () => {
-      const newErrors = getProLeafletValidationErrors(data);
+      const newErrors = getValidationErrors(data);
 
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
@@ -97,62 +107,27 @@ const Step1ContentPro = forwardRef(
       handleInputChange("typography", updatedTypography);
     };
 
-  const handleFileUpload = (field) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-
-    if (field === "productPhoto") {
-      input.multiple = true;
+  const handleImageSelect = async (field, event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+    if (files.some((file) => !file.type.startsWith("image/"))) {
+      toast.error(t("qrGeneration.invalidImage"));
+      return;
     }
-
-    input.onchange = (event) => {
-      const files = Array.from(event.target.files);
-
-      if (field === "productPhoto") {
-        const filePromises = files.map((file) => {
-          return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (loadEvent) =>
-              resolve({
-                file,
-                name: file.name,
-                size: file.size,
-                preview: loadEvent.target.result,
-              });
-            reader.readAsDataURL(file);
-          });
+    try {
+      const images = await Promise.all(files.map((file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({
+          file, name: file.name, size: file.size, preview: reader.result,
         });
-
-        Promise.all(filePromises).then((fileObjects) => {
-          const updatedData = {
-            ...data,
-            [field]: [...data[field], ...fileObjects],
-          };
-          onUpdate(updatedData);
-        });
-      } else {
-        const file = files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (loadEvent) => {
-            const updatedData = {
-              ...data,
-              [field]: {
-                file,
-                name: file.name,
-                size: file.size,
-                preview: loadEvent.target.result,
-              },
-            };
-            onUpdate(updatedData);
-          };
-          reader.readAsDataURL(file);
-        }
-      }
-    };
-
-    input.click();
+        reader.onerror = () => reject(new Error(t("flyerContent.imageReadFailed")));
+        reader.readAsDataURL(file);
+      })));
+      handleInputChange(field, field === "productPhoto" ? [...(data[field] || []), ...images] : images[0]);
+    } catch (error) {
+      toast.error(error.message || t("flyerContent.imageReadFailed"));
+    }
   };
 
   const handleRemoveImage = (field, index = null) => {
@@ -227,6 +202,7 @@ const Step1ContentPro = forwardRef(
             <label className="form-label">{t("common.merchant")}</label>
             <div className="select-wrapper">
               <select
+                aria-label={t("common.merchant")}
                 className={`form-select ${errors.companyId ? "error" : ""}`}
                 value={selectedCompanyId}
                 onChange={(e) => handleInputChange("companyId", e.target.value)}
@@ -247,11 +223,13 @@ const Step1ContentPro = forwardRef(
           </div>
         )}
 
+        {showGenerationControls && <>
         <div className="form-group">
           <label className="form-label">{t("leafletPro.aspectRatio")}</label>
           <div className="select-wrapper">
             <select
               className={`form-select ${errors.aspectRatio ? "error" : ""}`}
+              aria-label={t("leafletPro.aspectRatio")}
               value={data.aspectRatio}
               onChange={(e) => handleInputChange("aspectRatio", e.target.value)}
             >
@@ -274,6 +252,7 @@ const Step1ContentPro = forwardRef(
           <div className="select-wrapper">
             <select
               className="form-select"
+              aria-label={t("leafletPro.resolution")}
               value={data.resolution || "2K"}
               onChange={(e) => handleInputChange("resolution", e.target.value)}
             >
@@ -297,34 +276,19 @@ const Step1ContentPro = forwardRef(
               <input
                 type="file"
                 style={{ display: "none" }}
-                id="referenceFlyerInputPro"
+                ref={referenceInputRef}
+                aria-label={t("leafletPro.moodboard")}
                 accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      handleInputChange("referenceFlyer", {
-                        file,
-                        name: file.name,
-                        size: file.size,
-                        preview: event.target.result,
-                      });
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
+                onChange={(event) => handleImageSelect("referenceFlyer", event)}
               />
-              <div
+              <button
+                type="button"
+                aria-label={t("leafletStandard.selectFile")}
                 className="upload-area"
-                onClick={() =>
-                  document.getElementById("referenceFlyerInputPro").click()
-                }
-                tabIndex={0}
-                role="button"
+                onClick={() => referenceInputRef.current?.click()}
               >
                 <Plus size={24} />
-              </div>
+              </button>
             </>
           )}
         </div>
@@ -349,7 +313,7 @@ const Step1ContentPro = forwardRef(
           <label className="form-label">{t("leafletPro.typography")}</label>
           <div className="typography-editor">
             {typographyEntries.map((entry, index) => (
-              <div className="typography-row" key={`${entry.key || "row"}-${index}`}>
+              <div className="typography-row" key={index}>
                 <input
                   type="text"
                   className="form-input typography-key-input"
@@ -400,7 +364,7 @@ const Step1ContentPro = forwardRef(
           />
         </div>
 
-        <div className="form-group full-width">
+        {showLogo && <div className="form-group full-width">
           <label className="form-label">{t("leafletPro.uploadLogo")}</label>
           {data.logoImage ? (
             <SingleImageDisplay
@@ -413,34 +377,23 @@ const Step1ContentPro = forwardRef(
               <input
                 type="file"
                 style={{ display: "none" }}
-                id="logoImageInput"
+                ref={logoInputRef}
+                aria-label={t("leafletPro.uploadLogo")}
                 accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      handleInputChange("logoImage", {
-                        file,
-                        name: file.name,
-                        size: file.size,
-                        preview: event.target.result,
-                      });
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
+                onChange={(event) => handleImageSelect("logoImage", event)}
               />
-              <div
+              <button
+                type="button"
                 className="file-select"
-                onClick={() => document.getElementById("logoImageInput").click()}
+                onClick={() => logoInputRef.current?.click()}
               >
                 <span>{t("leafletPro.selectLogoFile")}</span>
                 <ChevronRight size={16} />
-              </div>
+              </button>
             </>
           )}
-        </div>
+        </div>}
+        </>}
 
       </div>
 
@@ -449,8 +402,10 @@ const Step1ContentPro = forwardRef(
 
         <div className="form-grid">
           <div className="form-group full-width">
-            <label className="form-label">{t("leafletPro.copyLine")}</label>
+            <label className="form-label" htmlFor={`${inputId}-header`}>{copyLabels.header || t("leafletPro.copyLine")}</label>
             <input
+              id={`${inputId}-header`}
+              maxLength={copyLimits.header}
               type="text"
               className={`form-input ${errors.header ? "error" : ""}`}
               placeholder={t("leafletPro.copyLinePlaceholder")}
@@ -463,8 +418,10 @@ const Step1ContentPro = forwardRef(
           </div>
 
           <div className="form-group full-width">
-            <label className="form-label">{t("leafletPro.adContent")}</label>
+            <label className="form-label" htmlFor={`${inputId}-description`}>{copyLabels.adContent || t("leafletPro.adContent")}</label>
             <textarea
+              id={`${inputId}-description`}
+              maxLength={copyLimits.adContent}
               className={`form-textarea ${errors.adContent ? "error" : ""}`}
               placeholder={t("leafletPro.adContentPlaceholder")}
               rows={4}
@@ -476,13 +433,15 @@ const Step1ContentPro = forwardRef(
             )}
           </div>
 
+          {showGenerationControls && <>
           <div className="form-group full-width">
-            <label className="form-label">{t("leafletPro.prompts")}</label>
+            <label className="form-label" htmlFor={`${inputId}-prompts`}>{t("leafletPro.prompts")}</label>
             <textarea
+              id={`${inputId}-prompts`}
               className={`form-textarea ${errors.flyerPrompts ? "error" : ""}`}
               placeholder={t("leafletPro.promptsPlaceholder")}
               rows={6}
-              value={data.flyerPrompts}
+              value={data.flyerPrompts || ""}
               onChange={(e) => handleInputChange("flyerPrompts", e.target.value)}
             />
             {errors.flyerPrompts && (
@@ -493,19 +452,30 @@ const Step1ContentPro = forwardRef(
           <div className="form-group full-width">
             <label className="form-label">
               {t("leafletPro.uploadProduct")}{" "}
-              <span className="counter">{data.productPhoto.length}/5</span>
+              <span className="counter">{(data.productPhoto || []).length}/5</span>
             </label>
-            <div
+            <input
+              ref={productInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              aria-label={t("leafletPro.uploadProduct")}
+              onChange={(event) => handleImageSelect("productPhoto", event)}
+            />
+            <button
+              type="button"
               className="file-select"
-              onClick={() => handleFileUpload("productPhoto")}
+              onClick={() => productInputRef.current?.click()}
             >
               <span>{t("leafletStandard.selectFile")}</span>
               <ChevronRight size={16} />
-            </div>
+            </button>
             <ThumbnailRow images={data.productPhoto} field="productPhoto" />
           </div>
+          </>}
 
-          <div className="form-group">
+          {showTags && <div className="form-group">
             <label className="form-label">{t("leafletPro.tagOptional")}</label>
             <div className="tag-input-container">
               <div className="tag-input">
@@ -515,7 +485,12 @@ const Step1ContentPro = forwardRef(
                   placeholder={t("qrGeneration.pleaseEnter")}
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
                 />
               </div>
               {tags.length > 0 && (
@@ -535,7 +510,7 @@ const Step1ContentPro = forwardRef(
                 </div>
               )}
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     </div>

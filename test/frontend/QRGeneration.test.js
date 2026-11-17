@@ -83,7 +83,7 @@ async function proceedToBudget() {
 test("generates and bills a flyer, then creates the QR flyer with its image", async () => {
   renderFlow();
   enterWebsite();
-  fireEvent.change(screen.getByLabelText("qrGeneration.imagePrompt"), { target: { value: "Summer sale" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Summer sale" } });
   await proceedToBudget();
   expect(ApiService.generateLeaflet).toHaveBeenCalledWith(expect.objectContaining({
     flyerPrompts: "Summer sale", aspectRatio: "1:1", resolution: "1K",
@@ -121,7 +121,7 @@ test("requires a prompt or upload and reports upload and billing failures", asyn
   renderFlow();
   enterWebsite();
   fireEvent.click(screen.getByRole("button", { name: "qrGeneration.proceedToQr" }));
-  await waitFor(() => expect(toast.error).toHaveBeenCalledWith("qrGeneration.promptRequired"));
+  expect(await screen.findByText("flyerContent.promptRequired")).toBeInTheDocument();
   const file = new File(["image"], "flyer.png", { type: "image/png" });
   userEvent.upload(screen.getByLabelText("qrGeneration.upload"), file);
   ApiService.uploadFilesFromData.mockRejectedValueOnce(new Error("Upload failed"));
@@ -129,7 +129,7 @@ test("requires a prompt or upload and reports upload and billing failures", asyn
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Upload failed"));
   expect(screen.queryByRole("button", { name: "qrGeneration.saveProceed" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "qrGeneration.usePrompt" }));
-  fireEvent.change(screen.getByLabelText("qrGeneration.imagePrompt"), { target: { value: "Sale" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Sale" } });
   ApiService.consumeLeafletTokens.mockRejectedValueOnce(new Error("Billing failed"));
   fireEvent.click(screen.getByRole("button", { name: "qrGeneration.proceedToQr" }));
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Billing failed"));
@@ -140,7 +140,7 @@ test("does not generate when the wallet has no free attempts or tokens", async (
   ApiService.getCompanyWallet.mockResolvedValue({ success: true, data: { balance: 0, dailyFreeAttemptsRemaining: 0 } });
   renderFlow();
   enterWebsite();
-  fireEvent.change(screen.getByLabelText("qrGeneration.imagePrompt"), { target: { value: "Sale" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Sale" } });
   fireEvent.click(screen.getByRole("button", { name: "qrGeneration.proceedToQr" }));
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith("leafletCreation.tokenIndicatorLowBalance"));
   expect(ApiService.generateLeaflet).not.toHaveBeenCalled();
@@ -149,7 +149,7 @@ test("does not generate when the wallet has no free attempts or tokens", async (
 test("reuses the prepared image when going back and allows switching to an in-page upload", async () => {
   renderFlow();
   enterWebsite();
-  fireEvent.change(screen.getByLabelText("qrGeneration.imagePrompt"), { target: { value: "Sale" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Sale" } });
   await proceedToBudget();
   fireEvent.click(screen.getByRole("button", { name: "creation.back" }));
   await proceedToBudget();
@@ -168,7 +168,7 @@ test("super admins generate without a wallet or token charge", async () => {
   isSuperAdmin.mockReturnValue(true);
   renderFlow();
   enterWebsite();
-  fireEvent.change(screen.getByLabelText("qrGeneration.imagePrompt"), { target: { value: "Sale" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Sale" } });
   await proceedToBudget();
   expect(ApiService.getCompanyWallet).not.toHaveBeenCalled();
   expect(ApiService.consumeLeafletTokens).not.toHaveBeenCalled();
@@ -206,8 +206,71 @@ test("editing an existing QR flyer keeps the image locked and saves only editabl
   ApiService.updateFlyer.mockResolvedValue({ success: true });
   renderFlow("/flyer/edit/qr/123");
   expect(await screen.findByAltText("Cover preview")).toHaveAttribute("src", "https://example.com/existing.png");
-  expect(screen.queryByLabelText("qrGeneration.imagePrompt")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("leafletPro.prompts")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("qrGeneration.upload")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "creation.saveChanges" }));
   await waitFor(() => expect(ApiService.updateFlyer).toHaveBeenCalledWith("123", expect.not.objectContaining({ coverPhoto: expect.anything() })));
+});
+
+test("shared Pro controls reach generation and selected 2K resolution is billed", async () => {
+  ApiService.getCompanyWallet.mockResolvedValue({
+    success: true, data: { balance: 2, dailyFreeAttemptsRemaining: 0 },
+  });
+  ApiService.consumeLeafletTokens.mockResolvedValue({ success: true, data: { usedFreeAttempt: false } });
+  renderFlow();
+  enterWebsite();
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Pro sale" } });
+  fireEvent.change(screen.getByLabelText("qrGeneration.header"), { target: { value: "Sale title" } });
+  fireEvent.change(screen.getByLabelText("qrGeneration.adContent"), { target: { value: "Shared description" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.resolution"), { target: { value: "2K" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.aspectRatio"), { target: { value: "4:5" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.primaryColor"), { target: { value: "#123456" } });
+  await proceedToBudget();
+  expect(ApiService.generateLeaflet).toHaveBeenCalledWith(expect.objectContaining({
+    aspectRatio: "4:5", resolution: "2K", primaryColor: "#123456",
+    adContent: "Shared description", productDescriptions: "Shared description",
+  }));
+  expect(ApiService.consumeLeafletTokens).toHaveBeenCalledWith({
+    resolution: "2K", flyerOutputPath: "https://example.com/generated.png",
+  });
+  fireEvent.click(screen.getByRole("button", { name: "creation.noCoupon" }));
+  await waitFor(() => expect(ApiService.createFlyer).toHaveBeenCalledWith(expect.objectContaining({
+    type: "qr",
+    data: expect.objectContaining({ productDescriptions: "Shared description" }),
+  })));
+  const saved = ApiService.createFlyer.mock.calls[0][0].data;
+  expect(saved).not.toHaveProperty("logoImage");
+  expect(saved).not.toHaveProperty("adContent");
+  expect(saved).not.toHaveProperty("productPhoto");
+  expect(saved).not.toHaveProperty("referenceFlyer");
+});
+
+test("2K generation requires two tokens when free attempts are exhausted", async () => {
+  ApiService.getCompanyWallet.mockResolvedValue({
+    success: true, data: { balance: 1, dailyFreeAttemptsRemaining: 0 },
+  });
+  renderFlow();
+  enterWebsite();
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Sale" } });
+  fireEvent.change(screen.getByLabelText("leafletPro.resolution"), { target: { value: "2K" } });
+  fireEvent.click(screen.getByRole("button", { name: "qrGeneration.proceedToQr" }));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith("leafletCreation.tokenIndicatorLowBalance"));
+  expect(ApiService.generateLeaflet).not.toHaveBeenCalled();
+});
+
+test("changing creative inputs regenerates but changing the QR website reuses the cover", async () => {
+  renderFlow();
+  enterWebsite();
+  fireEvent.change(screen.getByLabelText("leafletPro.prompts"), { target: { value: "Sale" } });
+  await proceedToBudget();
+  fireEvent.click(screen.getByRole("button", { name: "creation.back" }));
+  fireEvent.change(screen.getByLabelText("qrGeneration.website"), { target: { value: "https://example.com/new" } });
+  await proceedToBudget();
+  expect(ApiService.generateLeaflet).toHaveBeenCalledTimes(1);
+  expect(QRCode.toDataURL).toHaveBeenLastCalledWith("https://example.com/new", expect.any(Object));
+  fireEvent.click(screen.getByRole("button", { name: "creation.back" }));
+  fireEvent.change(screen.getByLabelText("leafletPro.secondaryColor"), { target: { value: "#ABCDEF" } });
+  await proceedToBudget();
+  expect(ApiService.generateLeaflet).toHaveBeenCalledTimes(2);
+  expect(ApiService.consumeLeafletTokens).toHaveBeenCalledTimes(2);
 });

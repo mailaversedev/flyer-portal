@@ -6,15 +6,20 @@ import { toast } from "react-toastify";
 
 import TargetBudget from "../../../components/Flyer/TargetBudget";
 import Step1Background from "../../../components/Flyer/QR/Step1Background";
+import QRDetails from "../../../components/Flyer/QR/QRDetails";
+import FlyerContentStep from "../../../components/Flyer/FlyerContentStep";
 import QRCodeModal from "../../../components/Flyer/QR/QRCodeModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
 import CouponBuilder from "../../../components/Flyer/CouponBuilder";
 import { uploadFlyerCoupons } from "../../../utils/FlyerCouponUpload";
 import ApiService from "../../../services/ApiService";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
+import { createCreativeDefaults, getCreativeValidationErrors, getFlyerGenerationTokenCost, mergeFlyerContent, withoutCreativeFiles } from "../../../utils/FlyerContentUtil";
+import { normalizeLeafletResolution } from "../../../utils/LeafletNormalizationUtil";
 import "./QRGeneration.css";
 
 const DEFAULT_QR_DATA = {
+  ...createCreativeDefaults(),
   coverPhoto: null,
   flyerPrompts: "",
   adType: "",
@@ -22,6 +27,7 @@ const DEFAULT_QR_DATA = {
   website: "",
   startingDate: "",
   header: "",
+  adContent: "",
   productDescriptions: "",
   promotionMessage: "",
   couponType: "",
@@ -57,21 +63,10 @@ const QRGeneration = () => {
   const [uploadedFile, setUploadedFile] = useState(
     () => (!isEditMode ? location.state?.uploadedFile || null : null),
   );
-  const [uploadedPreview, setUploadedPreview] = useState("");
   const [history, setHistory] = useState([]);
   const [isFreeAttempt, setIsFreeAttempt] = useState(false);
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-
-  useEffect(() => {
-    if (!uploadedFile) {
-      setUploadedPreview("");
-      return;
-    }
-    const preview = URL.createObjectURL(uploadedFile);
-    setUploadedPreview(preview);
-    return () => URL.revokeObjectURL(preview);
-  }, [uploadedFile]);
+  const step1Ref = useRef(null);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -125,10 +120,12 @@ const QRGeneration = () => {
   };
 
   const updateQrData = (data) => {
-    setQrData((prev) => ({
-      ...prev,
-      ...data,
-    }));
+    setQrData((prev) => {
+      const updates = Object.prototype.hasOwnProperty.call(data, "adContent")
+        ? { ...data, productDescriptions: data.adContent }
+        : data;
+      return isEditMode ? { ...prev, ...updates } : mergeFlyerContent(prev, updates, Boolean(uploadedFile));
+    });
   };
 
   const handleInputChange = (field, value) => {
@@ -156,14 +153,9 @@ const QRGeneration = () => {
     event.target.value = "";
   };
 
-  const handleUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
   const handleProceedToQRCode = async () => {
-    if (!validateRequiredFields()) {
+    const validCreative = step1Ref.current?.validateRequiredFields();
+    if (!validateRequiredFields() || !validCreative) {
       return;
     }
 
@@ -187,15 +179,12 @@ const QRGeneration = () => {
           if (!Number.isFinite(freeAttempts) || !Number.isFinite(balance)) {
             throw new Error(t("qrGeneration.walletFailed"));
           }
-          if (freeAttempts <= 0 && balance < 1) {
+          const tokenCost = getFlyerGenerationTokenCost(qrData.resolution);
+          if (freeAttempts <= 0 && balance < tokenCost) {
             throw new Error(t("leafletCreation.tokenIndicatorLowBalance"));
           }
         }
-        const result = await ApiService.generateLeaflet({
-          ...qrData,
-          aspectRatio: "1:1",
-          resolution: "1K",
-        });
+        const result = await ApiService.generateLeaflet(qrData);
         coverPhoto = result.images?.[0]?.url || result.flyer_output_path;
         if (!coverPhoto || !/^https:\/\//i.test(coverPhoto)) {
           throw new Error(t("qrGeneration.imageFailed"));
@@ -203,7 +192,7 @@ const QRGeneration = () => {
         let freeAttempt = false;
         if (!isSuperAdminUser) {
           const billing = await ApiService.consumeLeafletTokens({
-            resolution: "1K",
+            resolution: normalizeLeafletResolution(qrData.resolution),
             flyerOutputPath: coverPhoto,
           });
           if (!billing.success || !billing.data) throw new Error(billing.message || t("qrGeneration.billingFailed"));
@@ -274,8 +263,11 @@ const QRGeneration = () => {
         coverPhoto: qrData.coverPhoto,
       });
       const coupons = await uploadFlyerCoupons(qrData, t);
+      // QR persistence and its locked-asset edit form use the legacy description field.
+      const { adContent, ...persistentQrData } = withoutCreativeFiles(qrData);
       const finalQrData = {
-        ...qrData,
+        ...persistentQrData,
+        productDescriptions: adContent,
         scheduledAt:
           qrData.scheduledAt || qrData.targetBudget?.scheduledAt || null,
         coverPhoto: uploadedFileUrls.coverPhoto || qrData.coverPhoto,
@@ -335,24 +327,13 @@ const QRGeneration = () => {
 
   return (
     <div className="qr-generation">
-      {!isEditMode && (
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          accept="image/*"
-          aria-label={t("qrGeneration.upload")}
-          style={{ display: "none" }}
-        />
-      )}
-
       <div className="qr-container">
         {!isEditMode && (
           <div className="step-header">
             <div className="step-indicators">
               <div className={`step-indicator ${currentStep >= 1 ? "active" : ""}`}>
                 <span className="step-number">1</span>
-                <span className="step-label">{t("creation.background")}</span>
+                <span className="step-label">{t("creation.content")}</span>
               </div>
               <div className={`step-connector ${currentStep >= 2 ? "active" : ""}`}></div>
               <div className={`step-indicator ${currentStep >= 2 ? "active" : ""}`}>
@@ -373,23 +354,39 @@ const QRGeneration = () => {
             <div className="loading-indicator-text">{t("creation.loadingFlyer")}</div>
           ) : (
             <>
-              {currentStep === 1 && (
+              {currentStep === 1 && (isEditMode ? (
                 <Step1Background
                   qrData={qrData}
                   errors={errors}
-                  isEditMode={isEditMode}
-                  isSuperAdminUser={isSuperAdminUser}
-                  uploadedFile={uploadedFile}
-                  uploadedPreview={uploadedPreview}
                   handleInputChange={handleInputChange}
-                  updateQrData={updateQrData}
-                  handleUpload={handleUpload}
+                />
+              ) : (
+                <FlyerContentStep
+                  ref={step1Ref}
+                  data={qrData}
+                  onUpdate={updateQrData}
+                  showTags={false}
+                  copyLabels={{ header: t("qrGeneration.header"), adContent: t("qrGeneration.adContent") }}
+                  getValidationErrors={(data) => uploadedFile || data.coverPhoto ? {} : getCreativeValidationErrors(data, t)}
+                  uploadedFile={uploadedFile}
+                  onFileSelect={handleFileSelect}
+                  previewLabel="Cover preview"
+                  generationHint={isSuperAdminUser
+                    ? t("leafletCreation.tokenIndicatorSuperAdmin")
+                    : t("flyerContent.generationCost", {
+                      resolution: qrData.resolution,
+                      count: getFlyerGenerationTokenCost(qrData.resolution),
+                    })}
                   onUsePrompt={() => {
                     setUploadedFile(null);
+                    setHistory([]);
+                    setIsFreeAttempt(false);
                     updateQrData({ coverPhoto: null });
                   }}
-                />
-              )}
+                >
+                  <QRDetails data={qrData} errors={errors} onChange={handleInputChange} />
+                </FlyerContentStep>
+              ))}
 
               {!isEditMode && currentStep === 2 && (
                 <TargetBudget data={qrData} onUpdate={updateQrData} history={history} isFreeAttempt={isFreeAttempt} />

@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 import ApiService from "../../../services/ApiService";
 import { isSuperAdmin } from "../../../utils/AuthUtil";
 import TargetBudget from "../../../components/Flyer/TargetBudget";
+import FlyerContentStep from "../../../components/Flyer/FlyerContentStep";
+import { createCreativeDefaults, getCreativeValidationErrors, mergeFlyerContent, withoutCreativeFiles } from "../../../utils/FlyerContentUtil";
 import eventUtils from "../../../utils/EventCreationUtil";
 import "./Leaflet.css";
 import "./EventCreation.css";
 
 const initial = {
+  ...createCreativeDefaults(),
   companyId: eventUtils.MAILAVERSE_ORGANIZER.id,
   header: "",
   adContent: "",
@@ -31,15 +34,17 @@ const EventCreation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [uploadedFile, setUploadedFile] = useState(location.state?.uploadedFile || null);
-  const [uploadedPreview, setUploadedPreview] = useState("");
   const [iconPreview, setIconPreview] = useState("");
   const [step, setStep] = useState(1);
   const [history, setHistory] = useState([]);
   const [data, setData] = useState(initial);
   const [companies, setCompanies] = useState([]);
   const [busy, setBusy] = useState(false);
+  const step1Ref = useRef(null);
+  const updateContent = (updates) =>
+    setData((previous) => mergeFlyerContent(previous, updates, Boolean(uploadedFile)));
   const update = (key, value) =>
-    setData((previous) => ({ ...previous, [key]: value, ...(step === 1 && !uploadedFile ? { coverPhoto: "" } : {}) }));
+    updateContent({ [key]: value });
   const merchant = companies.find((company) => company.id === data.companyId) || eventUtils.MAILAVERSE_ORGANIZER;
   const defaultIcon = merchant.icon || eventUtils.MAILAVERSE_ORGANIZER.icon;
 
@@ -54,22 +59,15 @@ const EventCreation = () => {
   }, [data.logoImage]);
 
   useEffect(() => {
-    if (!uploadedFile) {
-      setUploadedPreview("");
-      return;
-    }
-    const preview = URL.createObjectURL(uploadedFile);
-    setUploadedPreview(preview);
-    return () => URL.revokeObjectURL(preview);
-  }, [uploadedFile]);
-
-  useEffect(() => {
     if (!isSuperAdmin()) {
       navigate("/flyer", { replace: true });
       return;
     }
     ApiService.getAdminCompanies()
-      .then((response) => setCompanies((response.data || []).filter((company) => company.isActive !== false)))
+      .then((response) => {
+        if (!response.success) throw new Error(t("eventCreation.loadMerchantsFailed"));
+        setCompanies((response.data || []).filter((company) => company.isActive !== false));
+      })
       .catch(() => toast.error(t("eventCreation.loadMerchantsFailed")));
   }, [navigate, t]);
 
@@ -90,6 +88,7 @@ const EventCreation = () => {
   const submit = async (event) => {
     event.preventDefault();
     if (busy) return;
+    if (step === 1 && !step1Ref.current?.validateRequiredFields()) return;
     setBusy(true);
     try {
       const payload = buildPayload();
@@ -100,7 +99,7 @@ const EventCreation = () => {
           if (!uploaded.success || !uploaded.url) throw new Error(t("eventCreation.iconFailed"));
           companyIcon = uploaded.url;
         }
-        const response = await ApiService.createEvent({ ...payload, companyIcon, logoImage: undefined });
+        const response = await ApiService.createEvent({ ...withoutCreativeFiles(payload), companyIcon });
         if (!response.success) throw new Error(response.message || t("eventCreation.failed"));
         navigate("/flyer", {
           state: { success: true, message: t("eventCreation.created") },
@@ -114,18 +113,16 @@ const EventCreation = () => {
         });
         coverPhoto = uploaded.coverPhoto;
         if (!coverPhoto) throw new Error(t("eventCreation.failed"));
-        update("coverPhoto", coverPhoto);
       }
       if (!coverPhoto) {
         if (!data.flyerPrompts.trim())
           throw new Error(t("eventCreation.promptRequired"));
         const image = await ApiService.generateLeaflet(
-          { ...data, aspectRatio: "1:1", resolution: "1K" },
+          data,
           { company: { ...merchant, icon: defaultIcon } },
         );
         coverPhoto = image.images?.[0]?.url || image.flyer_output_path;
         if (!coverPhoto) throw new Error(t("eventCreation.imageFailed"));
-        update("coverPhoto", coverPhoto);
       }
       if (!/^https:\/\//.test(coverPhoto)) throw new Error(t("eventCreation.imageFailed"));
       setData((previous) => ({ ...previous, coverPhoto }));
@@ -156,14 +153,54 @@ const EventCreation = () => {
           </div>
         </div>
       </div>
-      <form onSubmit={submit} className={`step-content ${step === 1 ? "step1-content" : ""}`} aria-label={t("eventCreation.title")}>
+      <form onSubmit={submit} className="step-content" aria-label={t("eventCreation.title")}>
         <fieldset disabled={busy} className="event-fields">
-        {step === 1 ? <div className={`event-details-layout ${uploadedPreview || data.coverPhoto ? "has-preview" : ""}`}>
-        <div className="event-details-form">
+        {step === 1 ? <FlyerContentStep
+          ref={step1Ref}
+          data={data}
+          onUpdate={updateContent}
+          showTags={false}
+          showLogo={false}
+          copyLabels={{
+            header: t("eventCreation.eventTitle"),
+            adContent: t("eventCreation.description"),
+          }}
+          copyLimits={{ header: 160, adContent: 5000 }}
+          getValidationErrors={(values) => {
+            const errors = uploadedFile || values.coverPhoto ? {} : getCreativeValidationErrors(values, t);
+            for (const field of ["header", "adContent"]) {
+              if (!values[field]?.trim()) errors[field] = t("eventCreation.requiredDetails");
+            }
+            return errors;
+          }}
+          uploadedFile={uploadedFile}
+          previewLabel={t("eventCreation.preview")}
+          generationHint={t("leafletCreation.tokenIndicatorSuperAdmin")}
+          onFileSelect={(event) => {
+            const file = event.target.files?.[0];
+            if (file?.type.startsWith("image/")) {
+              setUploadedFile(file);
+              setHistory([]);
+              setData((previous) => ({ ...previous, coverPhoto: "" }));
+            } else if (file) {
+              toast.error(t("qrGeneration.invalidImage"));
+            }
+            event.target.value = "";
+          }}
+          onUsePrompt={() => {
+            setUploadedFile(null);
+            setHistory([]);
+            setData((previous) => ({ ...previous, coverPhoto: "" }));
+          }}
+        >
+        <div className="content-section">
+        <h3 className="section-title">{t("eventCreation.detailsStep")}</h3>
+        <div className="form-grid">
         <div className="form-group">
           <label className="form-label">{t("eventCreation.merchant")}</label>
           <select
             className="form-select"
+            aria-label={t("eventCreation.merchant")}
             required
             value={data.companyId}
             onChange={(event) => update("companyId", event.target.value)}
@@ -183,38 +220,24 @@ const EventCreation = () => {
             <input id="event-icon" type="file" accept="image/*" onChange={(event) => {
               const file = event.target.files?.[0];
               if (file?.type.startsWith("image/")) update("logoImage", { file });
+              else if (file) toast.error(t("qrGeneration.invalidImage"));
+              event.target.value = "";
             }} />
             {data.logoImage && <button type="button" className="action-button secondary" onClick={() => update("logoImage", null)}>{t("eventCreation.resetIcon")}</button>}
           </div>
           <p className="event-hint">{t("eventCreation.iconHint")}</p>
         </div>
-        {[
-          ["header", "eventCreation.eventTitle"],
-          ["venue", "eventCreation.venue"],
-        ].map(([field, label]) => (
-          <div className="form-group" key={field}>
-            <label className="form-label">{t(label)}</label>
+          <div className="form-group">
+            <label className="form-label" htmlFor="event-venue">{t("eventCreation.venue")}</label>
             <input
+              id="event-venue"
               className="form-input"
               required
-              aria-label={t(label)}
-              maxLength={field === "header" ? 160 : 300}
-              value={data[field]}
-              onChange={(event) => update(field, event.target.value)}
+              maxLength={300}
+              value={data.venue}
+              onChange={(event) => update("venue", event.target.value)}
             />
           </div>
-        ))}
-        <div className="form-group">
-          <label className="form-label">{t("eventCreation.description")}</label>
-          <textarea
-            className="form-textarea"
-            required
-            aria-label={t("eventCreation.description")}
-            maxLength={5000}
-            value={data.adContent}
-            onChange={(event) => update("adContent", event.target.value)}
-          />
-        </div>
         {[
           ["startsAt", "eventCreation.start"],
           ["endsAt", "eventCreation.end"],
@@ -266,44 +289,9 @@ const EventCreation = () => {
             <span>{t("eventCreation.confirmationRequired")}</span>
           </label>
         </div>
-        <div className="form-group">
-          <label className="form-label" htmlFor="event-photo">{t("flyerPage.leafletSecondary")}</label>
-          <input id="event-photo" type="file" accept="image/*" onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file?.type.startsWith("image/")) {
-              setUploadedFile(file);
-              setData((previous) => ({ ...previous, coverPhoto: "" }));
-            }
-          }} />
-          {uploadedFile && <button className="action-button secondary" type="button" onClick={() => {
-            setUploadedFile(null);
-            setData((previous) => ({ ...previous, coverPhoto: "" }));
-          }}>{t("eventCreation.usePrompt")}</button>}
         </div>
-        {!uploadedFile && (
-          <div className="form-group">
-            <label className="form-label">{t("eventCreation.imagePrompt")}</label>
-            <textarea
-              className="form-textarea"
-              aria-label={t("eventCreation.imagePrompt")}
-              value={data.flyerPrompts}
-              onChange={(event) => update("flyerPrompts", event.target.value)}
-            />
-          </div>
-        )}
         </div>
-        {(uploadedPreview || data.coverPhoto) && (
-          <aside className="event-details-preview" aria-label={t("eventCreation.preview")}>
-            <div className="preview-container">
-              <img
-                src={data.coverPhoto || uploadedPreview}
-                alt={t("eventCreation.preview")}
-                className="event-upload-preview-image"
-              />
-            </div>
-          </aside>
-        )}
-        </div> : <TargetBudget
+        </FlyerContentStep> : <TargetBudget
           data={data}
           onUpdate={setData}
           history={history}

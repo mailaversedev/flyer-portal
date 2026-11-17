@@ -31,6 +31,7 @@ const ColorInputField = ({ label, field, value, placeholder, onChange }) => {
         />
         <input
           type="text"
+          aria-label={label}
           className="form-input color-text-input"
           placeholder={placeholder}
           value={value || ""}

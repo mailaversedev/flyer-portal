@@ -104,6 +104,7 @@
 }
 
 .color-input-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -149,10 +150,12 @@
   background-image: none;
 }
 
-.color-picker-native {
+.color-input-wrapper .color-picker-native {
   position: absolute;
   width: 0;
   height: 0;
+  padding: 0;
+  border: 0;
   opacity: 0;
   pointer-events: none;
 }
