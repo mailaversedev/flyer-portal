@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  commitImport, decryptImage, encryptImage, itemId, prepareImport,
+  commitImport, decryptImage, encryptImage, itemId, MAX_IMAGES, prepareImport,
 } = require("../services/importedVouchers");
 
 function fakeFirestore() {
@@ -81,13 +81,18 @@ test("validates codes and image content and encrypts image data", () => {
   process.env.VOUCHER_IMAGE_ENCRYPTION_KEY = Buffer.alloc(32, 1).toString("base64");
   try {
     const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1]);
-    const prepared = prepareImport('["  0001 ", "A-9"]', [{ buffer: png }], "key-1");
+    const prepared = prepareImport('["  0001 ", "A-9"]', [], "key-1");
     assert.deepEqual(prepared.codes, ["  0001 ", "A-9"]);
-    assert.equal(prepared.images[0].type, "image/png");
+    assert.equal(prepareImport("[]", [{ buffer: png }], "image").images[0].type, "image/png");
+    assert.throws(() => prepareImport('["x"]', [{ buffer: png }], "mixed"), /either codes or images/);
     assert.throws(() => prepareImport('["x","x"]', [], "key"), /Duplicate/);
     assert.throws(() => prepareImport("[]", [{ buffer: Buffer.from("svg") }], "key"), /Images must/);
     assert.throws(() => prepareImport('["x"]', [], "../bad"), /Invalid import key/);
+    assert.equal(prepareImport(JSON.stringify(Array.from({ length: 100 }, (_, index) => `${index}`)), [], "codes").codes.length, 100);
     assert.throws(() => prepareImport(JSON.stringify(Array.from({ length: 101 }, (_, index) => `${index}`)), [], "key"), /limit/);
+    assert.equal(MAX_IMAGES, 100);
+    assert.equal(prepareImport("[]", Array.from({ length: 100 }, () => ({ buffer: png })), "images").images.length, 100);
+    assert.throws(() => prepareImport("[]", Array.from({ length: 101 }, () => ({ buffer: png })), "too-many-images"), /limit/);
     const encrypted = encryptImage(png);
     assert.notDeepEqual(encrypted, png);
     assert.deepEqual(decryptImage(encrypted), png);
@@ -105,6 +110,7 @@ test("imports atomically, in order, and rejects duplicate codes and conflicting 
   docs.set(voucher.path, { voucherType: "imported", totalNumber: 0, isActive: false });
   const first = prepareImport('["ABC","0009"]', [], "import1");
   assert.equal((await commitImport(db, voucher, first, [], "now")).totalNumber, 2);
+  assert.equal(docs.get(voucher.path).importKind, "code");
   assert.equal(docs.get(`${voucher.path}/inventory/${itemId(0)}`).code, "ABC");
   assert.equal(docs.get(`${voucher.path}/inventory/${itemId(1)}`).code, "0009");
   assert.equal((await commitImport(db, voucher, first, [], "later")).alreadyImported, true);
@@ -113,6 +119,41 @@ test("imports atomically, in order, and rejects duplicate codes and conflicting 
   assert.equal(docs.get(voucher.path).totalNumber, 2);
   await commitImport(db, voucher, prepareImport('["third"]', [], "import3"), [], "later");
   assert.equal(docs.get(`${voucher.path}/inventory/${itemId(2)}`).code, "third");
+});
+
+test("fixes inventory type across batches, including legacy vouchers and concurrent imports", async () => {
+  const { db, docs } = fakeFirestore();
+  const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1]);
+  const images = prepareImport("[]", [{ buffer: png }], "image");
+  const codes = prepareImport('["code"]', [], "code");
+  const imagePaths = [{ storagePath: "path", contentType: "image/png" }];
+  const imageVoucher = db.collection("vouchers").doc("image");
+  docs.set(imageVoucher.path, { voucherType: "imported", totalNumber: 0 });
+  await commitImport(db, imageVoucher, images, imagePaths, "now");
+  assert.equal(docs.get(imageVoucher.path).importKind, "image");
+  await assert.rejects(commitImport(db, imageVoucher, codes, [], "now"), /__VOUCHER_IMPORT_KIND_MISMATCH__/);
+  await commitImport(db, imageVoucher, prepareImport("[]", [{ buffer: png }], "next"), imagePaths, "now");
+  assert.equal(docs.get(imageVoucher.path).totalNumber, 2);
+
+  const legacy = db.collection("vouchers").doc("legacy");
+  docs.set(legacy.path, { voucherType: "imported", totalNumber: 1 });
+  docs.set(`${legacy.path}/inventory/${itemId(0)}`, { kind: "code" });
+  await assert.rejects(commitImport(db, legacy, images, imagePaths, "now"), /__VOUCHER_IMPORT_KIND_MISMATCH__/);
+  await commitImport(db, legacy, codes, [], "now");
+  assert.equal(docs.get(legacy.path).importKind, "code");
+  const invalid = db.collection("vouchers").doc("invalid");
+  docs.set(invalid.path, { voucherType: "imported", totalNumber: 1 });
+  await assert.rejects(commitImport(db, invalid, codes, [], "now"), /__VOUCHER_IMPORT_KIND_INVALID__/);
+
+  const concurrent = db.collection("vouchers").doc("concurrent");
+  docs.set(concurrent.path, { voucherType: "imported", totalNumber: 0 });
+  const outcomes = await Promise.allSettled([
+    commitImport(db, concurrent, codes, [], "now"),
+    commitImport(db, concurrent, images, imagePaths, "now"),
+  ]);
+  assert.equal(outcomes.filter((result) => result.status === "fulfilled").length, 1);
+  assert.match(outcomes.find((result) => result.status === "rejected").reason.message, /__VOUCHER_IMPORT_KIND_MISMATCH__/);
+  assert.equal(docs.get(concurrent.path).totalNumber, 1);
 });
 
 test("admin multipart import keeps voucher private until stock commits and handles retry", async () => {
@@ -152,23 +193,44 @@ test("admin multipart import keeps voucher private until stock commits and handl
     const voucherId = (await createdResponse.json()).data.id;
     assert.equal(docs.get(`vouchers/${voucherId}`).isActive, false);
     const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1]);
-    async function importItems(codes, importKey) {
+    async function importItems(codes, importKey, imageCount = 0, targetId = voucherId) {
       const form = new FormData();
       form.append("codes", JSON.stringify(codes));
       form.append("importKey", importKey);
-      form.append("images", new Blob([png], { type: "image/png" }), "qr.png");
-      return fetch(`${base}/vouchers/${voucherId}/import`, { method: "POST", body: form });
+      for (let index = 0; index < imageCount; index += 1) {
+        form.append("images", new Blob([png], { type: "image/png" }), `${index}.png`);
+      }
+      return fetch(`${base}/vouchers/${targetId}/import`, { method: "POST", body: form });
     }
-    assert.equal((await importItems(["0001"], "first")).status, 200);
-    assert.equal(docs.get(`vouchers/${voucherId}`).totalNumber, 2);
+    assert.equal((await importItems(["0001"], "mixed", 1)).status, 400);
+    assert.equal(objects.size, 0);
+    assert.equal((await importItems([], "first", 100)).status, 200);
+    assert.equal(docs.get(`vouchers/${voucherId}`).totalNumber, 100);
+    assert.equal(docs.get(`vouchers/${voucherId}`).importKind, "image");
     assert.equal(docs.get(`vouchers/${voucherId}`).isActive, true);
-    assert.equal(objects.size, 1);
+    assert.equal(objects.size, 100);
     assert.notDeepEqual([...objects.values()][0], png);
-    assert.equal((await importItems(["0001"], "first")).status, 200);
-    assert.equal(objects.size, 1);
+    assert.equal((await importItems([], "first", 100)).status, 200);
+    assert.equal(objects.size, 100);
     assert.equal((await importItems(["0001"], "second")).status, 409);
-    assert.equal(objects.size, 1);
-    assert.equal(docs.get(`vouchers/${voucherId}`).totalNumber, 2);
+    assert.equal((await importItems([], "too-many", 101)).status, 400);
+    assert.equal(objects.size, 100);
+    assert.equal(docs.get(`vouchers/${voucherId}`).totalNumber, 100);
+    docs.set("vouchers/code-only", { voucherType: "imported", totalNumber: 0 });
+    const hundredCodes = Array.from({ length: 100 }, (_, index) => `code-${index}`);
+    assert.equal((await importItems(hundredCodes, "codes", 0, "code-only")).status, 200);
+    assert.equal((await importItems([], "wrong-type", 1, "code-only")).status, 409);
+    assert.equal(objects.size, 100);
+    assert.equal(docs.get("vouchers/code-only").totalNumber, 100);
+    const details = await (await fetch(`${base}/vouchers/${voucherId}`)).json();
+    assert.equal(details.data.importKind, "image");
+    docs.set("vouchers/legacy", { voucherType: "imported", totalNumber: 1 });
+    docs.set(`vouchers/legacy/inventory/${itemId(0)}`, { kind: "code" });
+    const legacy = await (await fetch(`${base}/vouchers/legacy`)).json();
+    assert.equal(legacy.data.importKind, "code");
+    docs.set("vouchers/invalid", { voucherType: "imported", totalNumber: 1 });
+    const invalid = await fetch(`${base}/vouchers/invalid`);
+    assert.equal(invalid.status, 409);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     for (const [path, cached] of saved) {

@@ -96,13 +96,14 @@ node --test test/flyerCoupons.test.js test/couponBulkClaim.test.js
 
 ## Imported platform vouchers
 
-Super admins can import arbitrary codes (pasted or CSV) and individual voucher
-images. Each code or image is one voucher; within each import, codes are assigned
-first, followed by images in upload order. Later batches follow earlier batches.
-Duplicate codes in the same voucher are rejected.
-Administrators must verify that image contents are unique. Each import is limited
-to 100 items, including at most 20 PNG, JPEG, GIF, or WebP images, each at most
-5 MiB and 20 MiB combined. Import more stock in additional batches.
+Super admins can import either arbitrary codes (pasted or CSV) or individual QR
+images for a voucher. The first successful import fixes its inventory type;
+subsequent batches must use the same type. Each code or image is one voucher.
+Items are assigned in import order, and later batches follow earlier batches.
+Duplicate codes in the same voucher are rejected. Administrators must verify
+that image contents are unique. Each import is limited to 100 codes or 100 PNG,
+JPEG, GIF, or WebP images, each at most 5 MiB and 20 MiB combined. Import more
+stock in additional batches.
 
 Set `VOUCHER_IMAGE_ENCRYPTION_KEY` on every API instance to the same base64
 encoding of a securely generated 32-byte key before importing images. Store it

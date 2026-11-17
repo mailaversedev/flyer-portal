@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IMPORT_IMAGE_TYPES, parseCodeCsv, parsePastedCodes, validateVoucherImport } from "../../utils/VoucherImportUtil";
+import VoucherFilePicker from "./VoucherFilePicker";
 
 const ImagePreview = ({ file }) => {
   const [url, setUrl] = useState("");
@@ -11,10 +12,12 @@ const ImagePreview = ({ file }) => {
   return <img className="platform-vouchers-import-image" src={url} alt={file.name} />;
 };
 
-export default function VoucherImportFields({ t, batch, onChange, disabled, isEditing }) {
+export default function VoucherImportFields({ t, batch, onChange, disabled, isEditing, importKind }) {
+  const [kind, setKind] = useState(importKind || (batch.images.length ? "image" : "code"));
   const [mode, setMode] = useState("paste");
   const [text, setText] = useState("");
   const [csvText, setCsvText] = useState("");
+  const [csvFile, setCsvFile] = useState(null);
   const [hasHeader, setHasHeader] = useState(false);
   const [reading, setReading] = useState(false);
 
@@ -31,70 +34,99 @@ export default function VoucherImportFields({ t, batch, onChange, disabled, isEd
   return (
     <fieldset className="full-width platform-vouchers-import" disabled={disabled}>
       <legend>{t(isEditing ? "voucherAdminPage.importAppend" : "voucherAdminPage.importTitle")}</legend>
-      <p>{t("voucherAdminPage.importGuidance")}</p>
-      <p>{t("voucherAdminPage.importLimits")}</p>
-      <p>{t("voucherAdminPage.importOrdering")}</p>
+      <div className="platform-vouchers-import-intro">
+        <p>{t("voucherAdminPage.importTypeSummary")}</p>
+        <p>{t("voucherAdminPage.importLimits")}</p>
+        <p>{t("voucherAdminPage.importOrdering")}</p>
+        <details className="platform-vouchers-import-help">
+          <summary>{t("voucherAdminPage.importHelp")}</summary>
+          <p>{t("voucherAdminPage.importGuidance")}</p>
+        </details>
+      </div>
       <label>
-        <span>{t("voucherAdminPage.importSource")}</span>
-        <select value={mode} disabled={reading} onChange={(event) => {
-          setMode(event.target.value);
-          updateCodes(event.target.value === "csv" ? csvText : text, event.target.value, hasHeader);
+        <span>{t("voucherAdminPage.importInventoryType")}</span>
+        <select value={kind} disabled={reading || Boolean(importKind)} onChange={(event) => {
+          if ((text || csvText || batch.codes.length || batch.images.length || batch.sourceError) &&
+              !window.confirm(t("voucherAdminPage.importSwitchConfirm"))) return;
+          setKind(event.target.value);
+          setText("");
+          setCsvText("");
+          setCsvFile(null);
+          setHasHeader(false);
+          setMode("paste");
+          onChange({ ...batch, codes: [], images: [], sourceError: "" });
         }}>
-          <option value="paste">{t("voucherAdminPage.importPaste")}</option>
-          <option value="csv">{t("voucherAdminPage.importCsv")}</option>
+          <option value="code">{t("voucherAdminPage.importInventoryCodes")}</option>
+          <option value="image">{t("voucherAdminPage.importInventoryImages")}</option>
         </select>
       </label>
-      {mode === "paste" ? (
-        <label>
-          <span>{t("voucherAdminPage.importPaste")}</span>
-          <textarea rows="6" value={text} onChange={(event) => {
-            setText(event.target.value);
-            updateCodes(event.target.value, "paste", false);
-          }} />
-        </label>
+      {importKind ? <p>{t("voucherAdminPage.importInventoryTypeLocked")}</p> : null}
+      {kind === "code" ? (
+        <>
+          <label>
+            <span>{t("voucherAdminPage.importSource")}</span>
+            <select value={mode} disabled={reading} onChange={(event) => {
+              setMode(event.target.value);
+              updateCodes(event.target.value === "csv" ? csvText : text, event.target.value, hasHeader);
+            }}>
+              <option value="paste">{t("voucherAdminPage.importPaste")}</option>
+              <option value="csv">{t("voucherAdminPage.importCsv")}</option>
+            </select>
+          </label>
+          {mode === "paste" ? (
+            <label>
+              <span>{t("voucherAdminPage.importPaste")}</span>
+              <textarea rows="6" value={text} onChange={(event) => {
+                setText(event.target.value);
+                updateCodes(event.target.value, "paste", false);
+              }} />
+            </label>
+          ) : (
+            <>
+              <p>{t("voucherAdminPage.csvGuidance")}</p>
+              <VoucherFilePicker
+                t={t}
+                label={t("voucherAdminPage.importCsv")}
+                accept=".csv,text/csv"
+                files={csvFile ? [csvFile] : []}
+                disabled={reading}
+                onSelect={async ([file]) => {
+                  setCsvFile(file);
+                  setReading(true);
+                  onChange({ ...batch, codes: [], sourceError: "csvReading" });
+                  try {
+                    const contents = await file.text();
+                    setCsvText(contents);
+                    updateCodes(contents, "csv", hasHeader);
+                  } catch (_error) {
+                    onChange({ ...batch, codes: [], sourceError: "csvReadError" });
+                  } finally {
+                    setReading(false);
+                  }
+                }}
+              />
+              <label className="platform-vouchers-import-checkbox">
+                <input type="checkbox" checked={hasHeader} disabled={reading} onChange={(event) => {
+                  setHasHeader(event.target.checked);
+                  updateCodes(csvText, "csv", event.target.checked);
+                }} />
+                <span>{t("voucherAdminPage.csvHeader")}</span>
+              </label>
+            </>
+          )}
+        </>
       ) : (
         <>
-          <p>{t("voucherAdminPage.csvGuidance")}</p>
-          <label>
-            <span>{t("voucherAdminPage.importCsv")}</span>
-            <input type="file" accept=".csv,text/csv" disabled={reading} onChange={async (event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (!file) return;
-              setReading(true);
-              onChange({ ...batch, codes: [], sourceError: "csvReading" });
-              try {
-                const contents = await file.text();
-                setCsvText(contents);
-                updateCodes(contents, "csv", hasHeader);
-              } catch (_error) {
-                onChange({ ...batch, codes: [], sourceError: "csvReadError" });
-              } finally {
-                setReading(false);
-              }
-            }} />
-          </label>
-          <label className="platform-vouchers-import-checkbox">
-            <input type="checkbox" checked={hasHeader} disabled={reading} onChange={(event) => {
-              setHasHeader(event.target.checked);
-              updateCodes(csvText, "csv", event.target.checked);
-            }} />
-            <span>{t("voucherAdminPage.csvHeader")}</span>
-          </label>
+          <VoucherFilePicker t={t} label={t("voucherAdminPage.importImages")}
+            accept={IMPORT_IMAGE_TYPES.join(",")} multiple files={batch.images}
+            disabled={reading} onSelect={(images) => onChange({ ...batch, images })} />
+          <p>{t("voucherAdminPage.importImageSelection")}</p>
+          {batch.images.length > 0 && <button type="button" className="platform-vouchers-import-clear" disabled={reading} onClick={() => onChange({ ...batch, images: [] })}>
+            {t("voucherAdminPage.importClearImages")}
+          </button>}
         </>
       )}
-      <label>
-        <span>{t("voucherAdminPage.importImages")}</span>
-        <input type="file" multiple accept={IMPORT_IMAGE_TYPES.join(",")} disabled={reading} onChange={(event) => {
-          onChange({ ...batch, images: Array.from(event.target.files || []) });
-          event.target.value = "";
-        }} />
-      </label>
-      <p>{t("voucherAdminPage.importImageSelection")}</p>
-      {batch.images.length > 0 && <button type="button" disabled={reading} onClick={() => onChange({ ...batch, images: [] })}>
-        {t("voucherAdminPage.importClearImages")}
-      </button>}
-      <h3>{t("voucherAdminPage.importPreview", { count: batch.codes.length + batch.images.length })}</h3>
+      <h3 className="platform-vouchers-import-preview-title">{t("voucherAdminPage.importPreview", { count: batch.codes.length + batch.images.length })}</h3>
       {errors.map((key) => <div role="alert" className="platform-vouchers-message error" key={key}>{t(`voucherAdminPage.${key}`)}</div>)}
       <ol className="platform-vouchers-import-preview">
         {batch.codes.map((code, index) => <li key={`code-${index}`}><code>{JSON.stringify(code)}</code></li>)}

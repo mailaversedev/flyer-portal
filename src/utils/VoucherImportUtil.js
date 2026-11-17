@@ -1,7 +1,7 @@
 export const IMPORT_LIMITS = {
   items: 100,
   codeBytes: 512,
-  images: 20,
+  images: 100,
   imageBytes: 5 * 1024 * 1024,
   combinedBytes: 20 * 1024 * 1024,
 };
@@ -69,6 +69,7 @@ export const parseCodeCsv = (text, hasHeader = false) => {
 
 export const validateVoucherImport = (codes, images) => {
   const errors = [];
+  if (codes.length && images.length) errors.push("importMixedTypes");
   if (codes.length + images.length > IMPORT_LIMITS.items) errors.push("importItemLimit");
   if (codes.some((code) => typeof code !== "string" || code.trim() === "")) {
     errors.push("importCodeBlank");

@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 
 const MAX_ITEMS = 100;
-const MAX_IMAGES = 20;
+const MAX_IMAGES = 100;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_TOTAL_IMAGE_BYTES = 20 * 1024 * 1024;
 
@@ -57,6 +57,7 @@ function prepareImport(rawCodes, images, importKey) {
   }
   if (new Set(codes).size !== codes.length) throw new Error("Duplicate codes in import");
   if (!codes.length && !images.length) throw new Error("Import must contain at least one item");
+  if (codes.length && images.length) throw new Error("Import must contain either codes or images, not both");
   if (codes.length + images.length > MAX_ITEMS || images.length > MAX_IMAGES) {
     throw new Error("Import exceeds item or image limit");
   }
@@ -72,6 +73,15 @@ function prepareImport(rawCodes, images, importKey) {
   if (totalBytes > MAX_TOTAL_IMAGE_BYTES) throw new Error("Combined images exceed 20 MB");
   const fingerprint = digest(JSON.stringify({ codes, images: preparedImages.map(({ hash }) => hash) }));
   return { codes, images: preparedImages, importKey, fingerprint };
+}
+
+function resolveImportKind(data, firstItem) {
+  const kind = data.importKind ?? (data.totalNumber > 0 ? firstItem?.kind : null);
+  if (kind !== null && kind !== "code" && kind !== "image") {
+    throw new Error("__VOUCHER_IMPORT_KIND_INVALID__");
+  }
+  if (data.totalNumber > 0 && !kind) throw new Error("__VOUCHER_IMPORT_KIND_INVALID__");
+  return kind;
 }
 
 async function commitImport(db, voucherRef, prepared, imagePaths, timestamp) {
@@ -92,6 +102,12 @@ async function commitImport(db, voucherRef, prepared, imagePaths, timestamp) {
     if (!Number.isSafeInteger(total) || total < 0 || !Number.isSafeInteger(total + prepared.codes.length + imagePaths.length)) {
       throw new Error("__VOUCHER_STOCK_INVALID__");
     }
+    const firstItem = total > 0 && data.importKind == null
+      ? await transaction.get(inventory.doc(itemId(0)))
+      : null;
+    const currentKind = resolveImportKind(data, firstItem?.data());
+    const importKind = prepared.codes.length ? "code" : "image";
+    if (currentKind && currentKind !== importKind) throw new Error("__VOUCHER_IMPORT_KIND_MISMATCH__");
     for (const ref of codeRefs) {
       if ((await transaction.get(ref)).exists) throw new Error("__DUPLICATE_CODE__");
     }
@@ -106,7 +122,7 @@ async function commitImport(db, voucherRef, prepared, imagePaths, timestamp) {
     });
     codeRefs.forEach((ref) => transaction.create(ref, { createdAt: timestamp }));
     const nextTotal = total + items.length;
-    transaction.update(voucherRef, { totalNumber: nextTotal, isActive: true, updatedAt: timestamp });
+    transaction.update(voucherRef, { totalNumber: nextTotal, importKind, isActive: true, updatedAt: timestamp });
     const result = { importedCount: items.length, totalNumber: nextTotal };
     transaction.create(importRef, { fingerprint: prepared.fingerprint, result, createdAt: timestamp });
     return result;
@@ -115,5 +131,5 @@ async function commitImport(db, voucherRef, prepared, imagePaths, timestamp) {
 
 module.exports = {
   MAX_IMAGES, MAX_IMAGE_BYTES, MAX_TOTAL_IMAGE_BYTES, MAX_ITEMS,
-  commitImport, decryptImage, encryptImage, itemId, prepareImport,
+  commitImport, decryptImage, encryptImage, itemId, prepareImport, resolveImportKind,
 };

@@ -45,22 +45,79 @@ const selectImported = () => {
 };
 const submit = () => fireEvent.submit(screen.getByRole("form"));
 
-test("creates imported voucher with zero stock before uploading ordered inventory", async () => {
+test("uses the same accessible file picker for merchant, voucher and QR images", () => {
+  render(<PlatformVouchersCreatePage />);
+  for (const label of ["Merchant Icon", "Voucher Image", "QR Code"]) {
+    const input = screen.getByLabelText(label);
+    const click = jest.spyOn(input, "click").mockImplementation(() => {});
+    const button = screen.getByRole("button", { name: `Choose file for ${label}` });
+    expect(button).toHaveTextContent("Choose file");
+    fireEvent.click(button);
+    expect(click).toHaveBeenCalledTimes(1);
+    const file = new File(["image"], `${label}.png`, { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(screen.getByText(`Selected: ${file.name}`)).toBeInTheDocument();
+  }
+});
+
+test("uses the shared picker for CSV and inventory images", () => {
+  render(<PlatformVouchersCreatePage />);
+  selectImported();
+  fireEvent.change(screen.getByLabelText("Code source"), { target: { value: "csv" } });
+  expect(screen.getByRole("button", { name: "Choose file for Upload codes CSV" })).toHaveTextContent("Choose file");
+  fireEvent.change(screen.getByLabelText("Inventory type"), { target: { value: "image" } });
+  const button = screen.getByRole("button", { name: "Choose file for Select inventory images" });
+  expect(button).toHaveTextContent("Choose files");
+  const images = [new File(["a"], "first.png", { type: "image/png" }), new File(["b"], "second.png", { type: "image/png" })];
+  fireEvent.change(screen.getByLabelText("Select inventory images"), { target: { files: images } });
+  expect(screen.getByText("2 files selected")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Clear images" }));
+  expect(screen.queryByText("2 files selected")).not.toBeInTheDocument();
+});
+
+test("creates imported voucher with zero stock before uploading codes", async () => {
   render(<PlatformVouchersCreatePage />);
   selectImported();
   fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "00123\n00002" } });
-  const images = [new File(["a"], "first.png", { type: "image/png" }), new File(["b"], "second.png", { type: "image/png" })];
-  fireEvent.change(screen.getByLabelText("Select inventory images"), { target: { files: images } });
+  expect(screen.queryByLabelText("Select inventory images")).not.toBeInTheDocument();
   expect(screen.getByText('"00123"')).toBeInTheDocument();
   expect(screen.getByLabelText("Quantity")).toHaveAttribute("readonly");
   submit();
   await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(1));
   expect(ApiService.createAdminVoucher).toHaveBeenCalledWith(expect.objectContaining({ voucherType: "imported", totalNumber: 0, promotionCode: "", qrCode: "" }));
-  expect(ApiService.importAdminVoucher).toHaveBeenCalledWith("saved-id", expect.objectContaining({ codes: ["00123", "00002"], images, importKey: "stable-import-key" }));
+  expect(ApiService.importAdminVoucher).toHaveBeenCalledWith("saved-id", expect.objectContaining({ codes: ["00123", "00002"], images: [], importKey: "stable-import-key" }));
   expect(ApiService.createAdminVoucher.mock.invocationCallOrder[0]).toBeLessThan(ApiService.importAdminVoucher.mock.invocationCallOrder[0]);
   expect(mockNavigate.mock.calls[0][0]).toBe("/platform-vouchers/saved-id/edit");
   expect(mockNavigate.mock.invocationCallOrder[0]).toBeLessThan(ApiService.importAdminVoucher.mock.invocationCallOrder[0]);
   await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/platform-vouchers", expect.any(Object)));
+});
+
+test("switches inventory type only after confirmation and imports images without codes", async () => {
+  const confirm = jest.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+  render(<PlatformVouchersCreatePage />);
+  selectImported();
+  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "001" } });
+  const selector = screen.getByLabelText("Inventory type");
+  fireEvent.change(selector, { target: { value: "image" } });
+  expect(selector).toHaveValue("code");
+  expect(screen.getByText('"001"')).toBeInTheDocument();
+  fireEvent.change(selector, { target: { value: "image" } });
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(screen.queryByLabelText("Paste codes (one per line)")).not.toBeInTheDocument();
+  const images = [new File(["a"], "first.png", { type: "image/png" })];
+  fireEvent.change(screen.getByLabelText("Select inventory images"), { target: { files: images } });
+  submit();
+  await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledWith("saved-id", expect.objectContaining({ codes: [], images })));
+});
+
+test.each(["code", "image"])("locks existing inventory type to %s", async (kind) => {
+  mockParams = { voucherId: "existing-id" };
+  ApiService.getAdminVoucher.mockResolvedValue({ success: true, data: { voucherType: "imported", totalNumber: 1, importKind: kind } });
+  render(<PlatformVouchersCreatePage />);
+  const selector = await screen.findByLabelText("Inventory type");
+  expect(selector).toHaveValue(kind);
+  expect(selector).toBeDisabled();
+  expect(screen.queryByLabelText(kind === "code" ? "Select inventory images" : "Paste codes (one per line)")).not.toBeInTheDocument();
 });
 
 test.each([false, true])("failed import persists saved ID and same retry key even after remount (throw=%s)", async (throws) => {
@@ -79,6 +136,7 @@ test.each([false, true])("failed import persists saved ID and same retry key eve
   render(<PlatformVouchersCreatePage />);
   expect(screen.getByText("Import unavailable")).toBeInTheDocument();
   expect(screen.getByLabelText("Merchant")).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Choose file for Merchant Icon" })).toBeDisabled();
   submit();
   await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(2));
   expect(ApiService.importAdminVoucher.mock.calls[0]).toEqual(ApiService.importAdminVoucher.mock.calls[1]);

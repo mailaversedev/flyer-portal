@@ -5,7 +5,7 @@ const multer = require("multer");
 
 const { serializeVoucher } = require("../voucher");
 const {
-  MAX_IMAGES, MAX_IMAGE_BYTES, commitImport, encryptImage, prepareImport,
+  MAX_IMAGES, MAX_IMAGE_BYTES, commitImport, encryptImage, itemId, prepareImport, resolveImportKind,
 } = require("../../services/importedVouchers");
 
 const importUpload = multer({
@@ -203,11 +203,23 @@ module.exports = function createVouchersRouter(context) {
         });
       }
 
+      const data = voucherDoc.data();
+      let importKind = null;
+      if (data.voucherType === "imported") {
+        const firstItem = data.totalNumber > 0 && data.importKind == null
+          ? await db.collection("vouchers").doc(voucherId).collection("inventory").doc(itemId(0)).get()
+          : null;
+        importKind = resolveImportKind(data, firstItem?.data());
+      }
+
       res.status(200).json({
         success: true,
-        data: serializeVoucher(voucherDoc),
+        data: { ...serializeVoucher(voucherDoc), importKind },
       });
     } catch (error) {
+      if (error.message === "__VOUCHER_IMPORT_KIND_INVALID__") {
+        return res.status(409).json({ success: false, message: "Voucher inventory type is invalid; review existing inventory" });
+      }
       console.error("Error fetching admin voucher:", error);
       res.status(500).json({
         success: false,
@@ -298,6 +310,8 @@ module.exports = function createVouchersRouter(context) {
         __VOUCHER_NOT_FOUND__: [404, "Voucher not found"],
         __VOUCHER_TYPE_INVALID__: [400, "Voucher is not an imported voucher"],
         __VOUCHER_STOCK_INVALID__: [409, "Voucher stock is invalid"],
+        __VOUCHER_IMPORT_KIND_INVALID__: [409, "Voucher inventory type is invalid; review existing inventory"],
+        __VOUCHER_IMPORT_KIND_MISMATCH__: [409, "All imports for a voucher must use the same inventory type"],
         __DUPLICATE_CODE__: [409, "One or more codes already exist in this voucher"],
         __IMPORT_KEY_CONFLICT__: [409, "Import key already used for different items"],
         __VOUCHER_IMAGE_KEY_MISSING__: [503, "Voucher image encryption is not configured"],
@@ -316,7 +330,8 @@ module.exports = function createVouchersRouter(context) {
       if (known) return res.status(known[0]).json({ success: false, message: known[1] });
       if (["Invalid import key", "Codes must be a JSON array", "Codes must be a JSON array of strings",
         "Each code must contain between 1 and 512 bytes", "Duplicate codes in import",
-        "Import must contain at least one item", "Import exceeds item or image limit",
+        "Import must contain at least one item", "Import must contain either codes or images, not both",
+        "Import exceeds item or image limit",
         "Images must be PNG, JPEG, GIF or WebP and at most 5 MB each", "Combined images exceed 20 MB"].includes(error.message)) {
         return res.status(400).json({ success: false, message: error.message });
       }

@@ -8,6 +8,7 @@ import { hkdToTokens, TOKEN_PRICE_HKD } from "../../config/billingConfig";
 import { DEFAULT_FORM, formatDate } from "../../components/PlatformVouchers";
 import { PlatformVoucherCard } from "../../components/PlatformVouchers/PlatformVoucherCard";
 import VoucherImportFields from "../../components/PlatformVouchers/VoucherImportFields";
+import VoucherFilePicker from "../../components/PlatformVouchers/VoucherFilePicker";
 import { validateVoucherImport } from "../../utils/VoucherImportUtil";
 import "./PlatformVouchers.css";
 
@@ -17,7 +18,6 @@ const PlatformVouchersCreatePage = () => {
   const location = useLocation();
   const { voucherId } = useParams();
   const isEditing = Boolean(voucherId);
-  const voucherImageInputRef = useRef(null);
   const retryState = location.state?.voucherImport;
   const [formData, setFormData] = useState(retryState?.formData || DEFAULT_FORM);
   const [loadedVoucherType, setLoadedVoucherType] = useState(retryState?.formData?.voucherType || null);
@@ -185,12 +185,6 @@ const PlatformVouchersCreatePage = () => {
       ...current,
       [name]: value,
     }));
-  };
-
-  const handleVoucherImageChange = (event) => {
-    setVoucherImageFile(event.target.files?.[0] || null);
-    // Allow selecting the same file again after replacing an image.
-    event.target.value = "";
   };
 
   const handleSubmit = async (event) => {
@@ -445,59 +439,20 @@ const PlatformVouchersCreatePage = () => {
               <span>{t("voucherAdminPage.merchant")}</span>
               <input name="merchant" value={formData.merchant} onChange={handleChange} required />
             </label>
-            <label className="full-width">
-              <span>{t("voucherAdminPage.merchantIcon")}</span>
-              <input
-                type="file"
+            <div className="full-width">
+              <VoucherFilePicker t={t} label={t("voucherAdminPage.merchantIcon")}
                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                onChange={(event) =>
-                  setMerchantIconFile(event.target.files?.[0] || null)
-                }
-              />
-            </label>
-            <label className="full-width">
-              <span>{t("voucherAdminPage.voucherImage")}</span>
-              <div className="platform-vouchers-file-field">
-                {formData.voucherImage ? (
-                  <a
-                    href={formData.voucherImage}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="platform-vouchers-file-url"
-                    title={formData.voucherImage}
-                  >
-                    {formData.voucherImage}
-                  </a>
-                ) : (
-                  <span className="platform-vouchers-file-placeholder">
-                    {t("voucherAdminPage.noVoucherImage")}
-                  </span>
-                )}
-                {voucherImageFile ? (
-                  <span className="platform-vouchers-file-selected">
-                    {t("voucherAdminPage.selectedFile", { name: voucherImageFile.name })}
-                  </span>
-                ) : null}
-                <button
-                  type="button"
-                  className="platform-vouchers-file-button"
-                  onClick={() => voucherImageInputRef.current?.click()}
-                >
-                  {t(
-                    voucherImageFile
-                      ? "voucherAdminPage.reselectVoucherImage"
-                      : "voucherAdminPage.selectVoucherImage",
-                  )}
-                </button>
-                <input
-                  ref={voucherImageInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className="platform-vouchers-file-input"
-                  onChange={handleVoucherImageChange}
-                />
-              </div>
-            </label>
+                files={merchantIconFile ? [merchantIconFile] : []}
+                existingUrl={formData.merchantIcon}
+                onSelect={([file]) => setMerchantIconFile(file)} />
+            </div>
+            <div className="full-width">
+              <VoucherFilePicker t={t} label={t("voucherAdminPage.voucherImage")}
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                files={voucherImageFile ? [voucherImageFile] : []}
+                existingUrl={formData.voucherImage}
+                onSelect={([file]) => setVoucherImageFile(file)} />
+            </div>
             <label>
               <span>{t("voucherAdminPage.value")}</span>
               <input name="value" value={formData.value} onChange={handleChange} required />
@@ -574,14 +529,13 @@ const PlatformVouchersCreatePage = () => {
               <span>{t("voucherAdminPage.secondaryColor")}</span>
               <input name="secondaryColor" type="color" value={formData.secondaryColor} onChange={handleChange} />
             </label>
-            {!isImported ? <label className="full-width">
-              <span>{t("voucherAdminPage.qrCode")}</span>
-              <input
-                type="file"
+            {!isImported ? <div className="full-width">
+              <VoucherFilePicker t={t} label={t("voucherAdminPage.qrCode")}
                 accept="image/png,image/jpeg,image/webp"
-                onChange={(event) => setQrCodeFile(event.target.files?.[0] || null)}
-              />
-            </label> : null}
+                files={qrCodeFile ? [qrCodeFile] : []}
+                existingUrl={formData.qrCode}
+                onSelect={([file]) => setQrCodeFile(file)} />
+            </div> : null}
             <label className="full-width">
               <span>{t("voucherAdminPage.terms")}</span>
               <textarea name="terms" rows="5" value={formData.terms} onChange={handleChange} required />
@@ -594,6 +548,7 @@ const PlatformVouchersCreatePage = () => {
               onChange={setImportBatch}
               disabled={submitting || Boolean(pendingImport)}
               isEditing={isEditing}
+              importKind={formData.importKind}
             /> : null}
             <button type="submit" className="platform-vouchers-submit" disabled={submitting}>
               {submitting

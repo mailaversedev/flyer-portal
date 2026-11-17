@@ -27,6 +27,7 @@ test("enforces total items and exact code duplicates without numeric conversion"
   const codes = Array.from({ length: 100 }, (_, index) => `00${index}`);
   expect(validateVoucherImport(codes, [])).toEqual([]);
   expect(validateVoucherImport(codes, [image("a")])).toContain("importItemLimit");
+  expect(validateVoucherImport(["001"], [image("a")])).toContain("importMixedTypes");
   expect(validateVoucherImport(["001", "1"], [])).toEqual([]);
   expect(validateVoucherImport(["001", "001"], [])).toContain("importDuplicateCodes");
 });
@@ -46,7 +47,7 @@ test.each([
 });
 
 test("enforces image counts, MIME types and duplicate selections", () => {
-  const images = Array.from({ length: 20 }, (_, index) => image(`${index}`));
+  const images = Array.from({ length: 100 }, (_, index) => image(`${index}`));
   expect(validateVoucherImport([], images)).toEqual([]);
   expect(validateVoucherImport([], [...images, image("extra")])).toContain("importImageLimit");
   expect(validateVoucherImport([], [image("svg", 1, "image/svg+xml")])).toContain("importImageType");
