@@ -91,7 +91,6 @@ const PlatformVouchersListPage = () => {
   return (
     <div className="platform-vouchers-page">
       <PageHeader
-        title={t("voucherAdminPage.listTitle")}
         description={t("voucherAdminPage.listSubtitle")}
         actions={
           <button

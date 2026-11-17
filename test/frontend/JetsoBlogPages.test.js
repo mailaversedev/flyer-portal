@@ -55,6 +55,7 @@ describe("Jetso blog authoring pages", () => {
     });
 
     mountRoutes("/jetso-blog");
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
     expect(await screen.findByText("Summer guide")).toBeInTheDocument();
     expect(screen.getAllByText("Published").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Open public page" })).toHaveAttribute(

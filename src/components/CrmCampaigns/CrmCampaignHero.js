@@ -5,7 +5,6 @@ import PageHeader from "../PageHeader/PageHeader";
 export function CrmCampaignHero({ onCreateCampaign, onRefresh }) {
   return (
     <PageHeader
-      title="CRM Email Campaigns"
       description="Review created campaigns first, then open the composer when you are ready to draft a new bulk email or queue a single-recipient test."
       actions={
         <>

@@ -44,7 +44,6 @@ const JetsoBlogListPage = () => {
   return (
     <main className="jetso-blog-page jetso-blog-list-page">
       <PageHeader
-        title={t("jetsoBlog.title")}
         description={t("jetsoBlog.description")}
         actions={
           <Link className="page-header-button page-header-button--primary" to="/jetso-blog/new">
