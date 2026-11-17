@@ -2,7 +2,13 @@
   max-width: 1440px;
   margin: 0 auto;
   padding: 28px 32px 112px;
-  color: #17212b;
+  color: #e5e7eb;
+}
+
+.jetso-blog-list-page {
+  max-width: none;
+  margin: 0;
+  padding: 8px 0 24px;
 }
 
 .jetso-blog-page-header,
@@ -24,15 +30,16 @@
 .jetso-blog-page-header h2 {
   margin: 3px 0 6px;
   font-size: 28px;
+  color: #f8fafc;
 }
 
 .jetso-blog-page-header p {
   margin: 0;
-  color: #687782;
+  color: #9ca3af;
 }
 
 .jetso-blog-eyebrow {
-  color: #198a79 !important;
+  color: #60a5fa !important;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -41,52 +48,66 @@
 .jetso-blog-primary-button,
 .jetso-blog-secondary-button,
 .jetso-blog-danger-button {
-  min-height: 38px;
-  padding: 9px 14px;
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 10px;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .jetso-blog-primary-button {
-  background: #167f72;
+  background: #2563eb;
   color: #fff;
 }
 
 .jetso-blog-primary-button:hover {
-  background: #11695e;
+  background: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .jetso-blog-secondary-button {
-  border-color: #cbd6da;
-  background: #fff;
-  color: #23323a;
+  border-color: #4b5563;
+  background: #374151;
+  color: #f3f4f6;
+}
+
+.jetso-blog-secondary-button:hover {
+  border-color: #6b7280;
+  background: #4b5563;
 }
 
 .jetso-blog-danger-button {
-  border-color: #e4b7b7;
-  background: #fff;
-  color: #a12626;
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(127, 29, 29, 0.35);
+  color: #fca5a5;
+}
+
+.jetso-blog-danger-button:hover {
+  background: rgba(127, 29, 29, 0.65);
 }
 
 .jetso-blog-primary-button:disabled,
 .jetso-blog-secondary-button:disabled,
 .jetso-blog-danger-button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.5;
+  transform: none;
 }
 
 .jetso-blog-list-panel,
 .jetso-blog-form-card {
-  border: 1px solid #e1e8e9;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 3px 12px rgb(21 47 51 / 4%);
+  border: 1px solid #3a4553;
+  border-radius: 16px;
+  background: #2a3447;
 }
 
 .jetso-blog-list-panel {
@@ -105,28 +126,51 @@
 
 .jetso-blog-table th,
 .jetso-blog-table td {
-  padding: 15px 12px;
-  border-bottom: 1px solid #edf1f2;
+  padding: 16px 12px;
+  border-bottom: 1px solid #3a4553;
   vertical-align: middle;
 }
 
 .jetso-blog-table th {
-  color: #65747b;
-  font-size: 11px;
-  font-weight: 800;
+  background: #374151;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.jetso-blog-table th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.jetso-blog-table th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.jetso-blog-table td {
+  color: #e5e7eb;
+}
+
+.jetso-blog-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.jetso-blog-table tbody tr:hover {
+  background: #374151;
 }
 
 .jetso-blog-list-title {
   font-weight: 700;
+  color: #f8fafc;
 }
 
 .jetso-blog-list-subtitle {
   max-width: 520px;
   overflow: hidden;
   margin-top: 4px;
-  color: #78868c;
+  color: #9ca3af;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -138,41 +182,46 @@
 
 .jetso-blog-row-actions a {
   margin-right: 12px;
-  color: #167f72;
-  font-size: 12px;
+  color: #60a5fa;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.jetso-blog-row-actions a:hover {
+  color: #93c5fd;
 }
 
 .jetso-blog-status {
   display: inline-flex;
   padding: 4px 9px;
   border-radius: 14px;
-  background: #eef1f2;
-  color: #58666b;
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
   font-size: 11px;
   font-weight: 800;
 }
 
 .jetso-blog-status-published {
-  background: #e0f3eb;
-  color: #14724d;
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
 }
 
 .jetso-blog-status-archived {
-  background: #f5e8e7;
-  color: #8d3934;
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
 }
 
 .jetso-blog-empty {
   padding: 45px 16px;
-  color: #718087;
+  color: #9ca3af;
   text-align: center;
 }
 
 .jetso-blog-empty h3 {
   margin: 0 0 8px;
-  color: #23323a;
+  color: #f8fafc;
 }
 
 .jetso-blog-empty p {
@@ -180,7 +229,7 @@
 }
 
 .jetso-blog-loading-more {
-  color: #718087;
+  color: #9ca3af;
   text-align: center;
 }
 
@@ -192,28 +241,32 @@
 }
 
 .jetso-blog-message.error {
-  border: 1px solid #f0caca;
-  background: #fff3f3;
-  color: #912d2d;
+  border: 1px solid rgba(252, 165, 165, 0.35);
+  background: rgba(127, 29, 29, 0.3);
+  color: #fecaca;
 }
 
 .jetso-blog-message.success {
-  border: 1px solid #b9e2d0;
-  background: #effaf4;
-  color: #176745;
+  border: 1px solid rgba(134, 239, 172, 0.3);
+  background: rgba(22, 101, 52, 0.28);
+  color: #bbf7d0;
 }
 
 .jetso-blog-breadcrumb {
   display: flex;
   gap: 9px;
   margin: 0 0 17px;
-  color: #78868c;
+  color: #9ca3af;
   font-size: 12px;
 }
 
 .jetso-blog-breadcrumb a {
-  color: #167f72;
+  color: #60a5fa;
   text-decoration: none;
+}
+
+.jetso-blog-breadcrumb a:hover {
+  color: #93c5fd;
 }
 
 .jetso-blog-form-layout {
@@ -236,14 +289,15 @@
 .jetso-blog-form-card h3 {
   margin: 0 0 17px;
   font-size: 16px;
+  color: #f8fafc;
 }
 
 .jetso-blog-field {
   display: grid;
   gap: 7px;
   margin: 0 0 18px;
-  color: #3a4b52;
-  font-size: 12px;
+  color: #e5e7eb;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -259,12 +313,17 @@
   width: 100%;
   min-height: 38px;
   padding: 9px 10px;
-  border: 1px solid #cfdadc;
-  border-radius: 6px;
-  background: #fff;
-  color: #17212b;
+  border: 1px solid #4b5563;
+  border-radius: 10px;
+  background: #111827;
+  color: #f9fafb;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
+}
+
+.jetso-blog-field input::placeholder,
+.jetso-blog-field textarea::placeholder {
+  color: #9ca3af;
 }
 
 .jetso-blog-field textarea {
@@ -273,9 +332,18 @@
 
 .jetso-blog-field input:focus,
 .jetso-blog-field textarea:focus,
-.jetso-blog-field select:focus {
-  border-color: #168b7b;
-  outline: 2px solid rgb(22 139 123 / 14%);
+.jetso-blog-field select:focus,
+.jetso-blog-image-controls input:focus,
+.jetso-blog-image-controls select:focus {
+  border-color: #60a5fa;
+  outline: 2px solid rgba(96, 165, 250, 0.2);
+}
+
+.jetso-blog-field input:disabled,
+.jetso-blog-field textarea:disabled,
+.jetso-blog-field select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .jetso-blog-cover-controls {
@@ -291,6 +359,17 @@
   font-size: 12px;
 }
 
+.jetso-blog-cover-controls input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 7px 10px;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: #374151;
+  color: #f3f4f6;
+  font: inherit;
+  cursor: pointer;
+}
+
 .jetso-blog-cover-preview {
   display: block;
   max-width: 100%;
@@ -303,21 +382,25 @@
 .jetso-blog-text-button {
   border: 0;
   background: none;
-  color: #a12626;
+  color: #fca5a5;
   font: inherit;
   font-size: 12px;
   cursor: pointer;
 }
 
+.jetso-blog-text-button:hover {
+  color: #fecaca;
+}
+
 .jetso-blog-inline-error {
   margin: 0;
-  color: #a12626;
+  color: #fca5a5;
   font-size: 12px;
 }
 
 .jetso-blog-form-hint,
 .jetso-blog-revision {
-  color: #75848a;
+  color: #9ca3af;
   font-size: 11px;
   line-height: 1.5;
 }
@@ -331,18 +414,19 @@
   align-items: flex-start;
   gap: 8px;
   margin: 12px 0;
-  color: #394b52;
+  color: #e5e7eb;
   font-size: 12px;
   line-height: 1.5;
 }
 
 .jetso-blog-checkbox input {
   margin-top: 2px;
+  accent-color: #2563eb;
 }
 
 .jetso-blog-translation {
   padding-top: 9px;
-  border-top: 1px solid #edf1f2;
+  border-top: 1px solid #3a4553;
 }
 
 .jetso-blog-translation-fields {
@@ -351,9 +435,9 @@
 
 .jetso-blog-editor {
   overflow: hidden;
-  border: 1px solid #cfdadc;
-  border-radius: 7px;
-  background: #fff;
+  border: 1px solid #4b5563;
+  border-radius: 12px;
+  background: #111827;
 }
 
 .jetso-blog-toolbar {
@@ -362,16 +446,17 @@
   flex-wrap: wrap;
   gap: 4px;
   padding: 8px;
-  border-bottom: 1px solid #e3e9ea;
-  background: #f7f9f9;
+  border-bottom: 1px solid #374151;
+  background: #1f2937;
 }
 
 .jetso-blog-toolbar select {
   height: 31px;
   max-width: 130px;
-  border: 1px solid #d5dfe0;
-  border-radius: 5px;
-  background: white;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: #111827;
+  color: #f3f4f6;
   font-size: 11px;
 }
 
@@ -380,9 +465,9 @@
   height: 30px;
   padding: 0 7px;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: 8px;
   background: transparent;
-  color: #37484e;
+  color: #e5e7eb;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -390,9 +475,9 @@
 
 .jetso-blog-toolbar-button:hover,
 .jetso-blog-toolbar-button.is-active {
-  border-color: #c6d9d5;
-  background: #e6f3f0;
-  color: #126d60;
+  border-color: rgba(96, 165, 250, 0.4);
+  background: rgba(37, 99, 235, 0.2);
+  color: #bfdbfe;
 }
 
 .jetso-blog-toolbar-button:disabled {
@@ -404,7 +489,7 @@
   width: 1px;
   height: 22px;
   margin: 0 3px;
-  background: #d7e0e1;
+  background: #4b5563;
 }
 
 .jetso-blog-editor-content {
@@ -415,7 +500,7 @@
 .jetso-blog-editor-content .tiptap {
   min-height: 270px;
   outline: none;
-  color: #26363c;
+  color: #f3f4f6;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -426,24 +511,24 @@
 
 .jetso-blog-editor-content .tiptap h2,
 .jetso-blog-editor-content .tiptap h3 {
-  color: #172d32;
+  color: #f8fafc;
   line-height: 1.3;
 }
 
 .jetso-blog-editor-content .tiptap blockquote {
   margin: 16px 0;
   padding: 4px 14px;
-  border-left: 3px solid #7bb9aa;
-  color: #56686d;
+  border-left: 3px solid #60a5fa;
+  color: #cbd5e1;
 }
 
 .jetso-blog-editor-content .tiptap hr {
   border: 0;
-  border-top: 1px solid #dce5e6;
+  border-top: 1px solid #4b5563;
 }
 
 .jetso-blog-editor-content .tiptap a {
-  color: #167f72;
+  color: #60a5fa;
   text-decoration: underline;
 }
 
@@ -474,13 +559,13 @@
 
 .jetso-blog-editor-content .tiptap figure figcaption {
   padding: 5px 0;
-  color: #77868b;
+  color: #9ca3af;
   font-size: 11px;
   font-style: italic;
 }
 
 .jetso-blog-editor-content .tiptap .ProseMirror-selectednode img {
-  outline: 2px solid #28a08c;
+  outline: 2px solid #60a5fa;
 }
 
 .jetso-blog-editor-content .tiptap .blog-image-node {
@@ -495,7 +580,7 @@
 
 .jetso-blog-editor-content .tiptap .blog-image-node figcaption {
   padding: 5px 0;
-  color: #77868b;
+  color: #9ca3af;
   font-size: 11px;
   font-style: italic;
 }
@@ -507,7 +592,7 @@
   height: 13px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: #188c7b;
+  background: #2563eb;
   box-shadow: 0 1px 5px rgb(0 0 0 / 25%);
   cursor: nwse-resize;
 }
@@ -517,14 +602,14 @@
   grid-template-columns: 90px 100px minmax(100px, 1fr) minmax(100px, 1fr);
   gap: 8px;
   padding: 9px;
-  border-bottom: 1px solid #e3e9ea;
-  background: #fbfcfc;
+  border-bottom: 1px solid #374151;
+  background: #1f2937;
 }
 
 .jetso-blog-image-controls label {
   display: grid;
   gap: 4px;
-  color: #59696e;
+  color: #cbd5e1;
   font-size: 10px;
   font-weight: 700;
 }
@@ -546,21 +631,22 @@
   bottom: 0;
   margin: 20px -32px -112px;
   padding: 12px 32px;
-  border-top: 1px solid #dfe7e8;
-  background: rgb(255 255 255 / 96%);
-  box-shadow: 0 -4px 16px rgb(30 55 60 / 6%);
+  border-top: 1px solid #3a4553;
+  background: rgb(26 31 55 / 96%);
+  box-shadow: 0 -4px 16px rgb(0 0 0 / 18%);
 }
 
 .jetso-blog-sticky-actions > span {
   font-size: 12px;
+  color: #cbd5e1;
 }
 
 .jetso-blog-sticky-actions .is-dirty {
-  color: #a05b12;
+  color: #fbbf24;
 }
 
 .jetso-blog-sticky-actions .is-clean {
-  color: #477a64;
+  color: #86efac;
 }
 
 .jetso-blog-preview-overlay {
@@ -580,34 +666,41 @@
   flex-direction: column;
   overflow: hidden;
   border-radius: 10px;
-  background: #f5f7f7;
+  background: #1f2937;
   box-shadow: 0 16px 50px rgb(0 0 0 / 22%);
 }
 
 .jetso-blog-preview-header {
   min-height: 55px;
   padding: 9px 16px;
-  border-bottom: 1px solid #dbe2e4;
-  background: #fff;
+  border-bottom: 1px solid #3a4553;
+  background: #2a3447;
 }
 
 .jetso-blog-preview-header h3 {
   margin: 0;
   font-size: 15px;
+  color: #f8fafc;
 }
 
 .jetso-blog-preview-header button {
   padding: 7px 10px;
-  border: 1px solid #d3dddf;
-  border-radius: 5px;
-  background: #fff;
-  color: #34444a;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: #374151;
+  color: #e5e7eb;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.jetso-blog-preview-header button:hover {
+  background: #4b5563;
 }
 
 .jetso-blog-preview-header button.is-selected {
-  background: #e6f3f0;
-  color: #126d60;
+  border-color: rgba(96, 165, 250, 0.4);
+  background: rgba(37, 99, 235, 0.25);
+  color: #bfdbfe;
 }
 
 .jetso-blog-preview-header .jetso-blog-preview-close {
@@ -621,6 +714,7 @@
   justify-content: center;
   overflow: auto;
   padding: 16px;
+  background: #1f2937;
 }
 
 .jetso-blog-preview-frame-wrap iframe {
@@ -630,6 +724,23 @@
   border-radius: 5px;
   background: white;
   box-shadow: 0 2px 10px rgb(0 0 0 / 8%);
+}
+
+.jetso-blog-page a:focus-visible,
+.jetso-blog-page button:focus-visible,
+.jetso-blog-page input:focus-visible,
+.jetso-blog-page select:focus-visible,
+.jetso-blog-page textarea:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jetso-blog-page *,
+  .jetso-blog-page *::before,
+  .jetso-blog-page *::after {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .jetso-blog-preview-frame-wrap.is-mobile iframe {
@@ -652,6 +763,10 @@
 @media (max-width: 700px) {
   .jetso-blog-page {
     padding: 20px 15px 130px;
+  }
+
+  .jetso-blog-list-page {
+    padding: 8px 0 24px;
   }
 
   .jetso-blog-page-header {

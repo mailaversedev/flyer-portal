@@ -6,6 +6,7 @@ import ApiService from "../../services/ApiService";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import { PlatformVoucherCard } from "../../components/PlatformVouchers/PlatformVoucherCard";
 import { formatDate } from "../../components/PlatformVouchers";
+import PageHeader from "../../components/PageHeader/PageHeader";
 import "./PlatformVouchers.css";
 
 const PlatformVouchersListPage = () => {
@@ -89,15 +90,13 @@ const PlatformVouchersListPage = () => {
 
   return (
     <div className="platform-vouchers-page">
-      <section className="platform-vouchers-list-card">
-        <div className="platform-vouchers-header-row">
-          <div className="platform-vouchers-header">
-            <h2>{t("voucherAdminPage.listTitle")}</h2>
-            <p>{t("voucherAdminPage.listSubtitle")}</p>
-          </div>
+      <PageHeader
+        title={t("voucherAdminPage.listTitle")}
+        description={t("voucherAdminPage.listSubtitle")}
+        actions={
           <button
             type="button"
-            className="platform-vouchers-primary-button"
+            className="page-header-button page-header-button--primary"
             onClick={() => {
               setError("");
               setSuccess("");
@@ -106,8 +105,9 @@ const PlatformVouchersListPage = () => {
           >
             {t("voucherAdminPage.openCreate")}
           </button>
-        </div>
-
+        }
+      />
+      <section className="platform-vouchers-list-card">
         {error ? <div className="platform-vouchers-message error">{error}</div> : null}
         {success ? <div className="platform-vouchers-message success">{success}</div> : null}
 

@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { isSuperAdmin } from "../../utils/AuthUtil";
 import ApiService from "../../services/ApiService";
+import PageHeader from "../../components/PageHeader/PageHeader";
 import { getJetsoPostUrl } from "./blogUtils";
 import "./JetsoBlog.css";
 
@@ -41,15 +42,16 @@ const JetsoBlogListPage = () => {
   };
 
   return (
-    <main className="jetso-blog-page">
-      <header className="jetso-blog-page-header">
-        <div>
-          <p className="jetso-blog-eyebrow">{t("jetsoBlog.eyebrow")}</p>
-          <h2>{t("jetsoBlog.title")}</h2>
-          <p>{t("jetsoBlog.description")}</p>
-        </div>
-        <Link className="jetso-blog-primary-button" to="/jetso-blog/new">{t("jetsoBlog.newPost")}</Link>
-      </header>
+    <main className="jetso-blog-page jetso-blog-list-page">
+      <PageHeader
+        title={t("jetsoBlog.title")}
+        description={t("jetsoBlog.description")}
+        actions={
+          <Link className="page-header-button page-header-button--primary" to="/jetso-blog/new">
+            {t("jetsoBlog.newPost")}
+          </Link>
+        }
+      />
 
       {error && <div className="jetso-blog-message error" role="alert">{error}</div>}
       <section className="jetso-blog-list-panel" aria-label={t("jetsoBlog.posts")}>

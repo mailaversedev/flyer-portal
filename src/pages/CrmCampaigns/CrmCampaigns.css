@@ -5,33 +5,6 @@
   padding: 8px 0 24px;
 }
 
-.crm-campaigns-hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.crm-campaigns-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.crm-campaigns-hero h1 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 34px;
-}
-
-.crm-campaigns-subtitle {
-  max-width: 760px;
-  margin: 12px 0 0;
-  color: #9ca3af;
-  line-height: 1.7;
-}
-
 .crm-campaigns-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -500,8 +473,6 @@
 }
 
 @media (max-width: 720px) {
-  .crm-campaigns-hero,
-  .crm-campaigns-hero-actions,
   .crm-campaigns-form-actions,
   .crm-campaigns-form-action-group,
   .crm-campaigns-inline-field-row,
