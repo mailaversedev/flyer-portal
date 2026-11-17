@@ -450,6 +450,8 @@ router.get("/my-coupons", async (req, res) => {
 
         return {
           ...claim,
+          companyIcon: claim.companyIcon ||
+            (flyer.hideCompanyDetail ? "" : flyer.companyIcon) || "",
           flyerTitle: flyer.header || "",
           flyerCoupon: {
             downloadCount: flyerCoupon.downloadCount ?? 0,

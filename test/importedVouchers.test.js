@@ -275,6 +275,29 @@ test("redeems concurrent imported stock once, refunds on failure, and authorizes
     const oldWallet = response();
     await getWallet({ user: { userId: "b" } }, oldWallet);
     assert.ok(oldWallet.body.data.some((item) => item.voucherImage === "/api/payment/redeemed-vouchers/b_old/image" && !("importedImageUrl" in item)));
+
+    docs.get("voucherRedemptions/b_2").createdAt = "2024-01-01T00:00:00Z";
+    for (const [id, createdAt] of [
+      ["b_recent", "2025-01-02T00:00:00+08:00"],
+      ["b_tie_a", "2025-01-01T16:00:00Z"],
+      ["b_invalid", "not-a-date"],
+    ]) {
+      docs.set(`voucherRedemptions/${id}`, { userId: "b", createdAt, result: { voucher: { id } } });
+    }
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (message) => warnings.push(message);
+    try {
+      const sorted = response();
+      await getWallet({ user: { userId: "b" } }, sorted);
+      assert.deepEqual(sorted.body.data.map((item) => item.redemptionId), [
+        "b_recent", "b_tie_a", "b_2", "b_invalid", "b_old",
+      ]);
+      assert.equal(warnings.length, 1);
+      assert.match(warnings[0], /b_invalid/);
+    } finally {
+      console.warn = originalWarn;
+    }
   } finally {
     for (const [path, cached] of saved) {
       if (cached) require.cache[path] = cached;

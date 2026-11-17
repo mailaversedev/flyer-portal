@@ -49,14 +49,25 @@ router.get("/redeemed-vouchers", authenticateToken, async (req, res) => {
       .get();
 
     const data = snapshot.docs
-      .map((redemptionDoc) => getRedemptionResult(redemptionDoc))
-      .filter((result) => result.voucher)
-      .sort((left, right) => {
-        const leftTime = new Date(left.createdAt || 0).getTime();
-        const rightTime = new Date(right.createdAt || 0).getTime();
-        return rightTime - leftTime;
+      .map((redemptionDoc) => {
+        const result = getRedemptionResult(redemptionDoc);
+        const createdAt = redemptionDoc.data()?.createdAt;
+        const time = typeof createdAt === "string" && createdAt.trim()
+          ? Date.parse(createdAt)
+          : NaN;
+        if (createdAt != null && createdAt !== "" && !Number.isFinite(time)) {
+          console.warn(`Invalid redemption date for voucher redemption ${redemptionDoc.id}`);
+        }
+        return { result, time, id: redemptionDoc.id };
       })
-      .map((result) => result.voucher);
+      .filter(({ result }) => result.voucher)
+      .sort((left, right) => {
+        const leftTime = Number.isFinite(left.time) ? left.time : -Infinity;
+        const rightTime = Number.isFinite(right.time) ? right.time : -Infinity;
+        if (leftTime !== rightTime) return rightTime - leftTime;
+        return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+      })
+      .map(({ result }) => result.voucher);
 
     return res.status(200).json({ success: true, data });
   } catch (error) {
