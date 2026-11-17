@@ -78,6 +78,7 @@ test("uses the shared picker for CSV and inventory images", () => {
 test("creates imported voucher with zero stock before uploading codes", async () => {
   render(<PlatformVouchersCreatePage />);
   selectImported();
+  expect(screen.getByRole("group", { name: "Import inventory" })).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "00123\n00002" } });
   expect(screen.queryByLabelText("Select inventory images")).not.toBeInTheDocument();
   expect(screen.getByText('"00123"')).toBeInTheDocument();

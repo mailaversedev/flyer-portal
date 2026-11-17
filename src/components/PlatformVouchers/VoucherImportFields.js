@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { IMPORT_IMAGE_TYPES, parseCodeCsv, parsePastedCodes, validateVoucherImport } from "../../utils/VoucherImportUtil";
 import VoucherFilePicker from "./VoucherFilePicker";
 
@@ -13,6 +13,7 @@ const ImagePreview = ({ file }) => {
 };
 
 export default function VoucherImportFields({ t, batch, onChange, disabled, isEditing, importKind }) {
+  const titleId = useId();
   const [kind, setKind] = useState(importKind || (batch.images.length ? "image" : "code"));
   const [mode, setMode] = useState("paste");
   const [text, setText] = useState("");
@@ -32,8 +33,9 @@ export default function VoucherImportFields({ t, batch, onChange, disabled, isEd
   const errors = [batch.sourceError, ...validateVoucherImport(batch.codes, batch.images)].filter(Boolean);
 
   return (
-    <fieldset className="full-width platform-vouchers-import" disabled={disabled}>
-      <legend>{t(isEditing ? "voucherAdminPage.importAppend" : "voucherAdminPage.importTitle")}</legend>
+    <section className="full-width">
+      <h3 id={titleId} className="platform-vouchers-import-title">{t(isEditing ? "voucherAdminPage.importAppend" : "voucherAdminPage.importTitle")}</h3>
+      <fieldset className="platform-vouchers-import" aria-labelledby={titleId} disabled={disabled}>
       <div className="platform-vouchers-import-intro">
         <p>{t("voucherAdminPage.importTypeSummary")}</p>
         <p>{t("voucherAdminPage.importLimits")}</p>
@@ -135,6 +137,7 @@ export default function VoucherImportFields({ t, batch, onChange, disabled, isEd
           <span>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
         </li>)}
       </ol>
-    </fieldset>
+      </fieldset>
+    </section>
   );
 }
