@@ -220,9 +220,7 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
         const item = await transaction.get(importedItemRef);
         if (!item.exists || item.data().status !== "available") throw new Error("__VOUCHER_STOCK_INVALID__");
         importedItem = item.data();
-        if (!["code", "image"].includes(importedItem.kind) ||
-            (importedItem.kind === "code" && !importedItem.code) ||
-            (importedItem.kind === "image" && (!importedItem.storagePath || !importedItem.contentType))) {
+        if (!importedItem.code || !importedItem.storagePath || !importedItem.contentType) {
           throw new Error("__VOUCHER_STOCK_INVALID__");
         }
       }
@@ -291,13 +289,14 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
           id: voucherDoc.id, value: voucherData.value || "",
           cost: voucherCost, merchant: voucherData.merchant || "",
           merchantIcon: voucherData.merchantIcon || "",
-          voucherImage: importedItem?.kind === "image"
+          voucherImage: voucherData.voucherImage || "",
+          importedQrImageUrl: importedItem
             ? `/api/payment/redeemed-vouchers/${encodeURIComponent(redemptionRef.id)}/image`
-            : (voucherData.voucherImage || ""), voucherType,
+            : "", voucherType,
           expiryDate: voucherData.expiryDate || "", totalNumber,
           redeemedCount: nextRedeemedCount,
           remainingCount: Math.max(0, totalNumber - nextRedeemedCount),
-          qrCode: voucherType === "numbered" || voucherType === "imported" ? assignedVoucherNumber : (voucherData.qrCode || ""),
+          qrCode: voucherType === "imported" ? "" : voucherType === "numbered" ? assignedVoucherNumber : (voucherData.qrCode || ""),
           promotionCode: voucherType === "numbered" || voucherType === "imported" ? assignedVoucherNumber : (voucherData.promotionCode || ""),
           claimedVoucherNumber: assignedVoucherNumber,
           redemptionId: redemptionRef.id,
@@ -312,7 +311,7 @@ router.post("/redeem-voucher", authenticateToken, async (req, res) => {
         voucherId,
         idempotencyKey,
         assignedVoucherNumber,
-        ...(importedItem?.kind === "image" ? {
+        ...(importedItem ? {
           importedImagePath: importedItem.storagePath,
           importedImageType: importedItem.contentType,
         } : {}),

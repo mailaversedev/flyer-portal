@@ -21,7 +21,7 @@ const PlatformVouchersCreatePage = () => {
   const retryState = location.state?.voucherImport;
   const [formData, setFormData] = useState(retryState?.formData || DEFAULT_FORM);
   const [loadedVoucherType, setLoadedVoucherType] = useState(retryState?.formData?.voucherType || null);
-  const [importBatch, setImportBatch] = useState(retryState?.batch || { codes: [], images: [], sourceError: "" });
+  const [importBatch, setImportBatch] = useState(retryState?.batch || { pairs: [], images: [], sourceError: "" });
   const [pendingImport, setPendingImport] = useState(retryState?.pending || null);
   const [importFieldsKey, setImportFieldsKey] = useState(0);
   const savedVoucherIdRef = useRef(retryState?.pending?.voucherId || voucherId || "");
@@ -199,9 +199,9 @@ const PlatformVouchersCreatePage = () => {
     let savedFormData = formData;
     try {
       if (isImported) {
-        const importErrors = [importBatch.sourceError, ...validateVoucherImport(importBatch.codes, importBatch.images)].filter(Boolean);
+        const importErrors = [importBatch.sourceError, ...validateVoucherImport(importBatch.pairs, importBatch.images)].filter(Boolean);
         if (importErrors.length) throw new Error(t(`voucherAdminPage.${importErrors[0]}`));
-        if (!savedVoucherIdRef.current && !importBatch.codes.length && !importBatch.images.length) {
+        if (!savedVoucherIdRef.current && !importBatch.pairs.length && !importBatch.images.length) {
           throw new Error(t("voucherAdminPage.importEmpty"));
         }
       }
@@ -330,7 +330,7 @@ const PlatformVouchersCreatePage = () => {
           const savedId = savedVoucherIdRef.current || response.data?.id || response.data?.voucherId || response.voucherId || response.id;
           if (!savedId) throw new Error(t("voucherAdminPage.importMissingId"));
           savedVoucherIdRef.current = savedId;
-          if (importBatch.codes.length || importBatch.images.length) {
+          if (importBatch.pairs.length || importBatch.images.length) {
             activeImport = { ...importBatch, voucherId: savedId, importKey: crypto.randomUUID() };
             setPendingImport(activeImport);
             savedFormData = {
@@ -426,7 +426,7 @@ const PlatformVouchersCreatePage = () => {
             <button type="button" disabled={submitting} onClick={() => {
               if (!window.confirm(t("voucherAdminPage.importDiscardConfirm"))) return;
               setPendingImport(null);
-              setImportBatch({ codes: [], images: [], sourceError: "" });
+              setImportBatch({ pairs: [], images: [], sourceError: "" });
               setImportFieldsKey((key) => key + 1);
               setError("");
               navigate(`/platform-vouchers/${pendingImport.voucherId}/edit`, { replace: true, state: null });
@@ -548,7 +548,6 @@ const PlatformVouchersCreatePage = () => {
               onChange={setImportBatch}
               disabled={submitting || Boolean(pendingImport)}
               isEditing={isEditing}
-              importKind={formData.importKind}
             /> : null}
             <button type="submit" className="platform-vouchers-submit" disabled={submitting}>
               {submitting

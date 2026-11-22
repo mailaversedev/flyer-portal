@@ -8,11 +8,8 @@ export const IMPORT_LIMITS = {
 
 export const IMPORT_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
 
-export const parsePastedCodes = (text) =>
-  text.split(/\r\n|\n|\r/).filter((code) => code.trim() !== "");
-
-// A single-column CSV, including escaped quotes and newlines inside quoted cells.
-export const parseCodeCsv = (text, hasHeader = false) => {
+// CSV cells can contain escaped quotes and newlines.
+export const parsePairCsv = (text) => {
   const rows = [];
   let row = [];
   let cell = "";
@@ -59,18 +56,18 @@ export const parseCodeCsv = (text, hasHeader = false) => {
   }
   if (quoted) throw new Error("csvInvalid");
   finishRow();
-  if (rows.some((values) => values.length !== 1)) throw new Error("csvColumn");
-  if (hasHeader) {
-    if (rows[0]?.[0].trim().toLowerCase() !== "code") throw new Error("csvHeaderInvalid");
-    rows.shift();
-  }
-  return rows.map(([code]) => code);
+  if (rows[0]?.length !== 2 || rows[0][0].trim().toLowerCase() !== "code" ||
+      rows[0][1].trim().toLowerCase() !== "image_filename") throw new Error("csvHeaderInvalid");
+  rows.shift();
+  if (rows.some((values) => values.length !== 2)) throw new Error("csvColumn");
+  return rows.map(([code, imageFilename]) => ({ code, imageFilename }));
 };
 
-export const validateVoucherImport = (codes, images) => {
+export const validateVoucherImport = (pairs, images) => {
   const errors = [];
-  if (codes.length && images.length) errors.push("importMixedTypes");
-  if (codes.length + images.length > IMPORT_LIMITS.items) errors.push("importItemLimit");
+  const codes = pairs.map(({ code }) => code);
+  const names = pairs.map(({ imageFilename }) => imageFilename);
+  if (pairs.length > IMPORT_LIMITS.items) errors.push("importItemLimit");
   if (codes.some((code) => typeof code !== "string" || code.trim() === "")) {
     errors.push("importCodeBlank");
   }
@@ -78,13 +75,18 @@ export const validateVoucherImport = (codes, images) => {
     errors.push("importCodeSize");
   }
   if (new Set(codes).size !== codes.length) errors.push("importDuplicateCodes");
+  if (names.some((name) => typeof name !== "string" || !name.trim()) ||
+      new Set(names).size !== names.length) errors.push("importFilenameInvalid");
   if (images.length > IMPORT_LIMITS.images) errors.push("importImageLimit");
   if (images.some((file) => !IMPORT_IMAGE_TYPES.includes(file.type))) errors.push("importImageType");
   if (images.some((file) => file.size > IMPORT_LIMITS.imageBytes)) errors.push("importImageSize");
   if (images.reduce((total, file) => total + file.size, 0) > IMPORT_LIMITS.combinedBytes) {
     errors.push("importCombinedSize");
   }
-  const fileKeys = images.map((file) => JSON.stringify([file.name, file.size, file.type, file.lastModified]));
-  if (new Set(fileKeys).size !== images.length) errors.push("importDuplicateImages");
+  const fileNames = images.map((file) => file.name);
+  if (new Set(fileNames).size !== fileNames.length) errors.push("importDuplicateImages");
+  if ((pairs.length || images.length) &&
+      (pairs.length !== images.length || names.some((name) => !fileNames.includes(name)) ||
+       fileNames.some((name) => !names.includes(name)))) errors.push("importPairMismatch");
   return errors;
 };

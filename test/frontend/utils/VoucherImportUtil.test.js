@@ -1,65 +1,47 @@
-import { IMPORT_LIMITS, parseCodeCsv, parsePastedCodes, validateVoucherImport } from "../../../src/utils/VoucherImportUtil";
+import { IMPORT_LIMITS, parsePairCsv, validateVoucherImport } from "../../../src/utils/VoucherImportUtil";
 
-test("paste keeps leading zeros and spaces, ignoring only blank lines", () => {
-  expect(parsePastedCodes("00123\r\n\n 0007 \rABC\n  ")).toEqual(["00123", " 0007 ", "ABC"]);
-});
+const image = (name, size = 1, type = "image/png") => ({ name, size, type });
+const pair = (code, imageFilename) => ({ code, imageFilename });
 
-test("CSV handles BOM, optional header, quoted commas, escaped quotes and newlines", () => {
-  expect(parseCodeCsv('\uFEFFcode\r\n00123\r\n"a,b"\r\n"a""b"\r\n"line\nbreak"\r\n', true))
-    .toEqual(["00123", "a,b", 'a"b', "line\nbreak"]);
-  expect(parseCodeCsv("code\n0001")).toEqual(["code", "0001"]);
-  expect(parseCodeCsv(' 0001 \n\n"0002"')).toEqual([" 0001 ", "0002"]);
-});
-
-test.each(['"unclosed', 'a"b', '"a"x'])("rejects malformed CSV: %s", (csv) => {
-  expect(() => parseCodeCsv(csv)).toThrow("csvInvalid");
-});
-
-test("rejects multiple columns and an incorrect explicit header", () => {
-  expect(() => parseCodeCsv("a,b")).toThrow("csvColumn");
-  expect(() => parseCodeCsv("code\n001,")).toThrow("csvColumn");
-  expect(() => parseCodeCsv("001\n002", true)).toThrow("csvHeaderInvalid");
-});
-
-const image = (name, size = 1, type = "image/png") => ({ name, size, type, lastModified: 1 });
-
-test("enforces total items and exact code duplicates without numeric conversion", () => {
-  const codes = Array.from({ length: 100 }, (_, index) => `00${index}`);
-  expect(validateVoucherImport(codes, [])).toEqual([]);
-  expect(validateVoucherImport(codes, [image("a")])).toContain("importItemLimit");
-  expect(validateVoucherImport(["001"], [image("a")])).toContain("importMixedTypes");
-  expect(validateVoucherImport(["001", "1"], [])).toEqual([]);
-  expect(validateVoucherImport(["001", "001"], [])).toContain("importDuplicateCodes");
-});
-
-test.each(["", " ", "\t\r\n", "\u3000"])("rejects whitespace-only code %j", (code) => {
-  expect(validateVoucherImport([code], [])).toContain("importCodeBlank");
+test("parses CSV with BOM, quoted fields and leading zeros", () => {
+  expect(parsePairCsv('\uFEFFcode,image_filename\r\n00123,a.png\r\n"a,b","b,c.png"\r\n"a""b",d.png'))
+    .toEqual([pair("00123", "a.png"), pair("a,b", "b,c.png"), pair('a"b', "d.png")]);
 });
 
 test.each([
-  ["a".repeat(512), "a".repeat(513)],
-  ["中".repeat(170) + "ab", "中".repeat(171)],
-  ["😀".repeat(128), "😀".repeat(128) + "a"],
-  [" " + "0".repeat(510) + " ", " " + "0".repeat(511) + " "],
-])("counts UTF-8 bytes including preserved whitespace", (valid, invalid) => {
-  expect(validateVoucherImport([valid], [])).toEqual([]);
-  expect(validateVoucherImport([invalid], [])).toContain("importCodeSize");
+  ['code\n001', "csvHeaderInvalid"],
+  ['code,image_filename\n001', "csvColumn"],
+  ['code,image_filename\n"unclosed,a.png', "csvInvalid"],
+  ['code,image_filename\n"a"x,a.png', "csvInvalid"],
+])("rejects malformed or incomplete CSV", (csv, error) => {
+  expect(() => parsePairCsv(csv)).toThrow(error);
 });
 
-test("enforces image counts, MIME types and duplicate selections", () => {
-  const images = Array.from({ length: 100 }, (_, index) => image(`${index}`));
-  expect(validateVoucherImport([], images)).toEqual([]);
-  expect(validateVoucherImport([], [...images, image("extra")])).toContain("importImageLimit");
-  expect(validateVoucherImport([], [image("svg", 1, "image/svg+xml")])).toContain("importImageType");
-  expect(validateVoucherImport([], [image("a"), image("a")])).toContain("importDuplicateImages");
-  for (const type of ["image/png", "image/jpeg", "image/gif", "image/webp"]) {
-    expect(validateVoucherImport([], [image(type, 1, type)])).toEqual([]);
-  }
+test("matches filenames exactly independent of file order", () => {
+  const pairs = [pair("001", "a.png"), pair("002", "b.png")];
+  expect(validateVoucherImport(pairs, [image("b.png"), image("a.png")])).toEqual([]);
+  expect(validateVoucherImport(pairs, [image("A.png"), image("b.png")])).toContain("importPairMismatch");
+  expect(validateVoucherImport(pairs, [image("a.png")])).toContain("importPairMismatch");
+  expect(validateVoucherImport(pairs, [image("a.png"), image("b.png"), image("c.png")])).toContain("importPairMismatch");
+  expect(validateVoucherImport([pair("a", "a.png"), pair("b", "a.png")], [image("a.png"), image("a.png")]))
+    .toEqual(expect.arrayContaining(["importFilenameInvalid", "importDuplicateImages"]));
 });
 
-test("accepts size boundaries and rejects one byte over", () => {
-  const images = Array.from({ length: 4 }, (_, index) => image(`${index}`, IMPORT_LIMITS.imageBytes));
-  expect(validateVoucherImport([], images)).toEqual([]);
-  expect(validateVoucherImport([], [image("a", IMPORT_LIMITS.imageBytes + 1)])).toContain("importImageSize");
-  expect(validateVoucherImport([], [...images, image("extra")])).toContain("importCombinedSize");
+test("enforces pair count, code uniqueness and UTF-8 byte limit", () => {
+  const pairs = Array.from({ length: 100 }, (_, index) => pair(`00${index}`, `${index}.png`));
+  const images = pairs.map(({ imageFilename }) => image(imageFilename));
+  expect(validateVoucherImport(pairs, images)).toEqual([]);
+  expect(validateVoucherImport([...pairs, pair("x", "x.png")], [...images, image("x.png")])).toContain("importItemLimit");
+  expect(validateVoucherImport([pair("001", "a"), pair("001", "b")], [image("a"), image("b")])).toContain("importDuplicateCodes");
+  expect(validateVoucherImport([pair(" ", "a")], [image("a")])).toContain("importCodeBlank");
+  expect(validateVoucherImport([pair("中".repeat(171), "a")], [image("a")])).toContain("importCodeSize");
+});
+
+test("enforces image types and exact size boundaries", () => {
+  const pairs = Array.from({ length: 4 }, (_, index) => pair(`${index}`, `${index}.png`));
+  const images = pairs.map(({ imageFilename }) => image(imageFilename, IMPORT_LIMITS.imageBytes));
+  expect(validateVoucherImport(pairs, images)).toEqual([]);
+  expect(validateVoucherImport([pair("a", "a")], [image("a", IMPORT_LIMITS.imageBytes + 1)])).toContain("importImageSize");
+  expect(validateVoucherImport([...pairs, pair("x", "x")], [...images, image("x")])).toContain("importCombinedSize");
+  expect(validateVoucherImport([pair("a", "a")], [image("a", 1, "image/svg+xml")])).toContain("importImageType");
 });

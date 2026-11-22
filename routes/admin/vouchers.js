@@ -5,7 +5,7 @@ const multer = require("multer");
 
 const { serializeVoucher } = require("../voucher");
 const {
-  MAX_IMAGES, MAX_IMAGE_BYTES, commitImport, encryptImage, itemId, prepareImport, resolveImportKind,
+  MAX_IMAGES, MAX_IMAGE_BYTES, commitImport, encryptImage, prepareImport,
 } = require("../../services/importedVouchers");
 
 const importUpload = multer({
@@ -203,23 +203,11 @@ module.exports = function createVouchersRouter(context) {
         });
       }
 
-      const data = voucherDoc.data();
-      let importKind = null;
-      if (data.voucherType === "imported") {
-        const firstItem = data.totalNumber > 0 && data.importKind == null
-          ? await db.collection("vouchers").doc(voucherId).collection("inventory").doc(itemId(0)).get()
-          : null;
-        importKind = resolveImportKind(data, firstItem?.data());
-      }
-
       res.status(200).json({
         success: true,
-        data: { ...serializeVoucher(voucherDoc), importKind },
+        data: serializeVoucher(voucherDoc),
       });
     } catch (error) {
-      if (error.message === "__VOUCHER_IMPORT_KIND_INVALID__") {
-        return res.status(409).json({ success: false, message: "Voucher inventory type is invalid; review existing inventory" });
-      }
       console.error("Error fetching admin voucher:", error);
       res.status(500).json({
         success: false,
@@ -279,7 +267,7 @@ module.exports = function createVouchersRouter(context) {
   }, async (req, res) => {
     let uploadedPaths = [];
     try {
-      const prepared = prepareImport(req.body.codes, req.files || [], req.body.importKey);
+      const prepared = prepareImport(req.body.items, req.files || [], req.body.importKey);
       const voucherRef = db.collection("vouchers").doc(req.params.voucherId);
       const bucket = admin.storage().bucket();
       const attemptId = crypto.randomUUID();
@@ -287,8 +275,9 @@ module.exports = function createVouchersRouter(context) {
       for (let index = 0; index < prepared.images.length; index += 1) {
         const image = prepared.images[index];
         const storagePath = `private-voucher-items/${voucherRef.id}/${attemptId}/${index}`;
+        const encrypted = encryptImage(image.buffer);
         uploadedPaths.push(storagePath);
-        await bucket.file(storagePath).save(encryptImage(image.buffer), {
+        await bucket.file(storagePath).save(encrypted, {
           resumable: false,
           contentType: "application/octet-stream",
           metadata: { cacheControl: "private, no-store" },
@@ -310,8 +299,6 @@ module.exports = function createVouchersRouter(context) {
         __VOUCHER_NOT_FOUND__: [404, "Voucher not found"],
         __VOUCHER_TYPE_INVALID__: [400, "Voucher is not an imported voucher"],
         __VOUCHER_STOCK_INVALID__: [409, "Voucher stock is invalid"],
-        __VOUCHER_IMPORT_KIND_INVALID__: [409, "Voucher inventory type is invalid; review existing inventory"],
-        __VOUCHER_IMPORT_KIND_MISMATCH__: [409, "All imports for a voucher must use the same inventory type"],
         __DUPLICATE_CODE__: [409, "One or more codes already exist in this voucher"],
         __IMPORT_KEY_CONFLICT__: [409, "Import key already used for different items"],
         __VOUCHER_IMAGE_KEY_MISSING__: [503, "Voucher image encryption is not configured"],
@@ -328,9 +315,9 @@ module.exports = function createVouchersRouter(context) {
         console.error("Private voucher upload requires cleanup review:", uploadedPaths);
       }
       if (known) return res.status(known[0]).json({ success: false, message: known[1] });
-      if (["Invalid import key", "Codes must be a JSON array", "Codes must be a JSON array of strings",
+      if (["Invalid import key", "Items must be a JSON array", "Items must contain a code and image index",
         "Each code must contain between 1 and 512 bytes", "Duplicate codes in import",
-        "Import must contain at least one item", "Import must contain either codes or images, not both",
+        "Import must contain at least one item", "Each code must have exactly one unique image",
         "Import exceeds item or image limit",
         "Images must be PNG, JPEG, GIF or WebP and at most 5 MB each", "Combined images exceed 20 MB"].includes(error.message)) {
         return res.status(400).json({ success: false, message: error.message });

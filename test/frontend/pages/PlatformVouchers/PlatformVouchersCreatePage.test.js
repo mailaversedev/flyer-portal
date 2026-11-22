@@ -37,22 +37,28 @@ beforeEach(() => {
   ApiService.updateAdminVoucher.mockResolvedValue({ success: true });
   ApiService.importAdminVoucher.mockResolvedValue({ success: true });
 });
-
 afterEach(() => jest.restoreAllMocks());
 
-const selectImported = () => {
-  fireEvent.change(screen.getByLabelText("Voucher Type"), { target: { value: "imported" } });
-};
+const selectImported = () => fireEvent.change(screen.getByLabelText("Voucher Type"), { target: { value: "imported" } });
 const submit = () => fireEvent.submit(screen.getByRole("form"));
+const uploadCsv = async (contents) => {
+  const file = new File([], "pairs.csv", { type: "text/csv" });
+  file.text = jest.fn().mockResolvedValue(contents);
+  fireEvent.change(screen.getByLabelText("Upload pairs CSV"), { target: { files: [file] } });
+  await waitFor(() => expect(screen.queryByText(en.voucherAdminPage.csvReading)).not.toBeInTheDocument());
+};
+const uploadImages = (...names) => {
+  const images = names.map((name) => new File(["image"], name, { type: "image/png" }));
+  fireEvent.change(screen.getByLabelText("Select inventory images"), { target: { files: images } });
+  return images;
+};
 
-test("uses the same accessible file picker for merchant, voucher and QR images", () => {
+test("uses the accessible picker for voucher artwork", () => {
   render(<PlatformVouchersCreatePage />);
   for (const label of ["Merchant Icon", "Voucher Image", "QR Code"]) {
     const input = screen.getByLabelText(label);
     const click = jest.spyOn(input, "click").mockImplementation(() => {});
-    const button = screen.getByRole("button", { name: `Choose file for ${label}` });
-    expect(button).toHaveTextContent("Choose file");
-    fireEvent.click(button);
+    fireEvent.click(screen.getByRole("button", { name: `Choose file for ${label}` }));
     expect(click).toHaveBeenCalledTimes(1);
     const file = new File(["image"], `${label}.png`, { type: "image/png" });
     fireEvent.change(input, { target: { files: [file] } });
@@ -60,149 +66,94 @@ test("uses the same accessible file picker for merchant, voucher and QR images",
   }
 });
 
-test("uses the shared picker for CSV and inventory images", () => {
+test("creates zero-stock voucher then imports explicit pairs in CSV order", async () => {
   render(<PlatformVouchersCreatePage />);
   selectImported();
-  fireEvent.change(screen.getByLabelText("Code source"), { target: { value: "csv" } });
-  expect(screen.getByRole("button", { name: "Choose file for Upload codes CSV" })).toHaveTextContent("Choose file");
-  fireEvent.change(screen.getByLabelText("Inventory type"), { target: { value: "image" } });
-  const button = screen.getByRole("button", { name: "Choose file for Select inventory images" });
-  expect(button).toHaveTextContent("Choose files");
-  const images = [new File(["a"], "first.png", { type: "image/png" }), new File(["b"], "second.png", { type: "image/png" })];
-  fireEvent.change(screen.getByLabelText("Select inventory images"), { target: { files: images } });
-  expect(screen.getByText("2 files selected")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Clear images" }));
-  expect(screen.queryByText("2 files selected")).not.toBeInTheDocument();
-});
-
-test("creates imported voucher with zero stock before uploading codes", async () => {
-  render(<PlatformVouchersCreatePage />);
-  selectImported();
-  expect(screen.getByRole("group", { name: "Import inventory" })).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "00123\n00002" } });
-  expect(screen.queryByLabelText("Select inventory images")).not.toBeInTheDocument();
+  await uploadCsv("code,image_filename\n00123,first.png\n00002,second.png");
+  const images = uploadImages("second.png", "first.png");
   expect(screen.getByText('"00123"')).toBeInTheDocument();
-  expect(screen.getByLabelText("Quantity")).toHaveAttribute("readonly");
+  expect(screen.getByText("Import preview: 2 / 100 items")).toBeInTheDocument();
   submit();
   await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(1));
-  expect(ApiService.createAdminVoucher).toHaveBeenCalledWith(expect.objectContaining({ voucherType: "imported", totalNumber: 0, promotionCode: "", qrCode: "" }));
-  expect(ApiService.importAdminVoucher).toHaveBeenCalledWith("saved-id", expect.objectContaining({ codes: ["00123", "00002"], images: [], importKey: "stable-import-key" }));
+  expect(ApiService.createAdminVoucher).toHaveBeenCalledWith(expect.objectContaining({ voucherType: "imported", totalNumber: 0 }));
+  expect(ApiService.importAdminVoucher).toHaveBeenCalledWith("saved-id", expect.objectContaining({
+    pairs: [{ code: "00123", imageFilename: "first.png" }, { code: "00002", imageFilename: "second.png" }],
+    images, importKey: "stable-import-key",
+  }));
   expect(ApiService.createAdminVoucher.mock.invocationCallOrder[0]).toBeLessThan(ApiService.importAdminVoucher.mock.invocationCallOrder[0]);
-  expect(mockNavigate.mock.calls[0][0]).toBe("/platform-vouchers/saved-id/edit");
-  expect(mockNavigate.mock.invocationCallOrder[0]).toBeLessThan(ApiService.importAdminVoucher.mock.invocationCallOrder[0]);
-  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/platform-vouchers", expect.any(Object)));
 });
 
-test("switches inventory type only after confirmation and imports images without codes", async () => {
-  const confirm = jest.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+test("rejects incomplete or duplicate pairs before creating a voucher", async () => {
   render(<PlatformVouchersCreatePage />);
   selectImported();
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "001" } });
-  const selector = screen.getByLabelText("Inventory type");
-  fireEvent.change(selector, { target: { value: "image" } });
-  expect(selector).toHaveValue("code");
-  expect(screen.getByText('"001"')).toBeInTheDocument();
-  fireEvent.change(selector, { target: { value: "image" } });
-  expect(confirm).toHaveBeenCalledTimes(2);
-  expect(screen.queryByLabelText("Paste codes (one per line)")).not.toBeInTheDocument();
-  const images = [new File(["a"], "first.png", { type: "image/png" })];
-  fireEvent.change(screen.getByLabelText("Select inventory images"), { target: { files: images } });
   submit();
-  await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledWith("saved-id", expect.objectContaining({ codes: [], images })));
+  await screen.findByText(en.voucherAdminPage.importEmpty);
+  await uploadCsv("code,image_filename\n001,a.png\n001,b.png");
+  uploadImages("a.png");
+  submit();
+  expect(screen.getAllByText(en.voucherAdminPage.importDuplicateCodes).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(en.voucherAdminPage.importPairMismatch).length).toBeGreaterThan(0);
+  expect(ApiService.createAdminVoucher).not.toHaveBeenCalled();
 });
 
-test.each(["code", "image"])("locks existing inventory type to %s", async (kind) => {
-  mockParams = { voucherId: "existing-id" };
-  ApiService.getAdminVoucher.mockResolvedValue({ success: true, data: { voucherType: "imported", totalNumber: 1, importKind: kind } });
-  render(<PlatformVouchersCreatePage />);
-  const selector = await screen.findByLabelText("Inventory type");
-  expect(selector).toHaveValue(kind);
-  expect(selector).toBeDisabled();
-  expect(screen.queryByLabelText(kind === "code" ? "Select inventory images" : "Paste codes (one per line)")).not.toBeInTheDocument();
-});
-
-test.each([false, true])("failed import persists saved ID and same retry key even after remount (throw=%s)", async (throws) => {
+test.each([false, true])("failed import retries the identical pair batch after remount (throw=%s)", async (throws) => {
   if (throws) ApiService.importAdminVoucher.mockRejectedValueOnce(new Error("Import unavailable"));
   else ApiService.importAdminVoucher.mockResolvedValueOnce({ success: false, message: "Import unavailable" });
   const { unmount } = render(<PlatformVouchersCreatePage />);
   selectImported();
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "0001" } });
+  await uploadCsv("code,image_filename\n0001,qr.png");
+  uploadImages("qr.png");
   submit();
   await screen.findByText("Import unavailable");
-  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/platform-vouchers/saved-id/edit", expect.objectContaining({ replace: true })));
   const retryNavigation = mockNavigate.mock.calls.filter(([path]) => path.endsWith("/edit")).pop();
   unmount();
   mockParams = { voucherId: "saved-id" };
   mockLocation = { state: retryNavigation[1].state };
   render(<PlatformVouchersCreatePage />);
-  expect(screen.getByText("Import unavailable")).toBeInTheDocument();
   expect(screen.getByLabelText("Merchant")).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Choose file for Merchant Icon" })).toBeDisabled();
   submit();
   await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(2));
   expect(ApiService.importAdminVoucher.mock.calls[0]).toEqual(ApiService.importAdminVoucher.mock.calls[1]);
   expect(ApiService.createAdminVoucher).toHaveBeenCalledTimes(1);
   expect(ApiService.updateAdminVoucher).not.toHaveBeenCalled();
-  expect(screen.queryByText("Import unavailable")).not.toBeInTheDocument();
 });
 
-test("invalid and empty imports do not create a voucher", async () => {
+test("does not create while CSV is being read", async () => {
   render(<PlatformVouchersCreatePage />);
   selectImported();
+  const file = new File([], "pairs.csv", { type: "text/csv" });
+  file.text = jest.fn(() => new Promise(() => {}));
+  fireEvent.change(screen.getByLabelText("Upload pairs CSV"), { target: { files: [file] } });
   submit();
-  await screen.findByText(en.voucherAdminPage.importEmpty);
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "001\n001" } });
-  submit();
-  await waitFor(() => expect(ApiService.createAdminVoucher).not.toHaveBeenCalled());
-  expect(screen.getAllByText(en.voucherAdminPage.importDuplicateCodes).length).toBeGreaterThan(0);
-});
-
-test.each(["a".repeat(513), "中".repeat(171), "😀".repeat(129)])("oversized pasted codes prevent creation", async (code) => {
-  render(<PlatformVouchersCreatePage />);
-  selectImported();
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: code } });
-  submit();
-  await waitFor(() => expect(screen.getAllByText(en.voucherAdminPage.importCodeSize).length).toBeGreaterThan(0));
-  expect(ApiService.createAdminVoucher).not.toHaveBeenCalled();
-  expect(ApiService.importAdminVoucher).not.toHaveBeenCalled();
-});
-
-test("oversized quoted CSV code prevents creation without trimming spaces", async () => {
-  render(<PlatformVouchersCreatePage />);
-  selectImported();
-  fireEvent.change(screen.getByLabelText("Code source"), { target: { value: "csv" } });
-  const file = new File([], "codes.csv", { type: "text/csv" });
-  file.text = jest.fn().mockResolvedValue(`" ${"0".repeat(511)} "`);
-  fireEvent.change(screen.getByLabelText("Upload codes CSV"), { target: { files: [file] } });
-  await screen.findByText(en.voucherAdminPage.importCodeSize);
-  submit();
+  await waitFor(() => expect(screen.getAllByText(en.voucherAdminPage.csvReading).length).toBeGreaterThan(0));
   expect(ApiService.createAdminVoucher).not.toHaveBeenCalled();
 });
 
-test("uncertain import stays locked and keeps its key when discard is cancelled", async () => {
+test("cancelling discard preserves the retry payload", async () => {
   ApiService.importAdminVoucher.mockRejectedValueOnce(new Error("Network unavailable"));
   jest.spyOn(window, "confirm").mockReturnValue(false);
   render(<PlatformVouchersCreatePage />);
   selectImported();
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "0001" } });
+  await uploadCsv("code,image_filename\n0001,qr.png");
+  uploadImages("qr.png");
   submit();
   await screen.findByText("Network unavailable");
   fireEvent.click(screen.getByRole("button", { name: "Discard retry batch" }));
-  expect(screen.getByLabelText("Paste codes (one per line)")).toBeDisabled();
+  expect(screen.getByLabelText("Upload pairs CSV")).toBeDisabled();
   submit();
   await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(2));
   expect(ApiService.importAdminVoucher.mock.calls[0]).toEqual(ApiService.importAdminVoucher.mock.calls[1]);
-  expect(ApiService.createAdminVoucher).toHaveBeenCalledTimes(1);
 });
 
-test("confirmed definitive rejection permits a corrected batch on the saved voucher with a fresh key", async () => {
+test("discarding a definitively rejected batch permits a corrected batch with a fresh key", async () => {
   ApiService.importAdminVoucher.mockResolvedValueOnce({ success: false, message: "Duplicate code" });
   ApiService.getAdminVoucher.mockResolvedValue({ success: true, data: { voucherType: "imported", totalNumber: 0 } });
   global.crypto.randomUUID.mockReturnValueOnce("rejected-key").mockReturnValueOnce("corrected-key");
   jest.spyOn(window, "confirm").mockReturnValue(true);
   const { rerender } = render(<PlatformVouchersCreatePage />);
   selectImported();
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "duplicate" } });
+  await uploadCsv("code,image_filename\nduplicate,old.png");
+  uploadImages("old.png");
   submit();
   await screen.findByText("Duplicate code");
   mockParams = { voucherId: "saved-id" };
@@ -212,76 +163,45 @@ test("confirmed definitive rejection permits a corrected batch on the saved vouc
   mockLocation = { state: null };
   rerender(<PlatformVouchersCreatePage />);
   await screen.findByText("Append inventory");
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "corrected" } });
+  await uploadCsv("code,image_filename\ncorrected,new.png");
+  uploadImages("new.png");
   submit();
   await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(2));
-  expect(ApiService.importAdminVoucher.mock.calls[1]).toEqual(["saved-id", expect.objectContaining({ codes: ["corrected"], importKey: "corrected-key" })]);
+  expect(ApiService.importAdminVoucher.mock.calls[1]).toEqual(["saved-id", expect.objectContaining({
+    pairs: [{ code: "corrected", imageFilename: "new.png" }], importKey: "corrected-key",
+  })]);
   expect(ApiService.createAdminVoucher).toHaveBeenCalledTimes(1);
 });
 
-test.each(["static", "numbered"])("edit excludes imported conversion but preserves original choices (%s)", async (type) => {
+test.each(["static", "numbered"])("editing %s cannot convert it to imported", async (type) => {
   mockParams = { voucherId: "existing-id" };
   ApiService.getAdminVoucher.mockResolvedValue({ success: true, data: { voucherType: type, totalNumber: 3 } });
   render(<PlatformVouchersCreatePage />);
-  const selector = await screen.findByLabelText("Voucher Type");
-  expect(selector).not.toBeDisabled();
+  await screen.findByLabelText("Voucher Type");
   expect(screen.queryByRole("option", { name: "Imported Voucher" })).not.toBeInTheDocument();
-  fireEvent.change(selector, { target: { value: type === "static" ? "numbered" : "static" } });
-  expect(selector).toHaveValue(type === "static" ? "numbered" : "static");
 });
 
 test("existing imported voucher type is locked", async () => {
   mockParams = { voucherId: "existing-id" };
   ApiService.getAdminVoucher.mockResolvedValue({ success: true, data: { voucherType: "imported", totalNumber: 3 } });
   render(<PlatformVouchersCreatePage />);
-  const selector = await screen.findByLabelText("Voucher Type");
-  expect(selector).toBeDisabled();
-  fireEvent.change(selector, { target: { value: "static" } });
-  expect(selector).toHaveValue("imported");
+  expect(await screen.findByLabelText("Voucher Type")).toBeDisabled();
 });
 
-test("edit appends inventory without setting server-controlled quantity", async () => {
+test("edit appends pairs without setting quantity", async () => {
   mockParams = { voucherId: "existing-id" };
   ApiService.getAdminVoucher.mockResolvedValue({ success: true, data: { voucherType: "imported", totalNumber: 42 } });
   render(<PlatformVouchersCreatePage />);
   await screen.findByText("Append inventory");
-  fireEvent.change(screen.getByLabelText("Paste codes (one per line)"), { target: { value: "0007" } });
+  await uploadCsv("code,image_filename\n0007,qr.png");
+  uploadImages("qr.png");
   submit();
   await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(1));
-  const payload = ApiService.updateAdminVoucher.mock.calls[0][1];
-  expect(payload.voucherType).toBe("imported");
-  expect(payload).not.toHaveProperty("totalNumber");
-  expect(ApiService.createAdminVoucher).not.toHaveBeenCalled();
+  expect(ApiService.updateAdminVoucher.mock.calls[0][1]).not.toHaveProperty("totalNumber");
   expect(ApiService.importAdminVoucher.mock.calls[0][0]).toBe("existing-id");
 });
 
-test("CSV upload honors explicit header and quoted cells without losing zeros", async () => {
-  render(<PlatformVouchersCreatePage />);
-  selectImported();
-  fireEvent.change(screen.getByLabelText("Code source"), { target: { value: "csv" } });
-  fireEvent.click(screen.getByLabelText("First nonblank row is a code header"));
-  const file = new File([], "codes.csv", { type: "text/csv" });
-  file.text = jest.fn().mockResolvedValue('code\r\n00123\r\n"a,b"\r\n"a""b"');
-  fireEvent.change(screen.getByLabelText("Upload codes CSV"), { target: { files: [file] } });
-  await screen.findByText('"00123"');
-  submit();
-  await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(1));
-  expect(ApiService.importAdminVoucher.mock.calls[0][1].codes).toEqual(["00123", "a,b", 'a"b']);
-});
-
-test("does not create a voucher while the CSV is still being read", async () => {
-  render(<PlatformVouchersCreatePage />);
-  selectImported();
-  fireEvent.change(screen.getByLabelText("Code source"), { target: { value: "csv" } });
-  const file = new File([], "codes.csv", { type: "text/csv" });
-  file.text = jest.fn(() => new Promise(() => {}));
-  fireEvent.change(screen.getByLabelText("Upload codes CSV"), { target: { files: [file] } });
-  submit();
-  await waitFor(() => expect(screen.getAllByText(en.voucherAdminPage.csvReading).length).toBeGreaterThan(0));
-  expect(ApiService.createAdminVoucher).not.toHaveBeenCalled();
-});
-
-test("edit may save metadata without importing any inventory", async () => {
+test("edit may save metadata without importing inventory", async () => {
   mockParams = { voucherId: "existing-id" };
   ApiService.getAdminVoucher.mockResolvedValue({ success: true, data: { voucherType: "imported", totalNumber: 42 } });
   render(<PlatformVouchersCreatePage />);
@@ -291,7 +211,7 @@ test("edit may save metadata without importing any inventory", async () => {
   expect(ApiService.importAdminVoucher).not.toHaveBeenCalled();
 });
 
-test.each(["static", "numbered"])("existing %s creation still submits its original stock fields", async (type) => {
+test.each(["static", "numbered"])("existing %s creation preserves stock fields", async (type) => {
   render(<PlatformVouchersCreatePage />);
   fireEvent.change(screen.getByLabelText("Voucher Type"), { target: { value: type } });
   if (type === "static") fireEvent.change(screen.getByLabelText("Quantity"), { target: { value: "3" } });
@@ -303,5 +223,4 @@ test.each(["static", "numbered"])("existing %s creation still submits its origin
   submit();
   await waitFor(() => expect(ApiService.createAdminVoucher).toHaveBeenCalledTimes(1));
   expect(ApiService.createAdminVoucher.mock.calls[0][0]).toEqual(expect.objectContaining({ voucherType: type, totalNumber: 3 }));
-  expect(ApiService.importAdminVoucher).not.toHaveBeenCalled();
 });

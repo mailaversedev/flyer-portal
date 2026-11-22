@@ -475,9 +475,11 @@ class ApiService {
     });
   }
 
-  static async importAdminVoucher(voucherId, { codes, images, importKey }) {
+  static async importAdminVoucher(voucherId, { pairs, images, importKey }) {
     const formData = new FormData();
-    formData.append("codes", JSON.stringify(codes));
+    formData.append("items", JSON.stringify(pairs.map(({ code, imageFilename }) => ({
+      code, imageIndex: images.findIndex((file) => file.name === imageFilename),
+    }))));
     images.forEach((file) => formData.append("images", file));
     formData.append("importKey", importKey);
     return this.makeRequest(`/api/admin/vouchers/${voucherId}/import`, {

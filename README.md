@@ -96,14 +96,14 @@ node --test test/flyerCoupons.test.js test/couponBulkClaim.test.js
 
 ## Imported platform vouchers
 
-Super admins can import either arbitrary codes (pasted or CSV) or individual QR
-images for a voucher. The first successful import fixes its inventory type;
-subsequent batches must use the same type. Each code or image is one voucher.
-Items are assigned in import order, and later batches follow earlier batches.
-Duplicate codes in the same voucher are rejected. Administrators must verify
-that image contents are unique. Each import is limited to 100 codes or 100 PNG,
-JPEG, GIF, or WebP images, each at most 5 MiB and 20 MiB combined. Import more
-stock in additional batches.
+Super admins import code and QR image pairs using a UTF-8 CSV with the header
+`code,image_filename`, followed by one pair per row. Select all referenced
+images; filenames must match exactly, including case, and must be unique.
+Review the paired preview: the system does not verify QR image contents against
+codes. Each pair is one voucher. CSV row order determines assignment order;
+later batches follow earlier ones. Duplicate codes in a voucher are rejected.
+Each import is limited to 100 pairs with PNG, JPEG, GIF, or WebP images, each
+at most 5 MiB and 20 MiB combined. Codes retain leading zeros and spaces.
 
 Set `VOUCHER_IMAGE_ENCRYPTION_KEY` on every API instance to the same base64
 encoding of a securely generated 32-byte key before importing images. Store it
@@ -114,9 +114,9 @@ is lost or changed. For example, generate a key locally with
 control. Image imports fail explicitly if the key is not configured.
 
 Images are encrypted in Cloud Storage and served only through an authenticated,
-redemption-owner-checked API. For an assigned image, the redeemed voucher's
-`voucherImage` contains this authenticated API path instead of the shared card
-artwork; imported code vouchers continue to use the shared artwork. Ensure
+redemption-owner-checked API. Redeemed vouchers keep the shared artwork in
+`voucherImage` and expose the authenticated QR image path in `importedQrImageUrl`.
+Ensure
 Firestore security rules deny direct client
 access to `vouchers/{id}/inventory`, `vouchers/{id}/importedCodeIndex`,
 `vouchers/{id}/imports`, and other users' `voucherRedemptions`; the API uses the
