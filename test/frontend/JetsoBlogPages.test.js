@@ -57,11 +57,34 @@ describe("Jetso blog authoring pages", () => {
     mountRoutes("/jetso-blog");
     expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
     expect(await screen.findByText("Summer guide")).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(table).toHaveClass("campaigns-table");
+    expect(table.parentElement).toHaveClass("table-container");
+    expect(table.closest("section")).toHaveClass("campaign-table");
     expect(screen.getAllByText("Published").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Open public page" })).toHaveAttribute(
       "href",
       "https://jetso.mailaverse.io/blog/post-1",
     );
+  });
+
+  test("loads more articles from the table panel", async () => {
+    const getPosts = jest.spyOn(ApiService, "getJetsoBlogPosts")
+      .mockResolvedValueOnce({
+        data: [{ id: "post-1", status: "draft", draft: { header: "First article" } }],
+        pagination: { nextCursor: "next-page" },
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: "post-2", status: "draft", draft: { header: "Second article" } }],
+        pagination: { nextCursor: null },
+      });
+
+    mountRoutes("/jetso-blog");
+    await screen.findByText("First article");
+    fireEvent.click(screen.getByRole("button", { name: /load more/i }));
+    expect(await screen.findByText("Second article")).toBeInTheDocument();
+    expect(screen.getByText("First article")).toBeInTheDocument();
+    expect(getPosts).toHaveBeenLastCalledWith("next-page", 20);
   });
 
   test("renders an article editor and confirms before discarding unsaved changes", async () => {

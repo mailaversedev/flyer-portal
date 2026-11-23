@@ -51,7 +51,7 @@ export const PlatformAdminVoucherRedemptionsTable = ({
   });
 
   return (
-    <table className="campaigns-table platform-admin-engagement-table">
+    <table className="campaigns-table platform-admin-engagement-table platform-admin-voucher-redemptions-table">
       <thead>
         <tr>
           <th>{t("adminPage.username")}</th>

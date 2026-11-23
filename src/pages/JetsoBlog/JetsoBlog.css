@@ -103,62 +103,10 @@
   transform: none;
 }
 
-.jetso-blog-list-panel,
 .jetso-blog-form-card {
   border: 1px solid #3a4553;
   border-radius: 16px;
   background: #2a3447;
-}
-
-.jetso-blog-list-panel {
-  padding: 0 20px 20px;
-}
-
-.jetso-blog-table-wrap {
-  overflow-x: auto;
-}
-
-.jetso-blog-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.jetso-blog-table th,
-.jetso-blog-table td {
-  padding: 16px 12px;
-  border-bottom: 1px solid #3a4553;
-  vertical-align: middle;
-}
-
-.jetso-blog-table th {
-  background: #374151;
-  color: #e5e7eb;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.jetso-blog-table th:first-child {
-  border-top-left-radius: 8px;
-}
-
-.jetso-blog-table th:last-child {
-  border-top-right-radius: 8px;
-}
-
-.jetso-blog-table td {
-  color: #e5e7eb;
-}
-
-.jetso-blog-table tbody tr {
-  transition: background 0.2s ease;
-}
-
-.jetso-blog-table tbody tr:hover {
-  background: #374151;
 }
 
 .jetso-blog-list-title {
@@ -231,6 +179,12 @@
 .jetso-blog-loading-more {
   color: #9ca3af;
   text-align: center;
+}
+
+.jetso-blog-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 16px 20px 20px;
 }
 
 .jetso-blog-message {
@@ -780,15 +734,6 @@
 
   .jetso-blog-top-actions {
     width: 100%;
-  }
-
-  .jetso-blog-list-panel {
-    padding: 0 10px 14px;
-  }
-
-  .jetso-blog-table th,
-  .jetso-blog-table td {
-    padding: 11px 8px;
   }
 
   .jetso-blog-image-controls {

@@ -5,6 +5,7 @@ import { isSuperAdmin } from "../../utils/AuthUtil";
 import ApiService from "../../services/ApiService";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import { getJetsoPostUrl } from "./blogUtils";
+import "../../components/Dashboard/CampaignTable.css";
 import "./JetsoBlog.css";
 
 const JetsoBlogListPage = () => {
@@ -53,7 +54,7 @@ const JetsoBlogListPage = () => {
       />
 
       {error && <div className="jetso-blog-message error" role="alert">{error}</div>}
-      <section className="jetso-blog-list-panel" aria-label={t("jetsoBlog.posts")}>
+      <section className="campaign-table" aria-label={t("jetsoBlog.posts")}>
         {loading && posts.length === 0 ? (
           <p className="jetso-blog-empty">{t("jetsoBlog.loading")}</p>
         ) : posts.length === 0 ? (
@@ -62,8 +63,8 @@ const JetsoBlogListPage = () => {
             <p>{t("jetsoBlog.noPostsDescription")}</p>
           </div>
         ) : (
-          <div className="jetso-blog-table-wrap">
-            <table className="jetso-blog-table">
+          <div className="table-container">
+            <table className="campaigns-table">
               <thead>
                 <tr>
                   <th>{t("jetsoBlog.article")}</th>
@@ -95,9 +96,11 @@ const JetsoBlogListPage = () => {
         )}
         {loading && posts.length > 0 && <p className="jetso-blog-loading-more">{t("jetsoBlog.loading")}</p>}
         {!loading && nextCursor && (
-          <button type="button" className="jetso-blog-secondary-button" onClick={() => loadPosts(nextCursor, true)}>
-            {t("jetsoBlog.loadMore")}
-          </button>
+          <div className="jetso-blog-load-more">
+            <button type="button" className="jetso-blog-secondary-button" onClick={() => loadPosts(nextCursor, true)}>
+              {t("jetsoBlog.loadMore")}
+            </button>
+          </div>
         )}
       </section>
     </main>

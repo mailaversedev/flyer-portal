@@ -119,27 +119,6 @@
   gap: 24px;
 }
 
-.platform-admin-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px 20px 0;
-}
-
-.platform-admin-section-title {
-  margin: 0;
-  color: #f8fafc;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.platform-admin-section-subtitle {
-  margin: 6px 0 0;
-  color: #94a3b8;
-  font-size: 0.92rem;
-}
-
 .platform-admin-load-more-wrap {
   display: flex;
   justify-content: center;
@@ -152,6 +131,10 @@
   vertical-align: top;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.platform-admin-voucher-redemptions-table th {
+  white-space: nowrap;
 }
 
 .platform-admin-user-list {

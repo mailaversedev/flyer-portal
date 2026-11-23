@@ -62,16 +62,6 @@ const PlatformAdminVoucherRedemptionsPage = () => {
   return (
     <div className="platform-admin-page">
       <section className="campaign-table">
-        <div className="platform-admin-section-header">
-          <div>
-            <h2 className="platform-admin-section-title">
-              {t("adminPage.voucherRedemptionsTitle")}
-            </h2>
-            <p className="platform-admin-section-subtitle">
-              {t("adminPage.voucherRedemptionsSubtitle")}
-            </p>
-          </div>
-        </div>
         <div className="table-container">
           {loading ? (
             <div className="table-loading">{t("adminPage.loading")}</div>
