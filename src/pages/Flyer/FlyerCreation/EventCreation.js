@@ -33,7 +33,7 @@ const EventCreation = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [uploadedFile, setUploadedFile] = useState(location.state?.uploadedFile || null);
+  const [uploadedFile] = useState(location.state?.uploadedFile || null);
   const [iconPreview, setIconPreview] = useState("");
   const [step, setStep] = useState(1);
   const [history, setHistory] = useState([]);

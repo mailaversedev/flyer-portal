@@ -1,6 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const { authenticateToken } = require("../auth");
+const { eventCheckinConfigured } = require("./eventEdit");
 const { MAILAVERSE_ORGANIZER, validateEventDetails } = require("../../src/utils/EventCreationUtil");
 const eventMessages = require("../../src/i18n/locales/en/common.json").eventCreation;
 
@@ -63,7 +64,7 @@ module.exports = function createEventsRouter({ db }) {
         ["district", "propertyEstate", "targetedGroup"].some((field) => targeting[field] != null && (typeof targeting[field] !== "string" || targeting[field].length > 300))) {
       return res.status(400).json({ success: false, message: "Invalid event targeting fields", field: "targetBudget" });
     }
-    if (data.confirmationRequired && ((!process.env.EVENT_CHECKIN_SECRET || process.env.EVENT_CHECKIN_SECRET.length < 32) || !/^https:\/\/[^/]+\/?$/.test(process.env.EVENT_PUBLIC_BASE_URL || ""))) {
+    if (data.confirmationRequired && !eventCheckinConfigured()) {
       return res.status(503).json({ success: false, message: "Event check-in is not configured" });
     }
     try {

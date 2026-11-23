@@ -5,6 +5,10 @@ const MAILAVERSE_ORGANIZER = {
   icon: "https://static.wixstatic.com/media/255d46_b08eb7f7e1134cd8b8d5758d0ab3d99e~mv2.png/v1/fill/w_61,h_55,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Mailaverse%20Logo.png",
 };
 
+const EVENT_TIMING_FIELDS = ["startsAt", "endsAt", "applicationDeadline", "timezone"];
+const EVENT_ENROLLMENT_FIELDS = ["companyId", ...EVENT_TIMING_FIELDS, "capacity", "confirmationRequired"];
+const eventEnrollmentLocked = (event) => Number(event.applicantCount) > 0;
+
 const isValidTimezone = (timezone) => {
   if (typeof timezone !== "string" || !timezone || timezone.length > 80) return false;
   try {
@@ -82,4 +86,7 @@ const validateEventDetails = (data, now = Date.now()) => {
   return null;
 };
 
-module.exports = { MAILAVERSE_ORGANIZER, isValidTimezone, eventDateToIso, eventDateToLocal, validateEventDetails };
+module.exports = {
+  MAILAVERSE_ORGANIZER, EVENT_TIMING_FIELDS, EVENT_ENROLLMENT_FIELDS, eventEnrollmentLocked,
+  isValidTimezone, eventDateToIso, eventDateToLocal, validateEventDetails,
+};

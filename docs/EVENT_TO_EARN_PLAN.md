@@ -18,6 +18,8 @@
 
 ## Phase 2: portal and mobile
 
+Published events can be edited from **Platform Admin → Flyers → Edit**. Super admins can change the title, description and venue at any time. The organizer, event dates, timezone, capacity and QR check-in mode are locked after the first application. Published artwork, release scheduling, targeting, and application records are not edited by this form.
+
 5. Add a super-admin-only Event to Earn card and creation/edit screens to the portal. Use two creation steps: event details/icon and prompt generation or direct upload, then the existing target-budget/preview UI in no-reward event mode. Review the image before explicitly publishing; targeting and release scheduling are optional, and coupon/payment/reward-budget controls remain unavailable. Interpret event and release times in the selected IANA timezone, accept valid aliases and UTC, and return field-specific date errors. Provide merchant/Mailaverse branding and English/zh-HK strings. Build an admin list/report view.
 6. Extend mobile flyer models and product details for events, hiding coupon/reward controls. Implement an Apply/Join CTA with restored status and a dedicated status view that shows a personal QR only when confirmation is on. Handle sign-in, full/closed events, retries and already-applied/confirmed states. Localize and log events without sending usernames or tokens to analytics.
 

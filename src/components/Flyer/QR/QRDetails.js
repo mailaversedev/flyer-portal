@@ -1,7 +1,7 @@
 import React, { useId } from "react";
 import { useTranslation } from "react-i18next";
 
-export const QRWebsiteField = ({ value, error, onChange }) => {
+export const QRWebsiteField = ({ value, error, onChange, required = true }) => {
   const { t } = useTranslation();
   const id = useId();
 
@@ -12,7 +12,7 @@ export const QRWebsiteField = ({ value, error, onChange }) => {
         id={id}
         className={`form-input ${error ? "error" : ""}`}
         type="url"
-        required
+        required={required}
         placeholder={t("qrGeneration.websitePlaceholder")}
         value={value || ""}
         onChange={(event) => onChange("website", event.target.value)}
@@ -56,7 +56,7 @@ const QRDetails = ({ data, errors, onChange, includeCopy = false }) => {
         </div>
         {fields.map(([field, label, placeholder]) => {
           if (field === "website") {
-            return <QRWebsiteField key={field} value={data.website} error={errors.website} onChange={onChange} />;
+            return <QRWebsiteField key={field} value={data.website} error={errors.website} onChange={onChange} required={!includeCopy} />;
           }
           const multiline = ["header", "productDescriptions", "promotionMessage"].includes(field);
           const Input = multiline ? "textarea" : "input";

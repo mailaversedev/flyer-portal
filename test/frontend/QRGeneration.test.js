@@ -198,15 +198,18 @@ test("QR modal cancel preserves the image, and the coupon step can create the fl
 test("editing an existing QR flyer keeps the image locked and saves only editable fields", async () => {
   ApiService.getFlyerById.mockResolvedValue({
     success: true,
-    data: { type: "qr", website: "https://example.com", coverPhoto: "https://example.com/existing.png" },
+    data: { type: "qr", adContent: "Legacy copy", coverPhoto: "https://example.com/existing.png" },
   });
   ApiService.updateFlyer.mockResolvedValue({ success: true });
   renderFlow("/flyer/edit/qr/123");
   expect(await screen.findByAltText("Cover preview")).toHaveAttribute("src", "https://example.com/existing.png");
   expect(screen.queryByLabelText("qrGeneration.imagePrompt")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("qrGeneration.upload")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("qrGeneration.adContent")).toHaveValue("Legacy copy");
+  fireEvent.change(screen.getByLabelText("qrGeneration.adContent"), { target: { value: "New QR copy" } });
   fireEvent.click(screen.getByRole("button", { name: "creation.saveChanges" }));
-  await waitFor(() => expect(ApiService.updateFlyer).toHaveBeenCalledWith("123", expect.not.objectContaining({ coverPhoto: expect.anything() })));
+  await waitFor(() => expect(ApiService.updateFlyer).toHaveBeenCalledWith("123", expect.objectContaining({ productDescriptions: "New QR copy" })));
+  expect(ApiService.updateFlyer.mock.calls[0][1]).not.toHaveProperty("coverPhoto");
 });
 
 test("Scan creation shows Website and original copy/prompt fields without legacy background or Pro controls", async () => {

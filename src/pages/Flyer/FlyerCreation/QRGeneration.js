@@ -54,13 +54,15 @@ const QRGeneration = () => {
   const location = useLocation();
   const isEditMode = Boolean(flyerId);
   const isSuperAdminUser = isSuperAdmin();
+  const editReturnPath = isSuperAdminUser && location.state?.fromPlatformAdmin ? "/platform-admin" : "/dashboard";
   const [currentStep, setCurrentStep] = useState(1);
   const [showQRModal, setShowQRModal] = useState(false);
   const [errors, setErrors] = useState({});
   const [qrData, setQrData] = useState(DEFAULT_QR_DATA);
   const [loading, setLoading] = useState("");
   const [isFetching, setIsFetching] = useState(isEditMode);
-  const [uploadedFile, setUploadedFile] = useState(
+  const [loadedFlyerId, setLoadedFlyerId] = useState(null);
+  const [uploadedFile] = useState(
     () => (!isEditMode ? location.state?.uploadedFile || null : null),
   );
   const [history, setHistory] = useState([]);
@@ -73,31 +75,34 @@ const QRGeneration = () => {
       return;
     }
 
+    let active = true;
     const fetchFlyer = async () => {
       try {
         setIsFetching(true);
         const response = await ApiService.getFlyerById(flyerId);
 
-        if (response.success && response.data) {
-          if (response.data.type !== "qr") {
-            navigate("/dashboard", { replace: true });
-            return;
-          }
-
+        if (!active) return;
+        if (response.success && response.data?.type === "qr") {
           setQrData({
             ...DEFAULT_QR_DATA,
             ...response.data,
+            productDescriptions: response.data.productDescriptions ?? response.data.adContent ?? "",
           });
+          setLoadedFlyerId(flyerId);
+        } else {
+          setLoadedFlyerId(null);
         }
       } catch (error) {
         console.error("Failed to load QR flyer:", error);
+        if (active) setLoadedFlyerId(null);
       } finally {
-        setIsFetching(false);
+        if (active) setIsFetching(false);
       }
     };
 
     fetchFlyer();
-  }, [flyerId, isEditMode, navigate]);
+    return () => { active = false; };
+  }, [flyerId, isEditMode]);
 
   const handleBack = () => {
     if (!isEditMode && currentStep > 1) {
@@ -105,7 +110,7 @@ const QRGeneration = () => {
       return;
     }
 
-    navigate(isEditMode ? "/dashboard" : "/flyer");
+    navigate(isEditMode ? editReturnPath : "/flyer");
   };
 
   const validateRequiredFields = () => {
@@ -287,11 +292,8 @@ const QRGeneration = () => {
   };
 
   const handleUpdate = async () => {
+    if (loadedFlyerId !== flyerId || loading) return;
     try {
-      if (!validateRequiredFields()) {
-        return;
-      }
-
       setLoading(t("creation.updating"));
 
       const response = await ApiService.updateFlyer(
@@ -300,13 +302,13 @@ const QRGeneration = () => {
       );
 
       if (response.success) {
-        navigate("/dashboard");
+        navigate(editReturnPath);
       } else {
-        toast.error(t("qrGeneration.createFailed"));
+        toast.error(response.message || t("qrGeneration.createFailed"));
       }
     } catch (error) {
       console.error("Error updating QR flyer:", error);
-      toast.error(t("qrGeneration.createError"));
+      toast.error(error.message || t("qrGeneration.createError"));
     } finally {
       setLoading("");
     }
@@ -339,6 +341,8 @@ const QRGeneration = () => {
         <div className="step-content">
           {isFetching ? (
             <div className="loading-indicator-text">{t("creation.loadingFlyer")}</div>
+          ) : isEditMode && loadedFlyerId !== flyerId ? (
+            <p role="alert">{t("creation.loadFlyerFailed")}</p>
           ) : (
             <>
               {currentStep === 1 && (isEditMode ? (
@@ -395,7 +399,7 @@ const QRGeneration = () => {
           <button
             className="nav-button back-button"
             onClick={handleBack}
-            disabled={loading || isFetching}
+            disabled={Boolean(loading) || isFetching}
           >
             <ChevronLeft size={16} />
             {t("creation.back")}
@@ -405,7 +409,7 @@ const QRGeneration = () => {
             <button
               className="nav-button next-button"
               onClick={handleUpdate}
-              disabled={loading || isFetching}
+              disabled={Boolean(loading) || isFetching || loadedFlyerId !== flyerId}
             >
               {loading ? t("creation.updating") : t("creation.saveChanges")}
             </button>

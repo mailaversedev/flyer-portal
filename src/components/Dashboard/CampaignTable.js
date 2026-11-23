@@ -35,14 +35,6 @@ const CampaignTable = ({ campaignData, loading }) => {
     return null;
   };
 
-  const handleRowClick = (campaign) => {
-    const route = getEditRoute(campaign);
-
-    if (route) {
-      navigate(route);
-    }
-  };
-
   const handleDownloadFlyer = async (event, campaign) => {
     event.stopPropagation();
 
@@ -115,7 +107,7 @@ const CampaignTable = ({ campaignData, loading }) => {
                 <th>{t("dashboard.costPerBrowse")}</th>
                 <th>{t("dashboard.downloadRate")}</th>
                 <th>{t("dashboard.convertedRate")}</th>
-                <th>Download</th>
+                <th>{t("adminPage.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -127,19 +119,7 @@ const CampaignTable = ({ campaignData, loading }) => {
                   <tr
                     key={campaign.id}
                     className={`campaign-row ${isEditable ? "campaign-row-editable" : "campaign-row-disabled"}`}
-                    onClick={isEditable ? () => handleRowClick(campaign) : undefined}
-                    onKeyDown={
-                      isEditable
-                        ? (event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              handleRowClick(campaign);
-                            }
-                          }
-                        : undefined
-                    }
-                    tabIndex={isEditable ? 0 : undefined}
-                    role={isEditable ? "button" : undefined}
+                    onClick={isEditable ? () => navigate(editRoute) : undefined}
                   >
                     <td>
                       <div className="campaign-thumbnail">
@@ -180,6 +160,11 @@ const CampaignTable = ({ campaignData, loading }) => {
                     <td>{campaign.downloadRate}</td>
                     <td>{campaign.convertedRate}</td>
                     <td>
+                      {editRoute && <button type="button" className="campaign-download-button"
+                        aria-label={`${t("creation.edit")}: ${campaign.adTitle}`}
+                        onClick={(event) => { event.stopPropagation(); navigate(editRoute); }}>
+                        {t("creation.edit")}
+                      </button>}
                       <button
                         type="button"
                         className="campaign-download-button"

@@ -47,7 +47,14 @@
     "saving": "建立活動中...",
     "created": "活動已建立",
     "failed": "未能建立活動",
-    "loadMerchantsFailed": "未能載入商戶"
+    "loadMerchantsFailed": "未能載入商戶",
+    "edit": "編輯活動賺獎賞",
+    "loadFailed": "未能載入活動。",
+    "updated": "活動已更新。",
+    "updateFailed": "未能更新活動。",
+    "enrollmentLocked": "收到首次報名後，主辦商戶、日期、時區、名額及出席確認方式均不可更改。",
+    "merchantNotFound": "請選擇有效的主辦商戶。",
+    "checkinNotConfigured": "活動簽到尚未設定。"
   },
   "common": {
     "dashboard": "主頁",
@@ -634,6 +641,8 @@
     "next": "下一步",
     "create": "建立",
     "saveChanges": "儲存變更",
+    "edit": "編輯",
+    "loadFlyerFailed": "未能載入傳單。",
     "updating": "儲存中...",
     "loadingFlyer": "正在載入傳單...",
     "assetLocked": "編輯模式下不能修改已上傳素材、優惠券設定及預算。",

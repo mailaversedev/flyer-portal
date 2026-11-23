@@ -47,7 +47,14 @@
     "saving": "Creating event...",
     "created": "Event created",
     "failed": "Could not create event",
-    "loadMerchantsFailed": "Could not load merchants"
+    "loadMerchantsFailed": "Could not load merchants",
+    "edit": "Edit Event to Earn",
+    "loadFailed": "Could not load the event.",
+    "updated": "Event updated.",
+    "updateFailed": "Could not update the event.",
+    "enrollmentLocked": "The organizer, dates, timezone, capacity, and check-in mode are locked after the first application.",
+    "merchantNotFound": "Choose an active organizer.",
+    "checkinNotConfigured": "Event check-in is not configured."
   },
   "common": {
     "dashboard": "Dashboard",
@@ -634,6 +641,8 @@
     "next": "Next",
     "create": "Create",
     "saveChanges": "Save Changes",
+    "edit": "Edit",
+    "loadFlyerFailed": "Could not load the flyer.",
     "updating": "Saving...",
     "loadingFlyer": "Loading flyer...",
     "assetLocked": "Uploaded assets, coupon settings, and budget are read-only during editing.",

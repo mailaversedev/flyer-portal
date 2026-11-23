@@ -131,7 +131,7 @@ const PlatformAdmin = () => {
             <PlatformAdminFlyersTable
               flyers={flyers}
               t={t}
-              onOpenFlyer={navigate}
+              onOpenFlyer={(route) => navigate(route, { state: { fromPlatformAdmin: true } })}
               onUpdateFlyerStatus={handleUpdateFlyerStatus}
               onDeleteFlyer={handleDeleteFlyer}
               deletingFlyerId={deletingFlyerId}

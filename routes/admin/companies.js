@@ -5,6 +5,9 @@ const {
   ensureCompanyWalletInTransaction,
 } = require("../../services/companyWalletService");
 
+const companyCreatedAtMillis = (value) =>
+  (typeof value?.toMillis === "function" ? value.toMillis() : Date.parse(value)) || 0;
+
 module.exports = function createCompaniesRouter(context) {
   const { db, normalizeLimit, normalizeMoneyAmount, normalizeString } = context;
 
@@ -12,14 +15,15 @@ module.exports = function createCompaniesRouter(context) {
 
   router.get("/companies", async (req, res) => {
     try {
-      const limit = normalizeLimit(req.query.limit);
+      const all = req.query.limit === "all";
       const direction = req.query.direction === "asc" ? "asc" : "desc";
 
-      const snapshot = await db
-        .collection("companies")
-        .orderBy("createdAt", direction)
-        .limit(limit)
-        .get();
+      const collection = db.collection("companies");
+      // Ordering in Firestore would omit legacy companies with no createdAt.
+      const snapshot = await (all
+        ? collection
+        : collection.orderBy("createdAt", direction).limit(normalizeLimit(req.query.limit))
+      ).get();
 
       const walletSnapshot = await db
         .collection("wallets")
@@ -65,6 +69,14 @@ module.exports = function createCompaniesRouter(context) {
           walletUpdatedAt: wallet?.updatedAt || null,
         };
       });
+
+      if (all) {
+        const sign = direction === "asc" ? 1 : -1;
+        companies.sort((a, b) =>
+          sign * (companyCreatedAtMillis(a.createdAt) - companyCreatedAtMillis(b.createdAt)) ||
+          a.id.localeCompare(b.id),
+        );
+      }
 
       res.status(200).json({
         success: true,

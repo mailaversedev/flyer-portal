@@ -1,6 +1,7 @@
 const express = require("express");
 
 const { authenticateToken } = require("../auth");
+const { prepareEventEdit } = require("./eventEdit");
 const {
   DAILY_FREE_GENERATIONS_PER_COMPANY,
   getLeafletTokenCost,
@@ -602,14 +603,11 @@ module.exports = function createCreationRouter(context) {
           throw new Error("__COUPONS_LOCKED__");
         }
 
-        if (existingFlyer.type === "event") {
-          throw new Error("__EVENT_EDIT_UNSUPPORTED__");
-        }
-
         if (
           !isSuperAdmin &&
-          existingFlyer.companyId &&
-          existingFlyer.companyId !== req.user.companyId
+          (existingFlyer.type === "event" ||
+            (existingFlyer.type === "qr" && !existingFlyer.companyId) ||
+            (existingFlyer.companyId && existingFlyer.companyId !== req.user.companyId))
         ) {
           throw new Error("__FORBIDDEN__");
         }
@@ -636,9 +634,28 @@ module.exports = function createCreationRouter(context) {
         };
 
         const editableFields = editableFieldsByType[existingFlyer.type] || [];
-        const filteredData = Object.fromEntries(
-          Object.entries(data).filter(([key]) => editableFields.includes(key)),
-        );
+        const filteredData = existingFlyer.type === "event"
+          ? await prepareEventEdit({ data, existing: existingFlyer, db, transaction, now })
+          : Object.fromEntries(Object.entries(data).filter(([key]) => editableFields.includes(key)));
+
+        if (existingFlyer.type === "qr" && typeof filteredData.productDescriptions === "string") {
+          filteredData.adContent = filteredData.productDescriptions;
+        }
+
+        if (existingFlyer.type === "qr" && Object.hasOwn(filteredData, "website") &&
+            filteredData.website !== existingFlyer.website) {
+          const website = typeof filteredData.website === "string" ? filteredData.website.trim() : null;
+          if (website === "" && !existingFlyer.website) {
+            delete filteredData.website;
+          } else {
+            try {
+              if (!["https:", "http:"].includes(new URL(website).protocol)) throw new Error();
+            } catch (_) {
+              throw new Error("__INVALID_QR_WEBSITE__");
+            }
+            filteredData.website = website;
+          }
+        }
 
         if (filteredData.scheduledAt !== undefined) {
           if (filteredData.scheduledAt) {
@@ -697,6 +714,9 @@ module.exports = function createCreationRouter(context) {
         },
       });
     } catch (error) {
+      if (error.message === "__INVALID_QR_WEBSITE__") {
+        return res.status(400).json({ success: false, message: "Enter a valid HTTP or HTTPS website for this QR flyer" });
+      }
       if (error.message === "__COUPONS_LOCKED__") {
         return res.status(400).json({ success: false, message: "Coupons cannot be changed after publication" });
       }
@@ -714,10 +734,12 @@ module.exports = function createCreationRouter(context) {
         });
       }
 
-      if (error.message === "__EVENT_EDIT_UNSUPPORTED__") {
-        return res.status(403).json({
+      if (error.status && error.code && error.message) {
+        return res.status(error.status).json({
           success: false,
-          message: "Event editing is not available yet",
+          message: error.message,
+          code: error.code,
+          field: error.field,
         });
       }
 

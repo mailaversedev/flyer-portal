@@ -142,12 +142,13 @@ const JetsoBlogEditorPage = () => {
     if (!isSuperAdmin()) return undefined;
     let active = true;
     ApiService.getAdminCompanies().then((response) => {
-      if (active) setCompanies(response?.data || []);
+      if (!response.success) throw new Error(response.message);
+      if (active) setCompanies(response.data);
     }).catch(() => {
-      if (active) setCompanies([]);
+      if (active) setError(t("eventCreation.loadMerchantsFailed"));
     });
     return () => { active = false; };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (isNew || !isSuperAdmin() || record?.id === postId) return undefined;

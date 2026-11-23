@@ -4,17 +4,20 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { toast } from "react-toastify";
 import EventCreation from "../../src/pages/Flyer/FlyerCreation/EventCreation";
+import EventEdit from "../../src/pages/Flyer/FlyerCreation/EventEdit";
 import ApiService from "../../src/services/ApiService";
 import { isSuperAdmin } from "../../src/utils/AuthUtil";
 
 const mockT = (key) => key;
 jest.mock("react-i18next", () => ({ useTranslation: () => ({ t: mockT }) }));
-jest.mock("react-toastify", () => ({ toast: { error: jest.fn() } }));
+jest.mock("react-toastify", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 jest.mock("../../src/utils/AuthUtil", () => ({ isSuperAdmin: jest.fn() }));
 jest.mock("../../src/services/ApiService", () => ({
   __esModule: true,
   default: {
     getAdminCompanies: jest.fn(),
+    getFlyerById: jest.fn(),
+    updateFlyer: jest.fn(),
     generateLeaflet: jest.fn(),
     uploadFilesFromData: jest.fn(),
     uploadFile: jest.fn(),
@@ -62,6 +65,49 @@ function renderFlow(uploadedFile) {
     </MemoryRouter>,
   );
 }
+
+function renderEdit(applicantCount) {
+  ApiService.getFlyerById.mockResolvedValue({ success: true, data: {
+    type: "event", applicantCount, companyId: "mailaverse", header: "Community day",
+    adContent: "Meet your neighbours", venue: "Town hall", timezone: "Asia/Hong_Kong",
+    startsAt: "2099-06-10T02:00:00.000Z", endsAt: "2099-06-10T04:00:00.000Z",
+    applicationDeadline: "2099-06-09T02:00:00.000Z", confirmationRequired: false,
+    capacity: 10, coverPhoto: "https://example.com/original.png",
+  } });
+  ApiService.updateFlyer.mockResolvedValue({ success: true });
+  render(
+    <MemoryRouter initialEntries={["/flyer/edit/event/event-id"]}>
+      <Routes>
+        <Route path="/flyer/edit/event/:flyerId" element={<EventEdit />} />
+        <Route path="/platform-admin" element={<div>flyer admin list</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+test("edit an event in its local timezone and submit only changed fields", async () => {
+  renderEdit(0);
+  expect(await screen.findByLabelText("eventCreation.start")).toHaveValue("2099-06-10T10:00");
+  expect(screen.getByAltText("eventCreation.preview")).toHaveAttribute("src", "https://example.com/original.png");
+  expect(await screen.findByRole("option", { name: "Merchant" })).toBeInTheDocument();
+  change("eventCreation.end", "2099-06-10T13:00");
+  fireEvent.click(screen.getByRole("button", { name: "creation.saveChanges" }));
+  expect(await screen.findByText("flyer admin list")).toBeInTheDocument();
+  expect(ApiService.updateFlyer).toHaveBeenCalledWith("event-id", { endsAt: "2099-06-10T05:00:00.000Z" });
+});
+
+test("edit existing event copy after an application while enrollment fields are locked", async () => {
+  renderEdit(1);
+  expect(await screen.findByLabelText("eventCreation.capacity")).toBeDisabled();
+  expect(screen.getByLabelText("eventCreation.start")).toBeDisabled();
+  expect(screen.getByLabelText("eventCreation.confirmationRequired")).toBeDisabled();
+  expect(screen.getByLabelText("eventCreation.merchant")).toBeDisabled();
+  change("eventCreation.venue", "New town hall");
+  fireEvent.click(screen.getByRole("button", { name: "creation.saveChanges" }));
+  expect(await screen.findByText("flyer admin list")).toBeInTheDocument();
+  expect(ApiService.updateFlyer).toHaveBeenCalledWith("event-id", { venue: "New town hall" });
+  expect(ApiService.getAdminCompanies).not.toHaveBeenCalled();
+});
 
 function change(label, value) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });

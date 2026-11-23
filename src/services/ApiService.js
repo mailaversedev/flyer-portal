@@ -372,7 +372,7 @@ class ApiService {
     return this.makeRequest("/api/admin/summary");
   }
 
-  static async getAdminCompanies(limit = 100, direction = "desc") {
+  static async getAdminCompanies(limit = "all", direction = "desc") {
     return this.makeRequest(
       `/api/admin/companies?limit=${limit}&direction=${direction}`,
     );
