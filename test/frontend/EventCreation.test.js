@@ -82,23 +82,26 @@ async function proceedToTargeting() {
   expect(await screen.findByText("event targeting: true")).toBeInTheDocument();
 }
 
-test("uses the Pro editor and publishes through event targeting without billing or coupons", async () => {
+test("uses the original event fields and publishes through event targeting without billing or coupons", async () => {
   renderFlow();
   enterDetails();
-  change("leafletPro.prompts", "A neighbourhood gathering");
-  expect(screen.getByLabelText("leafletPro.aspectRatio")).toHaveValue("1:1");
-  expect(screen.getByLabelText("leafletPro.resolution")).toHaveValue("1K");
+  change("eventCreation.imagePrompt", "A neighbourhood gathering");
+  expect(screen.queryByRole("button", { name: "qrGeneration.upload" })).not.toBeInTheDocument();
+  expect(screen.queryByText("qrGeneration.backgroundInformation")).not.toBeInTheDocument();
+  for (const field of [
+    "qrGeneration.website", "leafletPro.aspectRatio", "leafletPro.resolution", "leafletPro.primaryColor",
+    "leafletPro.moodboard", "leafletPro.uploadLogo", "leafletPro.uploadProduct",
+  ]) {
+    expect(screen.queryByLabelText(field)).not.toBeInTheDocument();
+  }
   expect(screen.getByLabelText("eventCreation.eventTitle")).toHaveAttribute("maxlength", "160");
   expect(screen.getByLabelText("eventCreation.description")).toHaveAttribute("maxlength", "5000");
   await screen.findByRole("option", { name: "Merchant" });
   expect(screen.queryByRole("option", { name: "Inactive" })).not.toBeInTheDocument();
   change("eventCreation.merchant", "merchant");
-  change("leafletPro.aspectRatio", "4:5");
-  change("leafletPro.resolution", "2K");
-  change("leafletPro.primaryColor", "#123456");
   await proceedToTargeting();
   expect(ApiService.generateLeaflet).toHaveBeenCalledWith(expect.objectContaining({
-    aspectRatio: "4:5", resolution: "2K", primaryColor: "#123456",
+    aspectRatio: "1:1", resolution: "1K", flyerPrompts: "A neighbourhood gathering",
   }), { company: expect.objectContaining({ id: "merchant", icon: "https://example.com/icon.png" }) });
   fireEvent.click(screen.getByRole("button", { name: "select district" }));
   fireEvent.click(screen.getByRole("button", { name: "eventCreation.create" }));
@@ -119,7 +122,7 @@ test("uploaded events skip creative requirements and persist an overridden organ
   const file = new File(["image"], "event.png", { type: "image/png" });
   renderFlow(file);
   enterDetails();
-  expect(screen.queryByLabelText("leafletPro.prompts")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("eventCreation.imagePrompt")).not.toBeInTheDocument();
   expect(screen.getByText("event.png")).toBeInTheDocument();
   expect(screen.queryByAltText("eventCreation.preview")).not.toBeInTheDocument();
   const icon = new File(["icon"], "icon.png", { type: "image/png" });
@@ -135,17 +138,17 @@ test("uploaded events skip creative requirements and persist an overridden organ
   expect(ApiService.generateLeaflet).not.toHaveBeenCalled();
 });
 
-test("unchanged Back/Next reuses the image; design changes generate a new image", async () => {
+test("unchanged Back/Next reuses the image; prompt changes generate a new image", async () => {
   renderFlow();
   enterDetails();
-  change("leafletPro.prompts", "Community gathering");
+  change("eventCreation.imagePrompt", "Community gathering");
   await proceedToTargeting();
   fireEvent.click(screen.getByRole("button", { name: "creation.back" }));
   change("eventCreation.venue", "New town hall");
   await proceedToTargeting();
   expect(ApiService.generateLeaflet).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "creation.back" }));
-  change("leafletPro.secondaryColor", "#ABCDEF");
+  change("eventCreation.imagePrompt", "A community gathering outdoors");
   await proceedToTargeting();
   expect(ApiService.generateLeaflet).toHaveBeenCalledTimes(2);
 });
@@ -156,7 +159,7 @@ test("validates the shared prompt and event dates before generating", async () =
   fireEvent.click(screen.getByRole("button", { name: "creation.next" }));
   expect(await screen.findByText("flyerContent.promptRequired")).toBeInTheDocument();
   expect(ApiService.generateLeaflet).not.toHaveBeenCalled();
-  change("leafletPro.prompts", "Gathering");
+  change("eventCreation.imagePrompt", "Gathering");
   change("eventCreation.end", "2099-06-10T09:00");
   fireEvent.click(screen.getByRole("button", { name: "creation.next" }));
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith("eventCreation.endAfterStart"));

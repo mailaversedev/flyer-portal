@@ -1,6 +1,27 @@
 import React, { useId } from "react";
 import { useTranslation } from "react-i18next";
 
+export const QRWebsiteField = ({ value, error, onChange }) => {
+  const { t } = useTranslation();
+  const id = useId();
+
+  return (
+    <div className="form-group">
+      <label className="form-label" htmlFor={id}>{t("qrGeneration.website")}</label>
+      <input
+        id={id}
+        className={`form-input ${error ? "error" : ""}`}
+        type="url"
+        required
+        placeholder={t("qrGeneration.websitePlaceholder")}
+        value={value || ""}
+        onChange={(event) => onChange("website", event.target.value)}
+      />
+      {error && <span className="error-message">{error}</span>}
+    </div>
+  );
+};
+
 const QRDetails = ({ data, errors, onChange, includeCopy = false }) => {
   const { t } = useTranslation();
   const id = useId();
@@ -34,6 +55,9 @@ const QRDetails = ({ data, errors, onChange, includeCopy = false }) => {
           </select>
         </div>
         {fields.map(([field, label, placeholder]) => {
+          if (field === "website") {
+            return <QRWebsiteField key={field} value={data.website} error={errors.website} onChange={onChange} />;
+          }
           const multiline = ["header", "productDescriptions", "promotionMessage"].includes(field);
           const Input = multiline ? "textarea" : "input";
           return (
@@ -42,8 +66,7 @@ const QRDetails = ({ data, errors, onChange, includeCopy = false }) => {
               <Input
                 id={`${id}-${field}`}
                 className={`${multiline ? "form-textarea" : "form-input"} ${errors[field] ? "error" : ""}`}
-                {...(multiline ? { rows: 3 } : { type: field === "website" ? "url" : "text" })}
-                required={field === "website"}
+                {...(multiline ? { rows: 3 } : { type: "text" })}
                 placeholder={t(`qrGeneration.${placeholder}`)}
                 value={data[field] || ""}
                 onChange={(event) => onChange(field, event.target.value)}

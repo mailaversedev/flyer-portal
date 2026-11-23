@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 import TargetBudget from "../../../components/Flyer/TargetBudget";
 import Step1Background from "../../../components/Flyer/QR/Step1Background";
-import QRDetails from "../../../components/Flyer/QR/QRDetails";
+import { QRWebsiteField } from "../../../components/Flyer/QR/QRDetails";
 import FlyerContentStep from "../../../components/Flyer/FlyerContentStep";
 import QRCodeModal from "../../../components/Flyer/QR/QRCodeModal";
 import { validateTargetBudgetStep } from "../../../utils/FlyerValidationUtil";
@@ -138,19 +138,6 @@ const QRGeneration = () => {
     }
 
     updateQrData({ [field]: value });
-  };
-
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith("image/")) {
-      setUploadedFile(file);
-      setHistory([]);
-      setIsFreeAttempt(false);
-      updateQrData({ coverPhoto: null });
-    } else if (file) {
-      toast.error(t("qrGeneration.invalidImage"));
-    }
-    event.target.value = "";
   };
 
   const handleProceedToQRCode = async () => {
@@ -366,10 +353,11 @@ const QRGeneration = () => {
                   data={qrData}
                   onUpdate={updateQrData}
                   showTags={false}
+                  showDesignFields={false}
                   copyLabels={{ header: t("qrGeneration.header"), adContent: t("qrGeneration.adContent") }}
+                  promptLabel={t("qrGeneration.imagePrompt")}
                   getValidationErrors={(data) => uploadedFile || data.coverPhoto ? {} : getCreativeValidationErrors(data, t)}
                   uploadedFile={uploadedFile}
-                  onFileSelect={handleFileSelect}
                   generationHint={isSuperAdminUser
                     ? t("leafletCreation.tokenIndicatorSuperAdmin")
                     : t("flyerContent.generationCost", {
@@ -383,7 +371,9 @@ const QRGeneration = () => {
                     updateQrData({ coverPhoto: null });
                   }}
                 >
-                  <QRDetails data={qrData} errors={errors} onChange={handleInputChange} />
+                  <div className="content-section">
+                    <QRWebsiteField value={qrData.website} error={errors.website} onChange={handleInputChange} />
+                  </div>
                 </FlyerContentStep>
               ))}
 

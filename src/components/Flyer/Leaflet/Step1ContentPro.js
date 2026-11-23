@@ -11,8 +11,8 @@ const Step1ContentPro = forwardRef(
   ({
     data, onUpdate, isSuperAdminUser = false, merchantOptions = [],
     getValidationErrors = getProLeafletValidationErrors,
-    showGenerationControls = true, showTags = true, showLogo = true,
-    copyLabels = {}, copyLimits = {},
+    showGenerationControls = true, showDesignFields = true, showTags = true,
+    copyLabels = {}, copyLimits = {}, promptLabel,
   }, ref) => {
     const { t } = useTranslation();
     const [newTag, setNewTag] = useState("");
@@ -194,8 +194,11 @@ const Step1ContentPro = forwardRef(
     );
   };
 
+  const showDesign = showGenerationControls && showDesignFields;
+
   return (
     <div className="step1-content">
+      {(isSuperAdminUser || showDesign) && (
       <div className="form-grid">
         {isSuperAdminUser && (
           <div className="form-group full-width">
@@ -223,7 +226,7 @@ const Step1ContentPro = forwardRef(
           </div>
         )}
 
-        {showGenerationControls && <>
+        {showDesign && <>
         <div className="form-group">
           <label className="form-label">{t("leafletPro.aspectRatio")}</label>
           <div className="select-wrapper">
@@ -364,7 +367,7 @@ const Step1ContentPro = forwardRef(
           />
         </div>
 
-        {showLogo && <div className="form-group full-width">
+        <div className="form-group full-width">
           <label className="form-label">{t("leafletPro.uploadLogo")}</label>
           {data.logoImage ? (
             <SingleImageDisplay
@@ -392,10 +395,11 @@ const Step1ContentPro = forwardRef(
               </button>
             </>
           )}
-        </div>}
+        </div>
         </>}
 
       </div>
+      )}
 
       <div className="content-section">
         <h3 className="section-title">{t("leafletPro.copyContent")}</h3>
@@ -433,9 +437,9 @@ const Step1ContentPro = forwardRef(
             )}
           </div>
 
-          {showGenerationControls && <>
+          {showGenerationControls && (
           <div className="form-group full-width">
-            <label className="form-label" htmlFor={`${inputId}-prompts`}>{t("leafletPro.prompts")}</label>
+            <label className="form-label" htmlFor={`${inputId}-prompts`}>{promptLabel || t("leafletPro.prompts")}</label>
             <textarea
               id={`${inputId}-prompts`}
               className={`form-textarea ${errors.flyerPrompts ? "error" : ""}`}
@@ -448,7 +452,9 @@ const Step1ContentPro = forwardRef(
               <span className="error-message">{errors.flyerPrompts}</span>
             )}
           </div>
+          )}
 
+          {showDesign && (
           <div className="form-group full-width">
             <label className="form-label">
               {t("leafletPro.uploadProduct")}{" "}
@@ -473,7 +479,7 @@ const Step1ContentPro = forwardRef(
             </button>
             <ThumbnailRow images={data.productPhoto} field="productPhoto" />
           </div>
-          </>}
+          )}
 
           {showTags && <div className="form-group">
             <label className="form-label">{t("leafletPro.tagOptional")}</label>

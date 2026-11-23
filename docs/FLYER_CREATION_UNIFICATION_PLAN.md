@@ -5,17 +5,19 @@ Status: shared content editor implemented for Read, Scan and Event creation.
 ## Implemented
 
 - All three creation pages render `FlyerContentStep`, which reuses `Step1ContentPro`.
-  The wrapper shares upload controls and full-width responsive layout; the editor
-  supports injected validation, copy labels/limits and optional sections.
+  The wrapper shares the full-width responsive layout; the editor supports
+  injected validation, copy and prompt labels, limits and optional sections.
 - Scan and Event do not show an extra Step 1 cover-preview sidebar. Selected
   uploads are identified by filename; image review stays in Target Budget.
+  Direct cover uploads start from the flyer chooser, not from either editor.
   Scan retains its separate QR-code confirmation modal. All FlyerGenie creation
   card buttons use the same primary styling.
-- Scan and Event expose the Pro design controls while preserving their 1:1 / 1K
-  defaults. Read retains 4:5 / 2K. Scan billing and cost hints follow the selected
-  resolution through the shared pricing helper.
-- Scan uses a shared `QRDetails` section for creation and asset-locked editing.
-  Its common-editor `adContent` maps to the existing persisted
+- Scan and Event preserve their original 1:1 / 1K generation settings without
+  exposing Read's Pro design controls. Read retains those controls and its
+  4:5 / 2K defaults.
+- Scan creation keeps Website as the standalone, required QR destination.
+  Legacy background metadata remains available when editing an existing flyer.
+  Scan's common-editor `adContent` maps to the existing persisted
   `productDescriptions` field, rather than storing two description fields that
   could diverge when an existing QR flyer is edited.
 - Event retains its organizer/icon controls and event validation, separate
@@ -27,14 +29,14 @@ Status: shared content editor implemented for Read, Scan and Event creation.
 - The generation API and page-specific payment/publication orchestration remain
   unchanged in structure. Read's direct-upload shortcut and KPay restoration are
   intentionally preserved; unifying the upload shortcut remains deferred.
-- Regression tests cover the editor, all three pages, validation, selected
-  resolution pricing, image reuse, uploads, organizer icons and QR compatibility.
+- Regression tests cover the editor, all three pages, validation, generation
+  pricing, image reuse, uploads, organizer icons and QR compatibility.
 - Verified: 60 focused frontend tests, 32 event-server tests and the production
   build pass. Browser checks with local API fixtures exercise Read/Scan through
   Coupon Builder and Event through targeting/preview, plus desktop/laptop layout.
   No live generation, payments or publication were performed.
 
-## Goal and scope
+## Original plan
 
 Reuse `Step1ContentPro` for new Read to Earn (`leaflet`), Scan to Earn (`qr`),
 and Event to Earn (`event`) flyers. Share the creative editor and image preparation

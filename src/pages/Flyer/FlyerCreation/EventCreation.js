@@ -160,7 +160,8 @@ const EventCreation = () => {
           data={data}
           onUpdate={updateContent}
           showTags={false}
-          showLogo={false}
+          showDesignFields={false}
+          promptLabel={t("eventCreation.imagePrompt")}
           copyLabels={{
             header: t("eventCreation.eventTitle"),
             adContent: t("eventCreation.description"),
@@ -175,17 +176,6 @@ const EventCreation = () => {
           }}
           uploadedFile={uploadedFile}
           generationHint={t("leafletCreation.tokenIndicatorSuperAdmin")}
-          onFileSelect={(event) => {
-            const file = event.target.files?.[0];
-            if (file?.type.startsWith("image/")) {
-              setUploadedFile(file);
-              setHistory([]);
-              setData((previous) => ({ ...previous, coverPhoto: "" }));
-            } else if (file) {
-              toast.error(t("qrGeneration.invalidImage"));
-            }
-            event.target.value = "";
-          }}
           onUsePrompt={() => {
             setUploadedFile(null);
             setHistory([]);
