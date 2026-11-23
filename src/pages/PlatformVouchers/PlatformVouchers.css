@@ -198,11 +198,24 @@
 }
 
 .platform-vouchers-image-card {
+  position: relative;
   border-radius: 16px;
   overflow: hidden;
   min-height: 0;
   height: 100%;
   background: #111827;
+}
+
+.platform-vouchers-image-card__actions {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  margin-top: 0;
+}
+
+.platform-vouchers-image-card__actions .platform-vouchers-preview-delete {
+  background: rgba(17, 24, 39, 0.9);
 }
 
 .platform-vouchers-image-card__img {

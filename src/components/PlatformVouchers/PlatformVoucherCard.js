@@ -53,6 +53,20 @@ export function PlatformVoucherCard({
         <div className={`${surfaceClassName} platform-vouchers-preview-surface--image`}>
           <div className="platform-vouchers-image-card">
             <img src={value.voucherImage} alt={merchant} className="platform-vouchers-image-card__img" />
+            {typeof onDelete === "function" ? (
+              <div className="platform-vouchers-preview-actions platform-vouchers-image-card__actions">
+                <button
+                  type="button"
+                  className="platform-vouchers-preview-delete"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete(value);
+                  }}
+                >
+                  {t("adminPage.deleteFlyer")}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </article>
