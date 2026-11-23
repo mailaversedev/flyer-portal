@@ -364,12 +364,6 @@ const QRGeneration = () => {
                       resolution: qrData.resolution,
                       count: getFlyerGenerationTokenCost(qrData.resolution),
                     })}
-                  onUsePrompt={() => {
-                    setUploadedFile(null);
-                    setHistory([]);
-                    setIsFreeAttempt(false);
-                    updateQrData({ coverPhoto: null });
-                  }}
                 >
                   <div className="content-section">
                     <QRWebsiteField value={qrData.website} error={errors.website} onChange={handleInputChange} />

@@ -176,11 +176,6 @@ const EventCreation = () => {
           }}
           uploadedFile={uploadedFile}
           generationHint={t("leafletCreation.tokenIndicatorSuperAdmin")}
-          onUsePrompt={() => {
-            setUploadedFile(null);
-            setHistory([]);
-            setData((previous) => ({ ...previous, coverPhoto: "" }));
-          }}
         >
         <div className="content-section">
         <h3 className="section-title">{t("eventCreation.detailsStep")}</h3>

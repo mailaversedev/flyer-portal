@@ -28,7 +28,6 @@
     "iconHint": "預設使用商戶圖示；如未提供則使用 Mailaverse 圖示。可上傳圖片覆蓋預設圖示。",
     "resetIcon": "使用預設圖示",
     "iconFailed": "未能上傳主辦商戶圖示",
-    "usePrompt": "改用圖片生成提示",
     "preparingImage": "準備活動圖片中...",
     "noRewardHint": "活動不設獎賞預算或付款。請選擇目標受眾及發佈時間，並在發佈前預覽圖片。",
     "requiredDetails": "請填寫主辦商戶、活動名稱、介紹及地點，並遵守字數限制。",
@@ -676,7 +675,6 @@
   "qrGeneration": {
     "imagePrompt": "傳單圖片生成提示",
     "imagePlaceholder": "輸入提示生成傳單，或上傳圖片。",
-    "usePrompt": "改用圖片生成提示",
     "generationCost": "生成 1K 圖片會使用一次每日免費額度；免費額度用完後需支付 1 $MGT。",
     "preparingImage": "正在準備傳單圖片...",
     "promptRequired": "請輸入傳單圖片提示或上傳圖片。",

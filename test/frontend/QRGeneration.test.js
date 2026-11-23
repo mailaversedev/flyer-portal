@@ -131,7 +131,7 @@ test("requires a prompt on the generation path and reports billing failures", as
   expect(screen.queryByRole("button", { name: "qrGeneration.saveProceed" })).not.toBeInTheDocument();
 });
 
-test("reports a direct upload failure and allows switching to the image prompt", async () => {
+test("reports a direct upload failure without offering a prompt switch", async () => {
   const file = new File(["image"], "flyer.png", { type: "image/png" });
   renderFlow({ pathname: "/flyer/create/qr", state: { uploadedFile: file } });
   enterWebsite();
@@ -139,9 +139,8 @@ test("reports a direct upload failure and allows switching to the image prompt",
   fireEvent.click(screen.getByRole("button", { name: "qrGeneration.proceedToQr" }));
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Upload failed"));
   expect(screen.queryByRole("button", { name: "qrGeneration.saveProceed" })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "qrGeneration.usePrompt" }));
-  expect(screen.getByLabelText("qrGeneration.imagePrompt")).toBeInTheDocument();
-  expect(screen.queryByText("flyer.png")).not.toBeInTheDocument();
+  expect(screen.getByText("flyer.png")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "qrGeneration.usePrompt" })).not.toBeInTheDocument();
 });
 
 test("does not generate when the wallet has no free attempts or tokens", async () => {

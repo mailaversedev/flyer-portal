@@ -124,6 +124,7 @@ test("uploaded events skip creative requirements and persist an overridden organ
   enterDetails();
   expect(screen.queryByLabelText("eventCreation.imagePrompt")).not.toBeInTheDocument();
   expect(screen.getByText("event.png")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "qrGeneration.usePrompt" })).not.toBeInTheDocument();
   expect(screen.queryByAltText("eventCreation.preview")).not.toBeInTheDocument();
   const icon = new File(["icon"], "icon.png", { type: "image/png" });
   userEvent.upload(screen.getByLabelText("eventCreation.icon"), icon);

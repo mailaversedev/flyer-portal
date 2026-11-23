@@ -28,7 +28,6 @@
     "iconHint": "Uses the merchant icon, or the Mailaverse icon when no merchant icon is available. Upload an image to override it.",
     "resetIcon": "Use default icon",
     "iconFailed": "Could not upload the organizer icon",
-    "usePrompt": "Use an image prompt instead",
     "preparingImage": "Preparing event image...",
     "noRewardHint": "Events have no reward budget or payment. Choose targeting and an optional release time, then review the image before publishing.",
     "requiredDetails": "Enter an organizer, event title, description and venue within the allowed lengths.",
@@ -681,7 +680,6 @@
   "qrGeneration": {
     "imagePrompt": "Prompt for the flyer image",
     "imagePlaceholder": "Generate a flyer from a prompt or upload an image.",
-    "usePrompt": "Use an image prompt instead",
     "generationCost": "A 1K generation uses one daily free attempt, or 1 $MGT when no free attempts remain.",
     "preparingImage": "Preparing flyer image...",
     "promptRequired": "Enter a flyer image prompt or upload an image.",
