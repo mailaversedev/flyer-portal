@@ -58,7 +58,7 @@ describe("Jetso blog authoring pages", () => {
     expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
     expect(await screen.findByText("Summer guide")).toBeInTheDocument();
     const table = screen.getByRole("table");
-    expect(table).toHaveClass("campaigns-table");
+    expect(table).toHaveClass("campaigns-table", "jetso-blog-table");
     expect(table.parentElement).toHaveClass("table-container");
     expect(table.closest("section")).toHaveClass("campaign-table");
     expect(screen.getAllByText("Published").length).toBeGreaterThan(0);

@@ -64,7 +64,7 @@ const JetsoBlogListPage = () => {
           </div>
         ) : (
           <div className="table-container">
-            <table className="campaigns-table">
+            <table className="campaigns-table jetso-blog-table">
               <thead>
                 <tr>
                   <th>{t("jetsoBlog.article")}</th>

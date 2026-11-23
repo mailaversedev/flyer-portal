@@ -109,6 +109,14 @@
   background: #2a3447;
 }
 
+.jetso-blog-table td:first-child {
+  width: 40%;
+  min-width: 240px;
+  max-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .jetso-blog-list-title {
   font-weight: 700;
   color: #f8fafc;
