@@ -52,6 +52,34 @@ Starts the Node.js API server from `server.js`.
 
 Starts the flyer job background worker from `worker.js`.
 
+## Mobile flyer ordering and backfill
+
+The mobile API can order flyers by `scheduledAt` descending. For an unscheduled
+flyer this field equals its `createdAt`; a scheduled flyer uses its actual
+release time. Future releases are excluded before the page limit is applied.
+Existing `createdAt` ordering remains available to other clients.
+
+Before deploying the mobile change:
+
+1. Deploy the API changes so new flyers have a sortable `scheduledAt`.
+2. Create and wait for a Firestore composite index on collection `flyers`,
+   collection scope: `companyId` ascending, `scheduledAt` descending.
+3. With Application Default Credentials for the intended project, review the
+   backfill, then explicitly apply it:
+
+   ```bash
+   node scripts/backfillFlyerScheduledAt.js --project=PROJECT_ID
+   node scripts/backfillFlyerScheduledAt.js --project=PROJECT_ID --apply
+   ```
+
+   The script uses transactions, normalizes timestamps to UTC and can be
+   rerun. It reports invalid dates and exits nonzero; repair those records and
+   rerun before proceeding. Firestore excludes missing sort fields from queries.
+4. Deploy the mobile app after the backfill and index are complete.
+
+The mobile promotion screen currently requests the first 100 flyers; its lazy
+list/grid rendering is not network-level infinite scroll.
+
 ## Merchant products
 
 The profile area has Profile and Products tabs. The Products tab opens the product

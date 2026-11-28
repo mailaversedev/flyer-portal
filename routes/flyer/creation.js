@@ -292,11 +292,12 @@ module.exports = function createCreationRouter(context) {
           : null;
 
       const flyerRef = db.collection("flyers").doc();
+      const createdAt = new Date().toISOString();
       const flyerData = {
         type,
         ...data,
-        scheduledAt: parsedScheduledAt,
-        createdAt: new Date().toISOString(),
+        scheduledAt: parsedScheduledAt || createdAt,
+        createdAt,
         status: "active",
         noReward,
         hideCompanyDetail: isSuperAdmin,
@@ -675,6 +676,13 @@ module.exports = function createCreationRouter(context) {
               ? filteredData.scheduledAt
               : filteredData.targetBudget?.scheduledAt;
 
+          if (filteredData.scheduledAt === undefined && scheduledAt !== undefined) {
+            const parsedDate = scheduledAt ? new Date(scheduledAt) : null;
+            filteredData.scheduledAt = parsedDate && !Number.isNaN(parsedDate.getTime())
+              ? parsedDate.toISOString()
+              : null;
+          }
+
           if (typeof district === "string") {
             filteredData.targetBudget = {
               ...(existingFlyer.targetBudget || {}),
@@ -693,6 +701,13 @@ module.exports = function createCreationRouter(context) {
 
         if (Object.keys(filteredData).length === 0) {
           throw new Error("__NO_EDITABLE_FIELDS__");
+        }
+
+        if (Object.hasOwn(filteredData, "scheduledAt") && !filteredData.scheduledAt) {
+          if (!existingFlyer.createdAt || Number.isNaN(Date.parse(existingFlyer.createdAt))) {
+            throw new Error("Cannot clear schedule: flyer has no valid creation time");
+          }
+          filteredData.scheduledAt = new Date(existingFlyer.createdAt).toISOString();
         }
 
         const flyerUpdate = {

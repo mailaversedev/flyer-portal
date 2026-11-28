@@ -141,6 +141,8 @@ test("POST /flyer/events regression tests", { concurrency: false }, async (t) =>
         assert.equal(stored.applicantCount, 0);
         assert.equal(stored.confirmedCount, 0);
         assert.equal(stored.noReward, true);
+        assert.equal(stored.scheduledAt, stored.createdAt);
+        assert.equal(stored.targetBudget.scheduledAt, null);
         assert.deepEqual(res.payload.data, { id: "event-test-id", ...stored });
       } finally {
         if (descriptor) Object.defineProperty(Intl, "supportedValuesOf", descriptor);

@@ -77,6 +77,7 @@ module.exports = function createEventsRouter({ db }) {
       }
       const rawScheduledAt = targeting.scheduledAt || data.scheduledAt;
       const scheduledAt = rawScheduledAt ? new Date(rawScheduledAt).toISOString() : null;
+      const createdAt = new Date().toISOString();
       const flyer = {
         type: "event", companyId, header, adContent, venue,
         startsAt: start.toISOString(), endsAt: end.toISOString(), applicationDeadline: deadline.toISOString(),
@@ -85,13 +86,13 @@ module.exports = function createEventsRouter({ db }) {
         coverPhoto: data.coverPhoto || null, flyerPrompts: typeof data.flyerPrompts === "string" ? data.flyerPrompts.slice(0, 2000) : "",
         companyName: company.name || "", companyDisplayName: company.companyDisplayName || company.name || "",
         companyIcon: data.companyIcon || company.icon || MAILAVERSE_ORGANIZER.icon, hideCompanyDetail: isMailaverse, noReward: true,
-        scheduledAt,
+        scheduledAt: scheduledAt || createdAt,
         targetBudget: {
           district: targeting.district || "", propertyEstate: targeting.propertyEstate || "",
           targetedGroup: targeting.targetedGroup || "", aiTargeted: targeting.aiTargeted === true,
           noSpecific: targeting.noSpecific === true, noReward: true, scheduledAt,
         },
-        status: "active", createdAt: new Date().toISOString(),
+        status: "active", createdAt,
       };
       const ref = await db.collection("flyers").add(flyer);
       return res.status(201).json({ success: true, flyerId: ref.id, data: { id: ref.id, ...flyer } });

@@ -96,3 +96,23 @@ test("Read editing remains asset-locked instead of mounting Pro generation contr
   expect(screen.queryByLabelText("leafletPro.prompts")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("leafletPro.resolution")).not.toBeInTheDocument();
 });
+
+test.each([
+  ["default creation time", "2020-01-01T00:00:00.000Z", false],
+  ["actual schedule", "2020-02-01T00:00:00.000Z", true],
+])("Read edit displays %s appropriately", async (_name, scheduledAt, hasSchedule) => {
+  ApiService.getFlyerById.mockResolvedValue({
+    success: true,
+    data: {
+      type: "leaflet",
+      header: "Existing read",
+      createdAt: "2020-01-01T00:00:00.000Z",
+      scheduledAt,
+    },
+  });
+  renderFlow("/flyer/edit/leaflet/read-id");
+  await screen.findByText("creation.assetLocked");
+  const input = document.querySelector('input[type="datetime-local"]');
+  expect(input).not.toBeNull();
+  expect(Boolean(input.value)).toBe(hasSchedule);
+});

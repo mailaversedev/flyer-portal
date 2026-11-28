@@ -255,7 +255,12 @@ const LeafletEditForm = ({ data, onUpdate, t }) => {
             <input
               type="datetime-local"
               className="form-input"
-              value={formatDateTimeLocal(data.scheduledAt || data.targetBudget?.scheduledAt)}
+              value={formatDateTimeLocal(
+                data.scheduledAt && data.createdAt &&
+                Date.parse(data.scheduledAt) === Date.parse(data.createdAt)
+                  ? null
+                  : data.scheduledAt || data.targetBudget?.scheduledAt
+              )}
               onChange={(event) => {
                 const value = event.target.value;
                 const isoValue = value && !Number.isNaN(new Date(value).getTime())

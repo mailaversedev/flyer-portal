@@ -111,7 +111,7 @@ module.exports = function createListingRouter(context) {
         });
       }
 
-      const validSortFields = ["createdAt", "updatedAt", "type", "status"];
+      const validSortFields = ["createdAt", "scheduledAt", "updatedAt", "type", "status"];
       if (!validSortFields.includes(sortBy)) {
         return res.status(400).json({
           success: false,
@@ -125,6 +125,10 @@ module.exports = function createListingRouter(context) {
 
       if (companyId) {
         query = query.where("companyId", "==", companyId);
+      }
+
+      if (sortBy === "scheduledAt" && includeScheduled !== "true") {
+        query = query.where("scheduledAt", "<=", new Date().toISOString());
       }
 
       query = query.orderBy(sortBy, direction.toLowerCase());

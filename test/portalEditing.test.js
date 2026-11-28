@@ -128,9 +128,27 @@ test("merchant can save QR copy on a legacy flyer without a website without unlo
   const saved = await edit(qr, { website: "", productDescriptions: "Updated copy", coverPhoto: "replacement" }, {
     role: "staff", companyId: "merchant",
   });
+
   assert.equal(saved.status, 200);
   assert.equal(saved.stored.productDescriptions, "Updated copy");
   assert.equal(saved.stored.adContent, "Updated copy");
   assert.equal(saved.stored.coverPhoto, qr.coverPhoto);
   assert.equal((await edit(qr, { header: "Update" }, { role: "staff", companyId: "other" })).status, 403);
+});
+
+test("clearing a schedule falls back to creation time, including nested edits", async () => {
+  const flyer = {
+    type: "leaflet", companyId: "merchant",
+    createdAt: "2020-01-01T00:00:00.000Z",
+    scheduledAt: "2021-01-01T00:00:00.000Z",
+    targetBudget: { scheduledAt: "2021-01-01T00:00:00.000Z", district: "Central" },
+  };
+  for (const data of [{ scheduledAt: null, targetBudget: { district: "Central" } }, { targetBudget: { scheduledAt: null } }]) {
+    const result = await edit(flyer, data);
+    assert.equal(result.status, 200);
+    assert.equal(result.stored.scheduledAt, flyer.createdAt);
+    assert.equal(result.stored.targetBudget.scheduledAt, null);
+  }
+  const changed = await edit(flyer, { targetBudget: { scheduledAt: "2022-01-01T08:00:00+08:00" } });
+  assert.equal(changed.stored.scheduledAt, "2022-01-01T00:00:00.000Z");
 });
