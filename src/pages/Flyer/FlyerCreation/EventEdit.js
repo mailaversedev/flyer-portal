@@ -124,7 +124,7 @@ const EventEditForm = ({ flyerId }) => {
                     {!canEditEnrollment && <p className="event-hint">{t("eventCreation.enrollmentLocked")}</p>}
                     <div className="form-group">
                       <label className="form-label" htmlFor="edit-event-organizer">{t("eventCreation.merchant")}</label>
-                      <select id="edit-event-organizer" className="form-select" disabled={!merchantsLoaded}
+                      <select id="edit-event-organizer" className="form-select" disabled={!merchantsLoaded || record.rewardPolicy === "event_checkin_v1"}
                         value={data.companyId} onChange={(event) => update("companyId", event.target.value)}>
                         {organizers.map((company) => <option key={company.id} value={company.id}>{company.companyDisplayName || company.name}</option>)}
                       </select>
@@ -143,7 +143,7 @@ const EventEditForm = ({ flyerId }) => {
                     ))}
                     <div className="form-group">
                       <label className="event-confirmation-label">
-                        <input type="checkbox" checked={data.confirmationRequired}
+                        <input type="checkbox" checked={data.confirmationRequired} disabled={record.rewardPolicy === "event_checkin_v1"}
                           onChange={(event) => update("confirmationRequired", event.target.checked)} />
                         <span>{t("eventCreation.confirmationRequired")}</span>
                       </label>

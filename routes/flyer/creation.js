@@ -302,6 +302,13 @@ module.exports = function createCreationRouter(context) {
         noReward,
         hideCompanyDetail: isSuperAdmin,
       };
+      delete flyerData.rewardPolicy;
+      if (type === "qr" && !noReward) {
+        if (typeof data.website !== "string" || !data.website.trim()) {
+          return res.status(400).json({ success: false, message: "A QR destination is required for scan rewards" });
+        }
+        flyerData.rewardPolicy = "qr_scan_v1";
+      }
       if (flyerData.targetBudget) {
         flyerData.targetBudget.scheduledAt = parsedScheduledAt;
       }

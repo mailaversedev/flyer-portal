@@ -16,6 +16,14 @@ module.exports = function createAdminEventsRouter({ db }) {
         verifiedConfirmed: event.confirmationRequired ? confirmed : 0,
         selfReportedJoined: event.confirmationRequired ? 0 : applicants,
         verifiedShowUpRate: event.confirmationRequired && applicants ? confirmed / applicants : null,
+        rewards: event.rewardPolicy === "event_checkin_v1" ? {
+          fundingSource: event.fundingSource,
+          budgetHkd: event.targetBudget?.budget,
+          allocatedMailcoin: event.lottery?.lotteryMoney,
+          remainingMailcoin: event.lottery?.remaining,
+          paidMailcoin: event.lottery.lotteryMoney - event.lottery.remaining,
+          paidClaims: event.lottery?.claims,
+        } : null,
       } });
     } catch (error) {
       console.error("Failed to fetch event summary:", error);
@@ -41,6 +49,8 @@ module.exports = function createAdminEventsRouter({ db }) {
       const applications = snapshot.docs.map((doc) => ({
         userId: doc.id, username: doc.data().username,
         appliedAt: doc.data().appliedAt, confirmedAt: doc.data().confirmedAt || null,
+        rewardStatus: doc.data().rewardStatus || null,
+        reward: doc.data().reward ?? null,
         joinedType: doc.data().confirmationRequired
           ? (doc.data().confirmedAt ? "verified" : "pending")
           : "self-reported",

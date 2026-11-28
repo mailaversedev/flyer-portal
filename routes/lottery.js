@@ -65,7 +65,7 @@ router.get("/stream", (req, res) => {
 
 // GET /api/lottery - Lottery endpoint (idempotent per user, fluctuating reward, pool depletion)
 // Requires ?flyerId=xxx as query params. userId is extracted from the token.
-router.get("/", authenticateToken, async (req, res) => {
+async function claimLottery(req, res) {
   try {
     const userId = req.user.userId;
     const flyerId = req.query.flyerId;
@@ -84,6 +84,22 @@ router.get("/", authenticateToken, async (req, res) => {
     }
 
     const flyer = flyerDoc.data();
+
+    if (flyer?.rewardPolicy === "event_checkin_v1") {
+      return res.status(409).json({
+        success: false,
+        message: "Event rewards are available only through attendance confirmation",
+      });
+    }
+    if (flyer?.rewardPolicy === "qr_scan_v1") {
+      if (req.method !== "POST" || typeof req.body?.scannedValue !== "string" ||
+          typeof flyer.website !== "string" || req.body.scannedValue !== flyer.website) {
+        return res.status(403).json({ success: false, message: "Scan the QR code for this flyer to claim its reward" });
+      }
+      if (flyer.scheduledAt && Date.parse(flyer.scheduledAt) > Date.now()) {
+        return res.status(409).json({ success: false, message: "Flyer is not yet available" });
+      }
+    }
 
     if (flyer?.status !== "active") {
       return res.status(200).json({
@@ -129,7 +145,16 @@ router.get("/", authenticateToken, async (req, res) => {
     const walletRef = walletQuery.docs[0].ref;
 
     // --- Transaction for idempotency and atomicity ---
-    await db.runTransaction(async (transaction) => {
+    const result = await db.runTransaction(async (transaction) => {
+      if (flyer.rewardPolicy === "qr_scan_v1") {
+        const currentFlyer = await transaction.get(flyerRef);
+        const current = currentFlyer.exists ? currentFlyer.data() : null;
+        if (!current || current.status !== "active" || current.noReward ||
+            current.rewardPolicy !== "qr_scan_v1" || current.website !== req.body.scannedValue ||
+            (current.scheduledAt && Date.parse(current.scheduledAt) > Date.now())) {
+          throw Object.assign(new Error("Flyer is no longer eligible for this scan reward"), { status: 409 });
+        }
+      }
       // 1. Check if user already claimed
       const userClaimDoc = await transaction.get(userClaimsRef);
       if (userClaimDoc.exists) {
@@ -143,7 +168,7 @@ router.get("/", authenticateToken, async (req, res) => {
           0,
           Math.floor(data.avgMoneyPerUser || avgMoneyPerUser),
         );
-        res.status(200).json({
+        return {
           success: true,
           message: "Already claimed",
           ...data,
@@ -151,8 +176,7 @@ router.get("/", authenticateToken, async (req, res) => {
           maxUsers: effectiveMaxUsers,
           unit: "mailcoin",
           mailcoinHkdRate,
-        });
-        throw new Error("__ALREADY_CLAIMED__"); // abort transaction
+        };
       }
 
       // 2. Get or initialize lottery state
@@ -189,19 +213,21 @@ router.get("/", authenticateToken, async (req, res) => {
 
       // 3. Check if pool is depleted or max users reached
       if (state.claims >= state.maxUsers || state.remaining <= 0) {
-        res.status(200).json({
+        return {
           success: false,
           message: "All lottery rewards have been claimed",
           avgMoneyPerUser: effectiveAvgMoneyPerUser,
           maxUsers: state.maxUsers,
           unit: "mailcoin",
           mailcoinHkdRate,
-        });
-        throw new Error("__POOL_DEPLETED__");
+        };
       }
 
       // 7. Get user wallet (READ)
       const walletDoc = await transaction.get(walletRef);
+      if (!walletDoc.exists) {
+        throw Object.assign(new Error("User wallet not found"), { status: 404 });
+      }
 
       const date = new Date();
       const year = date.getFullYear();
@@ -249,7 +275,7 @@ router.get("/", authenticateToken, async (req, res) => {
           Math.floor(effectiveAvgMoneyPerUser * 1.5),
         );
         if (max <= min) {
-          reward = min;
+          reward = Math.min(state.remaining, min);
         } else {
           reward = Math.floor(Math.random() * (max - min + 1)) + min;
         }
@@ -368,18 +394,15 @@ router.get("/", authenticateToken, async (req, res) => {
       });
 
       // 9. Respond
-      res.status(200).json({
+      return {
         success: true,
         ...claimData,
-      });
+      };
     });
+    return res.status(200).json(result);
   } catch (error) {
-    if (
-      error.message === "__ALREADY_CLAIMED__" ||
-      error.message === "__POOL_DEPLETED__"
-    ) {
-      // Response already sent
-      return;
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
     }
     console.error("Lottery error:", error);
     res.status(500).json({
@@ -388,6 +411,9 @@ router.get("/", authenticateToken, async (req, res) => {
       error: error.message,
     });
   }
-});
+}
+
+router.get("/", authenticateToken, claimLottery);
+router.post("/", authenticateToken, claimLottery);
 
 module.exports = router;

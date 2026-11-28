@@ -1,5 +1,6 @@
 const express = require("express");
 const crypto = require("crypto");
+const { awardEventCheckin } = require("../services/eventRewards");
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -43,7 +44,10 @@ module.exports = function createEventCheckinRouter({ db }) {
   function render(res, token, record, message) {
     const { event, application } = record;
     const alreadyConfirmed = !!application.confirmedAt;
-    res.type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event check-in</title><style>body{font-family:system-ui,sans-serif;max-width:36rem;margin:3rem auto;padding:1rem;color:#172237}button{background:#1b68be;color:white;border:0;border-radius:8px;padding:1rem;font-size:1rem;cursor:pointer}.card{border:1px solid #ddd;border-radius:12px;padding:1.5rem}</style></head><body><main class="card"><h1>${escapeHtml(event.header)}</h1><p>${escapeHtml(event.adContent)}</p><p>Organizer: ${escapeHtml(event.companyDisplayName)}</p><p>Venue: ${escapeHtml(event.venue)}</p><p>Applicant: ${escapeHtml(application.username)}</p><p>${escapeHtml(message || (alreadyConfirmed ? "Attendance confirmed" : "Awaiting confirmation"))}</p>${alreadyConfirmed ? "" : `<form method="post" action="/events/check-in/${token}"><button type="submit">Confirm Attendance</button></form>`}</main></body></html>`);
+    const rewardMessage = application.rewardStatus === "paid"
+      ? `Reward credited: ${application.reward} Mailcoin.`
+      : application.rewardStatus === "exhausted" ? "Attendance confirmed; reward pool exhausted." : "";
+    res.type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event check-in</title><style>body{font-family:system-ui,sans-serif;max-width:36rem;margin:3rem auto;padding:1rem;color:#172237}button{background:#1b68be;color:white;border:0;border-radius:8px;padding:1rem;font-size:1rem;cursor:pointer}.card{border:1px solid #ddd;border-radius:12px;padding:1.5rem}</style></head><body><main class="card"><h1>${escapeHtml(event.header)}</h1><p>${escapeHtml(event.adContent)}</p><p>Organizer: ${escapeHtml(event.companyDisplayName)}</p><p>Venue: ${escapeHtml(event.venue)}</p><p>Applicant: ${escapeHtml(application.username)}</p><p>${escapeHtml(message || (alreadyConfirmed ? "Attendance confirmed" : "Awaiting confirmation"))}</p><p>${escapeHtml(rewardMessage)}</p>${alreadyConfirmed ? "" : `<form method="post" action="/events/check-in/${token}"><button type="submit">Confirm Attendance</button></form>`}</main></body></html>`);
   }
 
   router.get("/events/check-in/:token", async (req, res) => {
@@ -70,7 +74,11 @@ module.exports = function createEventCheckinRouter({ db }) {
         if (application.confirmedAt) return "Attendance confirmed";
         const now = new Date();
         if (event.status !== "active" || now < new Date(event.startsAt) || now > new Date(event.endsAt)) return "Check-in is not open";
-        tx.update(applicationRef, { confirmedAt: now.toISOString() });
+        const timestamp = now.toISOString();
+        const reward = event.rewardPolicy === "event_checkin_v1"
+          ? await awardEventCheckin({ db, tx, eventRef, event, application, timestamp })
+          : {};
+        tx.update(applicationRef, { confirmedAt: timestamp, ...reward });
         tx.update(eventRef, { confirmedCount: (event.confirmedCount || 0) + 1 });
         return "Attendance confirmed";
       });

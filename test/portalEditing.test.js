@@ -104,6 +104,13 @@ test("event updates are super-admin only and preserve published assets", async (
   assert.equal((await edit(event, { endsAt: event.startsAt })).status, 400);
 });
 
+test("rewarded events cannot change organizer or disable confirmation", async () => {
+  const rewarded = { ...event, rewardPolicy: "event_checkin_v1", confirmationRequired: true };
+  assert.equal((await edit(rewarded, { confirmationRequired: false })).status, 409);
+  assert.equal((await edit(rewarded, { companyId: "another-organizer" })).status, 409);
+  assert.equal((await edit(rewarded, { header: "New title" })).status, 200);
+});
+
 test("events with applications reject changes to enrollment but accept copy edits after the event", async () => {
   const past = Object.fromEntries(["startsAt", "endsAt", "applicationDeadline"].map((field) => [
     field, event[field].replace("2099", "2020"),

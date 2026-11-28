@@ -30,6 +30,8 @@
     "iconFailed": "未能上傳主辦商戶圖示",
     "preparingImage": "準備活動圖片中...",
     "noRewardHint": "活動不設獎賞預算或付款。請選擇目標受眾及發佈時間，並在發佈前預覽圖片。",
+    "rewardHint": "可選的獎賞由 Mailaverse 支付，並於二維碼確認出席後發放。",
+    "enableRewards": "啟用出席獎賞",
     "requiredDetails": "請填寫主辦商戶、活動名稱、介紹及地點，並遵守字數限制。",
     "invalidTimezone": "請輸入有效活動時區，例如 Asia/Hong_Kong 或 UTC。",
     "invalidDates": "請輸入有效日期及時間。所選時間可能因夏令時間變更而不存在。",

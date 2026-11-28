@@ -4,6 +4,7 @@ const { authenticateToken } = require("../auth");
 const { eventCheckinConfigured } = require("./eventEdit");
 const { MAILAVERSE_ORGANIZER, validateEventDetails } = require("../../src/utils/EventCreationUtil");
 const eventMessages = require("../../src/i18n/locales/en/common.json").eventCreation;
+const { prepareEventReward } = require("../../services/eventRewards");
 
 const asDate = (value) => typeof value === "string" && value.trim() ? new Date(value) : new Date(NaN);
 const hash = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -21,6 +22,7 @@ function applicationResponse(data, id) {
     confirmedAt: data.confirmedAt || null,
     status: data.confirmedAt ? "confirmed" : "applied",
     confirmationRequired: data.confirmationRequired,
+    ...(data.rewardStatus ? { rewardStatus: data.rewardStatus, reward: data.reward } : {}),
   };
   if (data.confirmationRequired) {
     const token = checkinToken(id, data.nonce);
@@ -64,6 +66,10 @@ module.exports = function createEventsRouter({ db }) {
         ["district", "propertyEstate", "targetedGroup"].some((field) => targeting[field] != null && (typeof targeting[field] !== "string" || targeting[field].length > 300))) {
       return res.status(400).json({ success: false, message: "Invalid event targeting fields", field: "targetBudget" });
     }
+    const rewardsEnabled = data.eventRewardsEnabled === true;
+    if (rewardsEnabled && data.confirmationRequired !== true) {
+      return res.status(400).json({ success: false, message: "Rewarded events require QR attendance confirmation", field: "confirmationRequired" });
+    }
     if (data.confirmationRequired && !eventCheckinConfigured()) {
       return res.status(503).json({ success: false, message: "Event check-in is not configured" });
     }
@@ -75,6 +81,14 @@ module.exports = function createEventsRouter({ db }) {
         if (!merchant.exists || merchant.data()?.isActive === false) return res.status(400).json({ success: false, message: "Active merchant not found", field: "companyId" });
         company = merchant.data();
       }
+      let rewardAllocation = null;
+      if (rewardsEnabled) {
+        try {
+          rewardAllocation = prepareEventReward(targeting.budget, company.nature);
+        } catch (error) {
+          return res.status(400).json({ success: false, message: error.message, field: "targetBudget.budget" });
+        }
+      }
       const rawScheduledAt = targeting.scheduledAt || data.scheduledAt;
       const scheduledAt = rawScheduledAt ? new Date(rawScheduledAt).toISOString() : null;
       const createdAt = new Date().toISOString();
@@ -85,16 +99,46 @@ module.exports = function createEventsRouter({ db }) {
         confirmationRequired: data.confirmationRequired === true, applicantCount: 0, confirmedCount: 0,
         coverPhoto: data.coverPhoto || null, flyerPrompts: typeof data.flyerPrompts === "string" ? data.flyerPrompts.slice(0, 2000) : "",
         companyName: company.name || "", companyDisplayName: company.companyDisplayName || company.name || "",
-        companyIcon: data.companyIcon || company.icon || MAILAVERSE_ORGANIZER.icon, hideCompanyDetail: isMailaverse, noReward: true,
+        companyIcon: data.companyIcon || company.icon || MAILAVERSE_ORGANIZER.icon, hideCompanyDetail: isMailaverse, noReward: !rewardsEnabled,
         scheduledAt: scheduledAt || createdAt,
         targetBudget: {
           district: targeting.district || "", propertyEstate: targeting.propertyEstate || "",
           targetedGroup: targeting.targetedGroup || "", aiTargeted: targeting.aiTargeted === true,
-          noSpecific: targeting.noSpecific === true, noReward: true, scheduledAt,
+          noSpecific: targeting.noSpecific === true, noReward: !rewardsEnabled, scheduledAt,
+          ...(rewardAllocation ? { budget: rewardAllocation.budget } : {}),
         },
+        ...(rewardAllocation ? {
+          rewardPolicy: "event_checkin_v1",
+          fundingSource: "platform",
+          companyNature: company.nature || null,
+          lottery: {
+            lotteryMoney: rewardAllocation.pool.lotteryMoney,
+            maxUsers: rewardAllocation.pool.maxUsers,
+            userReached: rewardAllocation.pool.userReached,
+            remaining: rewardAllocation.pool.remaining,
+            claims: 0,
+            unit: "mailcoin",
+            mailcoinHkdRate: rewardAllocation.pool.mailcoinHkdRate,
+          },
+        } : {}),
         status: "active", createdAt,
       };
-      const ref = await db.collection("flyers").add(flyer);
+      let ref;
+      if (rewardAllocation) {
+        ref = db.collection("flyers").doc();
+        const poolRef = db.collection("lottery").doc(ref.id);
+        const allocationRef = db.collection("eventRewardAllocations").doc(ref.id);
+        await db.runTransaction(async (tx) => {
+          tx.create(ref, flyer);
+          tx.create(poolRef, { ...rewardAllocation.pool, createdAt });
+          tx.create(allocationRef, {
+            flyerId: ref.id, fundingSource: "platform", budgetHkd: rewardAllocation.budget,
+            lotteryMoney: rewardAllocation.pool.lotteryMoney, createdAt,
+          });
+        });
+      } else {
+        ref = await db.collection("flyers").add(flyer);
+      }
       return res.status(201).json({ success: true, flyerId: ref.id, data: { id: ref.id, ...flyer } });
     } catch (error) {
       console.error("Failed to create event:", error);

@@ -1,5 +1,20 @@
 # Event to Earn rollout plan
 
+> Historical v1 plan. Optional, platform-allocated attendance rewards are now
+> available for newly created events without feature flags. Existing
+> events remain no-reward. Rewarded events require personal QR check-in; the
+> confirmation, pool decrement and wallet credit are transactional. An exhausted
+> pool still permits attendance confirmation and is reported to the attendee.
+> `eventRewardAllocations` records the HKD budget for reconciliation; it is not
+> a platform cash wallet or a proof of available funds. The event organizer and
+> check-in mode cannot be changed after a rewarded event is published.
+>
+> New rewarded Scan to Earn flyers require their claim to submit the flyer's QR
+> contents for comparison with the stored destination. Older mobile clients
+> cannot claim rewards from these new flyers until they upgrade; existing flyers
+> retain their previous claim and funding behavior. A static, publicly visible
+> destination is copyable and does **not** prove a physical scan.
+
 ## Product decisions
 
 - A fourth flyer type, `event`, is created **only by super admins**, with a selected merchant or Mailaverse itself as organizer. Organizer icons default to the merchant icon or Mailaverse logo and can be overridden with an uploaded image.

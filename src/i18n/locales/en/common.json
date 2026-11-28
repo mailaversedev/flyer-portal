@@ -30,6 +30,8 @@
     "iconFailed": "Could not upload the organizer icon",
     "preparingImage": "Preparing event image...",
     "noRewardHint": "Events have no reward budget or payment. Choose targeting and an optional release time, then review the image before publishing.",
+    "rewardHint": "Optional rewards are funded by Mailaverse and paid after QR attendance confirmation.",
+    "enableRewards": "Enable attendance rewards",
     "requiredDetails": "Enter an organizer, event title, description and venue within the allowed lengths.",
     "invalidTimezone": "Enter a valid event timezone, for example Asia/Hong_Kong or UTC.",
     "invalidDates": "Enter valid event dates and times. The selected time may not exist due to a daylight-saving change.",

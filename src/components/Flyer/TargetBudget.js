@@ -52,7 +52,7 @@ const TargetBudget = ({
     budget: data?.targetBudget?.budget || data?.budget || DEFAULT_BUDGET,
     paymentMethod:
       data?.targetBudget?.paymentMethod || data?.paymentMethod || "",
-    noReward: isEvent || Boolean(data?.targetBudget?.noReward || data?.noReward),
+    noReward: isEvent ? data?.eventRewardsEnabled !== true : Boolean(data?.targetBudget?.noReward || data?.noReward),
     scheduledAt:
       data?.targetBudget?.scheduledAt || data?.scheduledAt || "",
   };
@@ -258,7 +258,20 @@ const TargetBudget = ({
         <div className="budget-form">
           <h3 className="section-title">{t("targetBudget.title")}</h3>
 
-          {isEvent && <p className="event-budget-note">{t("eventCreation.noRewardHint")}</p>}
+          {isEvent && <p className="event-budget-note">{t("eventCreation.rewardHint")}</p>}
+
+          {isEvent && (
+            <label className="checkbox-label">
+              <input type="checkbox" checked={data?.eventRewardsEnabled === true}
+                onChange={(event) => onUpdate({
+                  ...data,
+                  eventRewardsEnabled: event.target.checked,
+                  confirmationRequired: event.target.checked ? true : data.confirmationRequired,
+                  targetBudget: { ...formData, noReward: !event.target.checked },
+                })} />
+              <span>{t("eventCreation.enableRewards")}</span>
+            </label>
+          )}
 
           {showNoRewardOption && !isEvent && (
             <div className="form-group">
@@ -539,7 +552,7 @@ const TargetBudget = ({
             </div>
           )}
 
-          {!formData.noReward && (
+          {!formData.noReward && !isEvent && (
             <div className="form-group">
               <label className="form-label">{t("targetBudget.payment")}</label>
               <div className="payment-options">

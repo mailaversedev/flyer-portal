@@ -23,6 +23,10 @@ async function prepareEventEdit({ data, existing, db, transaction, now }) {
   ]));
 
   const changed = (field) => Object.hasOwn(patch, field) && patch[field] !== existing[field];
+  if (existing.rewardPolicy === "event_checkin_v1" &&
+      ((Object.hasOwn(patch, "confirmationRequired") && patch.confirmationRequired !== true) || changed("companyId"))) {
+    throw Object.assign(new Error("Rewarded events must keep their organizer and QR confirmation"), { status: 409, code: "rewardSettingsLocked" });
+  }
   if (eventEnrollmentLocked(existing) && EVENT_ENROLLMENT_FIELDS.some(changed)) {
     throw eventEditError(409, "enrollmentLocked");
   }

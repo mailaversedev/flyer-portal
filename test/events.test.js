@@ -27,6 +27,7 @@ function harness(createEventsRouter, options = {}) {
   };
   const lookups = [];
   const writes = [];
+  const allocations = [];
   const db = {
     collection(name) {
       if (name === "companies") {
@@ -41,13 +42,25 @@ function harness(createEventsRouter, options = {}) {
           },
         };
       }
+      if (name === "lottery" || name === "eventRewardAllocations") {
+        return { doc: (id) => ({ id, collectionName: name }) };
+      }
       assert.equal(name, "flyers", "Unexpected database collection");
       return {
+        doc() { return { id: "event-test-id", collectionName: "flyers" }; },
         async add(flyer) {
           writes.push(flyer);
           return { id: "event-test-id" };
         },
       };
+    },
+    async runTransaction(fn) {
+      await fn({
+        create(ref, data) {
+          if (ref.collectionName === "flyers") writes.push(data);
+          else allocations.push({ collection: ref.collectionName, data });
+        },
+      });
     },
   };
   const router = createEventsRouter({ db });
@@ -60,6 +73,7 @@ function harness(createEventsRouter, options = {}) {
     company,
     lookups,
     writes,
+    allocations,
     async invoke(body = validBody(), user = { role: "super-admin", userId: "admin-test" }) {
       const res = {
         statusCode: 200,
@@ -267,6 +281,31 @@ test("POST /flyer/events regression tests", { concurrency: false }, async (t) =>
       assertRejected(res, fixture, 403);
       assert.equal(res.payload.message, "Super admin access is required");
       assert.deepEqual(fixture.lookups, []);
+    });
+
+    await t.test("rewarded event requires confirmation", serial, async () => {
+      const fixture = harness(createEventsRouter);
+      const data = validBody({ eventRewardsEnabled: true, targetBudget: { budget: 500 } });
+      assertRejected(await fixture.invoke(data), fixture, 400, "confirmationRequired");
+    });
+
+    await t.test("rewarded event creates a platform allocation and reward pool", serial, async () => {
+      process.env.EVENT_CHECKIN_SECRET = "test-only-secret-not-real-".repeat(2);
+      process.env.EVENT_PUBLIC_BASE_URL = "https://example.invalid";
+      try {
+        const fixture = harness(createEventsRouter);
+        const res = await fixture.invoke(validBody({
+          eventRewardsEnabled: true, confirmationRequired: true, targetBudget: { budget: 500 },
+        }));
+        assert.equal(res.statusCode, 201);
+        assert.equal(fixture.writes[0].rewardPolicy, "event_checkin_v1");
+        assert.equal(fixture.writes[0].noReward, false);
+        assert.equal(fixture.writes[0].fundingSource, "platform");
+        assert.equal(fixture.allocations.find((entry) => entry.collection === "eventRewardAllocations").data.budgetHkd, 500);
+        assert.equal(fixture.allocations.find((entry) => entry.collection === "lottery").data.remaining, fixture.writes[0].lottery.lotteryMoney);
+      } finally {
+        for (const name of envNames) delete process.env[name];
+      }
     });
 
     const checkinCases = [
