@@ -11,6 +11,7 @@ const KPAY_PAYMENT_PURPOSES = {
   WALLET_TOP_UP: "wallet_topup",
   BUNDLE_PURCHASE: "bundle_purchase",
   TARGET_BUDGET_DIRECT: "target_budget_direct",
+  ADMIN_UAT: "admin_uat",
 };
 
 const toCents = (value) => {
@@ -107,6 +108,16 @@ router.post("/notify", async (req, res) => {
       }
 
       const purpose = `${payment.purpose || KPAY_PAYMENT_PURPOSES.WALLET_TOP_UP}`.trim();
+      if (purpose === KPAY_PAYMENT_PURPOSES.ADMIN_UAT) {
+        transaction.update(paymentRef, {
+          status: "PAID",
+          paidAt: timestamp,
+          failureReason: null,
+          kpayCallback: callbackData,
+          updatedAt: timestamp,
+        });
+        return;
+      }
       const purposeMeta = payment.purposeMeta || {};
       const wallet = await ensureCompanyWalletInTransaction({
         transaction,

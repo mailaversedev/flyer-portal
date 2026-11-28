@@ -342,6 +342,16 @@
     "comingSoon": "Coming Soon"
   },
   "adminPage": {
+    "kpayTestTitle": "KPay credit card UAT",
+    "kpayTestDescription": "Create a HK$5.00 KPay UAT checkout. Test payments never credit a company wallet. Use KPay test cards only.",
+    "kpayTestCreate": "Create KPay test transaction",
+    "kpayTestCreating": "Creating test transaction...",
+    "kpayTestCreateError": "Could not create the KPay test transaction.",
+    "kpayTestLoadError": "Could not retrieve the KPay test transaction.",
+    "kpayTestOrder": "Merchant order number",
+    "kpayTestStatus": "Verified callback status",
+    "kpayTestUpdated": "Last updated",
+    "kpayTestRefresh": "Refresh status",
     "usersTab": "User List",
     "companiesTab": "Company List",
     "creditRequestsTab": "Credit Requests",

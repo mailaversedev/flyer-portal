@@ -74,6 +74,19 @@ The webhook is idempotent: duplicate KPay callbacks do not create more than one 
 
 ## UAT checklist
 
+Super admins can create an isolated HK$5 test checkout from the platform admin
+page. The server permits this only when the configured KPay API origin is
+`https://payment.uat.kpay-group.com`; it records verified callbacks without
+crediting any company wallet. After returning, refresh the displayed status and
+record the merchant order number and callback result in the test workbook.
+Use only KPay-provided test cards. The configured public HTTPS URL must point
+to the deployment receiving the webhook; deploying only the frontend is not
+sufficient. A pending status does not establish that a callback was received.
+
+The integration does not currently implement a KPay refund API or refund
+callbacks, so the two refund cases cannot be completed through this button.
+Do not mark them as passed without implementing and verifying that flow.
+
 1. Configure UAT credentials and public URLs, deploy, and provide the outbound IP to KPay for allow listing.
 2. Create an order with the API and open the returned checkout URL in the KPay sandbox flow.
 3. Complete a KPay-provided test case.

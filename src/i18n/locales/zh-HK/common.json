@@ -343,6 +343,16 @@
     "comingSoon": "即將推出"
   },
   "adminPage": {
+    "kpayTestTitle": "KPay 信用卡 UAT 測試",
+    "kpayTestDescription": "建立 HK$5.00 的 KPay UAT 測試交易。測試交易不會增加公司錢包餘額。請只使用 KPay 測試信用卡。",
+    "kpayTestCreate": "建立 KPay 測試交易",
+    "kpayTestCreating": "正在建立測試交易...",
+    "kpayTestCreateError": "無法建立 KPay 測試交易。",
+    "kpayTestLoadError": "無法讀取 KPay 測試交易。",
+    "kpayTestOrder": "商戶交易訂單號",
+    "kpayTestStatus": "已驗證通知狀態",
+    "kpayTestUpdated": "最後更新",
+    "kpayTestRefresh": "更新狀態",
     "usersTab": "用戶列表",
     "companiesTab": "公司列表",
     "creditRequestsTab": "額度申請",

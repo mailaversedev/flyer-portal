@@ -8,6 +8,7 @@ import { isSuperAdmin } from "../../utils/AuthUtil";
 import { PlatformAdminFlyersTable } from "../../components/PlatformAdmin/PlatformAdminFlyersTable";
 import { PlatformAdminSummary } from "../../components/PlatformAdmin/PlatformAdminSummary";
 import { usePlatformAdminData } from "../../components/PlatformAdmin";
+import KpayUatTest from "./KpayUatTest";
 import "../../components/Dashboard/CampaignTable.css";
 import "./PlatformAdmin.css";
 
@@ -116,6 +117,7 @@ const PlatformAdmin = () => {
         </div>
       )}
 
+      <KpayUatTest />
       <PlatformAdminSummary
         collectionTotals={collectionTotals}
         t={t}

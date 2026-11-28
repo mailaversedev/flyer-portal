@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const express = require("express");
 
 const { TOKEN_BUNDLES } = require("../../config/billingConfig");
-const { buildCheckoutUrl, buildPublicReturnUrl, createManagedOrder } = require("../../services/kpayService");
+const { buildCheckoutUrl, buildPublicReturnUrl, createManagedOrder, getKPayConfig } = require("../../services/kpayService");
 const { db } = require("./helpers");
 
 const router = express.Router();
@@ -13,6 +13,7 @@ const KPAY_PAYMENT_PURPOSES = {
   WALLET_TOP_UP: "wallet_topup",
   BUNDLE_PURCHASE: "bundle_purchase",
   TARGET_BUDGET_DIRECT: "target_budget_direct",
+  ADMIN_UAT: "admin_uat",
 };
 
 const normalizeAmount = (value) => {
@@ -48,6 +49,7 @@ const serializePayment = (payment) => ({
   failureReason: payment.failureReason || null,
   purpose: payment.purpose || KPAY_PAYMENT_PURPOSES.WALLET_TOP_UP,
   purposeMeta: payment.purposeMeta || {},
+  ...(payment.purpose === KPAY_PAYMENT_PURPOSES.ADMIN_UAT ? { kpayCallback: payment.kpayCallback || null } : {}),
 });
 
 const resolvePurpose = (rawPurpose) => {
@@ -81,6 +83,15 @@ const resolveBundleByCode = (bundleCode) =>
   TOKEN_BUNDLES.find((entry) => entry.code === `${bundleCode || ""}`.trim()) || null;
 
 const createPurposePayload = ({ purpose, amount, body }) => {
+  if (purpose === KPAY_PAYMENT_PURPOSES.ADMIN_UAT) {
+    return {
+      ok: true,
+      description: "KPay UAT credit card test",
+      itemName: "KPay UAT test",
+      returnPath: "/platform-admin",
+      purposeMeta: {},
+    };
+  }
   if (purpose === KPAY_PAYMENT_PURPOSES.BUNDLE_PURCHASE) {
     const bundle = resolveBundleByCode(body?.bundleCode);
     if (!bundle) {
@@ -141,8 +152,19 @@ router.post("/kpay/orders", async (req, res) => {
     const idempotencyKey = `${req.body?.idempotencyKey || ""}`.trim();
     const language = `${req.body?.language || "zh-HK"}`.trim();
     const purpose = resolvePurpose(req.body?.purpose);
+    const isAdminUat = purpose === KPAY_PAYMENT_PURPOSES.ADMIN_UAT;
 
-    if (!companyId) {
+    if (isAdminUat) {
+      if (req.user?.role !== "super-admin" || !userId) {
+        return res.status(403).json({ success: false, message: "Super admin access is required" });
+      }
+      if (getKPayConfig().apiBaseUrl !== "https://payment.uat.kpay-group.com") {
+        return res.status(403).json({ success: false, message: "KPay admin tests require the UAT environment" });
+      }
+      if (!amount || amount.cents !== 500) {
+        return res.status(400).json({ success: false, message: "KPay UAT test amount must be HKD 5.00" });
+      }
+    } else if (!companyId) {
       return res.status(403).json({ success: false, message: "Company wallet access is required" });
     }
 
@@ -176,7 +198,8 @@ router.post("/kpay/orders", async (req, res) => {
       return res.status(400).json({ success: false, message: "returnPath must be a valid relative path" });
     }
 
-    const paymentRef = db.collection("kpayPayments").doc(buildIdempotencyHash({ companyId, idempotencyKey }));
+    const paymentOwner = isAdminUat ? `admin-uat:${userId}` : companyId;
+    const paymentRef = db.collection("kpayPayments").doc(buildIdempotencyHash({ companyId: paymentOwner, idempotencyKey }));
     const returnUrl = new URL(buildPublicReturnUrl(purposePayload.returnPath));
     returnUrl.searchParams.set("kpayPaymentId", paymentRef.id);
     const timestamp = new Date().toISOString();
@@ -291,7 +314,8 @@ router.get("/kpay/orders/:paymentId", async (req, res) => {
     const companyId = `${req.user?.companyId || ""}`.trim();
     const paymentId = `${req.params.paymentId || ""}`.trim();
 
-    if (!companyId) {
+    const userId = `${req.user?.userId || ""}`.trim();
+    if (!companyId && !(req.user?.role === "super-admin" && userId)) {
       return res.status(403).json({ success: false, message: "Company wallet access is required" });
     }
 
@@ -300,12 +324,16 @@ router.get("/kpay/orders/:paymentId", async (req, res) => {
     }
 
     const paymentDoc = await db.collection("kpayPayments").doc(paymentId).get();
-    if (!paymentDoc.exists || paymentDoc.data()?.companyId !== companyId) {
+    const payment = paymentDoc.exists ? paymentDoc.data() : null;
+    const canRead = payment?.purpose === KPAY_PAYMENT_PURPOSES.ADMIN_UAT
+      ? req.user?.role === "super-admin" && userId && payment.userId === userId
+      : companyId && payment?.companyId === companyId;
+    if (!payment || !canRead) {
       return res.status(404).json({ success: false, message: "KPay payment not found" });
     }
 
     res.set("Cache-Control", "no-store");
-    return res.status(200).json({ success: true, data: serializePayment(paymentDoc.data() || {}) });
+    return res.status(200).json({ success: true, data: serializePayment(payment) });
   } catch (error) {
     console.error("Error retrieving KPay payment:", error);
     return res.status(500).json({ success: false, message: "Internal server error retrieving KPay payment" });
