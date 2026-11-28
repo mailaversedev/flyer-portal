@@ -83,6 +83,27 @@ test("creates zero-stock voucher then imports explicit pairs in CSV order", asyn
   expect(ApiService.createAdminVoucher.mock.invocationCallOrder[0]).toBeLessThan(ApiService.importAdminVoucher.mock.invocationCallOrder[0]);
 });
 
+test("imports manually entered codes paired with images in selection order", async () => {
+  render(<PlatformVouchersCreatePage />);
+  selectImported();
+  fireEvent.change(screen.getByLabelText("How would you like to add codes?"), { target: { value: "manual" } });
+  const images = uploadImages("first.png", "second.png");
+  fireEvent.change(screen.getByLabelText("Voucher codes (one per line)"), {
+    target: { value: "00123\n\n00002" },
+  });
+  expect(screen.getByText('"00123"')).toBeInTheDocument();
+  expect(screen.getByText('"00002"')).toBeInTheDocument();
+  submit();
+  await waitFor(() => expect(ApiService.importAdminVoucher).toHaveBeenCalledTimes(1));
+  expect(ApiService.importAdminVoucher).toHaveBeenCalledWith("saved-id", expect.objectContaining({
+    pairs: [
+      { code: "00123", imageFilename: "first.png" },
+      { code: "00002", imageFilename: "second.png" },
+    ],
+    images,
+  }));
+});
+
 test("rejects incomplete or duplicate pairs before creating a voucher", async () => {
   render(<PlatformVouchersCreatePage />);
   selectImported();

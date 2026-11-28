@@ -63,6 +63,11 @@ export const parsePairCsv = (text) => {
   return rows.map(([code, imageFilename]) => ({ code, imageFilename }));
 };
 
+export const parseVoucherCodeLines = (text, images) => `${text}`
+  .split(/\r\n?|\n/)
+  .filter((code) => code.trim() !== "")
+  .map((code, index) => ({ code, imageFilename: images[index]?.name || "" }));
+
 export const validateVoucherImport = (pairs, images) => {
   const errors = [];
   const codes = pairs.map(({ code }) => code);
